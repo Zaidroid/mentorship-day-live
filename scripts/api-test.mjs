@@ -73,9 +73,11 @@ async function openDirect(dir) {
 /* ---------- calls, all recorded for the device id scan ---------- */
 const seen = [];
 const DEVS = new Set();
+const IMPORTED = []; // every people row the tests imported, for the person record scan at the end
 function newDev() { const d = Array.from(crypto.randomBytes(12), b => (b % 36).toString(36)).join(""); DEVS.add(d); return d; }
 async function call(base, method, url, { body, headers = {}, raw = false } = {}) {
   const h = { ...headers }; let b = body;
+  if (body && body.action === "peopleImport" && Array.isArray(body.people)) IMPORTED.push(...body.people.filter(r => r && typeof r === "object" && /^\d{4}$/.test(r.last4 || "") && r.name));
   if (body !== undefined && !raw) { b = JSON.stringify(body); if (!h["content-type"]) h["content-type"] = "application/json"; }
   const r = await fetch(base + url, { method, headers: h, body: b });
   const buf = Buffer.from(await r.arrayBuffer());
@@ -631,7 +633,7 @@ describe("wipe", () => {
     await call(W.base, "POST", "/api/beat", { body: { w: 1920, h: 1080 } });
     const s = await openDirect(W.dir);
     await s.setJSON("people", [{ id: "0123456789", name: "Sample Person" }]);
-    for (const k of ["who/" + d, "dv/g0123456789/" + d, "here/g0123456789", "hi/1~g0123456789~Layla", "fail/0123456789/" + d + "~1", "star/1/g0123456789/1A~own", "rx/1/" + d + "~1~0~0~ab", "rxt/1/1~ab", "code/123", "cx/ga~gb~1", "tk/1A/g0123456789", "fb/g0123456789"]) await s.set(k, "x");
+    for (const k of ["who/" + d, "dv/g0123456789/" + d, "sig/g0123456789", "here/g0123456789", "hi/1~g0123456789~Layla", "fail/0123456789/" + d + "~1", "star/1/g0123456789/1A~own", "rx/1/15/" + d + "~1~0~0~ab", "rxm/1~1~0~0", "rxd/" + d, "rxt/1/1~ab", "code/123", "cx/ga~gb~1", "tk/1A/g0123456789", "q/tk/1A~g0123456789", "ok/tk/1A~g0123456789", "fb/g0123456789", "lim/who/1/" + d + "/a", "alert/photos/1"]) await s.set(k, "x");
     assert.equal((await op(W.base, { action: "wipe", phrase: "reset md26" })).status, 400);
     assert.equal((await op(W.base, { action: "wipe" })).status, 400);
     const r = await op(W.base, { action: "wipe", phrase: "RESET MD26" });
@@ -1824,6 +1826,32 @@ describe("privacy", () => {
     await call(S.base, "GET", "/api/profile", { headers: { "x-dev": newDev() } });
     await opGet(S.base);
     assert.ok(sn.json.photos.length >= 1 && sn.json.profiles.length >= 1, "the sweep saw real data");
+  });
+
+  test("no response carries k4, a last 4 digits value, or a bare person id", async () => {
+    await openDirect(S.dir);
+    const { personId, k4Of } = lib.ids;
+    const people = [...new Map(IMPORTED.map(r => [r.name + "|" + r.last4, r])).values()];
+    assert.ok(people.length >= 20, "the tests imported many people: " + people.length);
+    const scan = (r, hits = []) => {
+      const text = r.text + "\n" + r.headers;
+      const utf = Buffer.from(r.text, "latin1").toString("utf8");
+      for (const p of people) {
+        const pid = personId(p.name, p.last4), k4 = k4Of(pid, p.last4);
+        if (text.includes(k4)) hits.push(`${r.method} ${r.url} carries the k4 of ${p.name}`);
+        if (new RegExp(`(?<![0-9])${p.last4}(?![0-9])`).test(utf)) hits.push(`${r.method} ${r.url} carries the digits ${p.last4}`);
+        if (new RegExp(`(?<!p)${pid}`).test(text)) hits.push(`${r.method} ${r.url} carries the bare person id of ${p.name}`);
+      }
+      if (/"(k4|last4)"/.test(utf)) hits.push(`${r.method} ${r.url} has a k4 or last4 field`);
+      return hits;
+    };
+    // the scan itself catches each kind of leak
+    const lp = personId(SAMPLE[0].name, SAMPLE[0].last4);
+    for (const leak of [`{"n":"${SAMPLE[0].last4}"}`, `{"k":"${k4Of(lp, SAMPLE[0].last4)}"}`, `{"id":"${lp}"}`, `{"id":"x${lp}"}`, `{"last4":1}`]) assert.equal(scan({ method: "TEST", url: leak, text: leak, headers: "" }).length > 0, true, leak);
+    assert.deepEqual(scan({ method: "TEST", url: "", text: `{"id":"p${lp}","at":1794500687724}`, headers: "" }), []);
+    const hits = [];
+    for (const r of seen) scan(r, hits);
+    assert.deepEqual(hits, []);
   });
 
   test("no response to any client carries a device id", () => {
