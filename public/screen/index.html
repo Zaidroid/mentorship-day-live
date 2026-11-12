@@ -234,6 +234,7 @@ html,body{width:100%;height:100%;overflow:hidden;color:var(--ink);font-family:SS
 #conn{position:absolute;right:0;top:0;bottom:0;display:flex;align-items:center;gap:calc(var(--u)*.7);padding:0 calc(var(--u)*3) 0 calc(var(--u)*6);background:linear-gradient(90deg,transparent,var(--teal) 35%);font-size:calc(var(--u)*1.3);color:rgba(255,255,255,.85);font-weight:600}
 #conn i{width:calc(var(--u)*.8);height:calc(var(--u)*.8);border-radius:50%;background:rgba(255,255,255,.5)}
 #conn.live i{background:#fff}
+#conn .reh{margin-left:calc(var(--u)*.9);padding:calc(var(--u)*.3) calc(var(--u)*.8);border-radius:calc(var(--u)*.3) calc(var(--u)*1) 0 calc(var(--u)*1);background:#fff;color:var(--teal);font-weight:700}
 .leaves{height:calc(var(--u)*2.2);margin-top:calc(var(--u)*.6)}
 .leaves svg{display:block;width:100%;height:100%}
 
@@ -384,8 +385,9 @@ const CONFIG = {
   join: (location.protocol.startsWith('http') && !/^(localhost|127\.)/.test(location.hostname)) ? location.origin + '/' : 'https://mentorship-day-live.netlify.app/',
   hashtag: '#MentorshipDay',
   theme: 'light',
-  refreshSeconds: 30,
-  stateSeconds: 3
+  refreshSeconds: 60,   // sheet tabs (docs/PLAN.md 5.12: the polling numbers are a budget)
+  stateSeconds: 3,
+  beatSeconds: 60
 };
 
 /* ============ Schedule, built from /assets/day.js ============ */
@@ -401,18 +403,37 @@ const SPEAKERS = DAY.speakers.map(x => Object.assign({}, x));
 const VIDEOS = DAY.videos.map(v => v.title);
 
 /* ============ Time ============ */
+// The wall shows venue time (MD_DAY.tz), whatever time zone the computer is set to.
+// It keeps its own clock, unless a fresh state t differs from it by more than 15 seconds
+// (a wrong clock on the wall computer, or a rehearsal): then it runs on Date.now() + skew.
+// ?t=HH:MM[:SS] wins over everything. ?speed=N runs the clock faster, for tests.
 const P = new URLSearchParams(location.search);
 const speed = Math.max(1, +P.get('speed') || 1), t0 = Date.now();
-let base = null;
-if (P.get('t')) { const [h,m,s] = P.get('t').split(':').map(Number); const d = new Date(); d.setHours(h, m||0, s||0, 0); base = d.getTime(); }
-const now = () => (base === null && speed === 1) ? new Date() : new Date((base === null ? t0 : base) + (Date.now() - t0) * speed);
+const TZF = (() => { try { return new Intl.DateTimeFormat('en-US', {timeZone:DAY.tz, hourCycle:'h23', year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit'}); } catch(e) { return null; } })();
+let tzOff = 0, tzAt = -1e13;
+function tzOffset(ms){ // venue wall time minus UTC, in ms, looked up again every 10 minutes
+  if (Math.abs(ms - tzAt) < 6e5) return tzOff; tzAt = ms;
+  if (!TZF) { tzOff = -new Date(ms).getTimezoneOffset() * 60000; return tzOff; }
+  const p = {}; TZF.formatToParts(new Date(ms)).forEach(x => { p[x.type] = x.value; });
+  tzOff = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour % 24, +p.minute, +p.second) - Math.floor(ms / 1000) * 1000; return tzOff;
+}
+let fakeBase = null;
+if (P.get('t')) { const [h,m,s] = P.get('t').split(':').map(Number), n = Date.now(), v = new Date(n + tzOffset(n)); fakeBase = Date.UTC(v.getUTCFullYear(), v.getUTCMonth(), v.getUTCDate(), h || 0, m || 0, s || 0) - tzOffset(n); }
+const CLOCK = {skew:0, use:false};
+function nowMs(){ const off = CLOCK.use ? CLOCK.skew : 0; if (fakeBase !== null) return fakeBase + (Date.now() - t0) * speed; return (speed === 1 ? Date.now() : t0 + (Date.now() - t0) * speed) + off; }
+function venue(){ const ms = nowMs(), d = new Date(ms + tzOffset(ms)); return {h:d.getUTCHours(), m:d.getUTCMinutes(), s:d.getUTCSeconds(), ms:d.getUTCMilliseconds(), t:ms}; }
 function toMin(s){ const [h,m] = String(s).split(':').map(Number); return h*60 + m; }
 function fmt(m){ return String(Math.floor(m/60)).padStart(2,'0') + ':' + String(Math.round(m%60)).padStart(2,'0'); }
-function nowMin(){ const d = now(); return d.getHours()*60 + d.getMinutes() + d.getSeconds()/60 + d.getMilliseconds()/60000; }
+function nowMin(){ const v = venue(); return v.h*60 + v.m + v.s/60 + v.ms/60000; }
 function mmss(sec){ sec = Math.max(0, Math.round(sec)); const h = Math.floor(sec/3600), m = Math.floor(sec%3600/60), s = sec%60; return (h ? h + ':' + String(m).padStart(2,'0') : String(m)) + ':' + String(s).padStart(2,'0'); }
 
+/* ============ Performance ============ */
+const GOV = {lite:false, fps:null};
+
 /* ============ State ============ */
-const S = {mode:null, override:P.get('mode'), demo:P.has('demo'), ann:'', speaker:null, live:false, checkedIn:null, poll:[], theme:P.get('theme') || CONFIG.theme, sheetScene:'', sheetTheme:'', sheetSpeaker:'', wifi:{name:'', pass:''}, plan:'', seen:new Set(), dataKey:'', momentKey:'', annShown:''};
+// Theme: theme= in the URL wins over everything until the T key is pressed. Otherwise the sheet's Theme,
+// then the latest of the remote's cfg.theme and the T key.
+const S = {mode:null, override:P.get('mode'), demo:P.has('demo'), ann:'', speaker:null, live:false, checkedIn:null, poll:[], urlTheme:/^(light|dark)$/.test(P.get('theme') || '') ? P.get('theme') : null, theme:CONFIG.theme, cfgTheme:null, sheetScene:'', sheetTheme:'', sheetSpeaker:'', wifi:{name:'', pass:''}, plan:'', seen:new Set(), dataKey:'', momentKey:'', annShown:''};
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let U = 10;
@@ -432,7 +453,7 @@ function advisorCount(){ return new Set(SESSIONS.flatMap(s => s.who).concat(SLOT
 const leafPad = s => `font-size:calc(var(--u)*${s});padding:calc(var(--u)*${(s*.45).toFixed(2)}) calc(var(--u)*${(s*.9).toFixed(2)})`;
 
 /* ============ Theme ============ */
-function wantedTheme(){ const t = S.sheetTheme || S.theme; return t === 'dark' ? 'dark' : 'light'; }
+function wantedTheme(){ const t = S.urlTheme || S.sheetTheme || S.theme; return t === 'dark' ? 'dark' : 'light'; }
 function applyTheme(animate){
   const t = wantedTheme(), root = document.documentElement;
   if (root.dataset.theme === t) return;
@@ -551,12 +572,14 @@ let wallI = 0;
 function wallKeys(){ return Object.keys(ADVISORS).filter(k => SESSIONS.some(s => s.who.includes(k)) || SLOTS.some(x => x.who === k)); }
 function nextTime(k){ const s = SESSIONS.find(x => x.who.includes(k)); if (s) return BLOCKS[s.b-1].s + ', ' + s.room; const x = SLOTS.find(y => y.who === k); return x ? x.s + ', one to ones' : ''; }
 function wallItem(k, size, i){ const a = adv(k); const pic = a.noPhoto ? `<div class="av" style="width:calc(var(--u)*${size});height:calc(var(--u)*${size});background:transparent;box-shadow:inset 0 0 0 2px var(--line)"></div>` : av(k, size); return `<div class="w rv" data-i="${i}">${pic}<b>${esc(a.name)}</b><span>${esc(nextTime(k))}</span></div>`; }
+// Photo size fits both the width and the height of the slot: a tile is the photo plus about 6.4 U of name and time.
+function wallSize(c, n, cols){ const rows = Math.ceil(n / cols); return Math.max(4, Math.min(12, c.w / cols * .6, (c.h - (rows - 1) * 2.4 - .8) / rows - 6.4)); }
 R.advisors = (c) => {
-  const keys = wallKeys(), cols = Math.max(3, Math.min(Math.ceil(keys.length / 2), Math.floor(c.w / 14))), size = Math.min(12, c.w / cols * .6);
+  const keys = wallKeys(), cols = Math.max(3, Math.min(Math.ceil(keys.length / 2), Math.floor(c.w / 14))), size = wallSize(c, keys.length, cols);
   return {title:"Today's Advisors", html:`<div class="wall hl" style="grid-template-columns:repeat(${cols},1fr)">${keys.map((k, i) => wallItem(k, size, i).replace('class="w rv"', `class="w rv ${i === wallI % keys.length ? 'on' : ''}"`)).join('')}</div>`,
     tick:2.6, onTick:(el) => { wallI++; const n = keys.length; el.querySelectorAll('.w').forEach(w => w.classList.toggle('on', +w.dataset.i === wallI % n)); return false; }};
 };
-R.thanks = (c) => { const keys = wallKeys(), cols = Math.max(3, Math.min(Math.ceil(keys.length / 2), Math.floor(c.w / 14))), size = Math.min(12, c.w / cols * .6);
+R.thanks = (c) => { const keys = wallKeys(), cols = Math.max(3, Math.min(Math.ceil(keys.length / 2), Math.floor(c.w / 14))), size = wallSize(c, keys.length, cols);
   return {title:'Thank You to Our Advisors', html:`<div class="wall" style="grid-template-columns:repeat(${cols},1fr)">${keys.map((k, i) => wallItem(k, size, i)).join('')}</div>`}; };
 
 function qrSvg(text){ try { const q = qrcode(0, 'M'); q.addData(text); q.make(); const n = q.getModuleCount(); let p = ''; for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) p += `M${c},${r}h1v1h-1z`; return `<svg viewBox="0 0 ${n} ${n}" shape-rendering="crispEdges"><path d="${p}" fill="#1F2E33"/></svg>`; } catch(e) { return ''; } }
@@ -611,21 +634,41 @@ R.survey = (c) => ({title:'Your Feedback', html:`<div style="flex:1;display:flex
 
 /* ============ Live system: phones and the operator remote ============ */
 const LIVE = {videos:DAY.videos.map(v => Object.assign({}, v))};
-Object.assign(S, {photos:[], profiles:[], snapV:'', pollQ:'', pollType:'words', pollOpts:[], pollTotal:0, pollOpen:true, remoteMode:null, pin:null, way:null, cfgAt:null, videoAt:null, annAt:null, annUntil:0, liveOk:false, skew:0});
-function applyState(d){
+Object.assign(S, {photos:[], profiles:[], links:[], takeaways:[], snapV:'', pollQ:'', pollId:'', pollType:'words', pollOpts:[], pollTotal:0, pollOpen:true, remoteMode:null, pin:null, way:null, cfgAt:null, videoAt:null, annAt:null, annUntil:0, liveOk:false, skew:0,
+  n:{here:0, board:0, links:0, photos:0, takeaways:0, answers:0}, interest:{}, hello:[], rx:null, phase:'', reh:false, flags:{}});
+// cfg.reloadAt is a version number. The wall reloads when it differs from the one seen in the first fresh
+// state after load, but never during a video or a moment. Each value causes one reload at most per session.
+const RELOAD = {seen:null, want:null};
+const ss = (k, v) => { try { if (v === undefined) return sessionStorage.getItem(k); sessionStorage.setItem(k, v); } catch(e) { return null; } };
+function checkReload(v){
+  v = String(v == null ? 0 : v);
+  if (RELOAD.seen === null) { RELOAD.seen = v; return; }
+  if (v === RELOAD.seen) { RELOAD.want = null; return; }
+  if (ss('md_reloaded') === v) { RELOAD.seen = v; return; }
+  RELOAD.want = v;
+}
+function busy(){ return !$('vid').classList.contains('hide') || !!S.momentKey; }
+function reloadPending(){ if (RELOAD.want === null || busy()) return; ss('md_reloaded', RELOAD.want); RELOAD.want = null; location.reload(); }
+function applyState(d, cached){
   if (d.t) S.skew = d.t - Date.now();
+  if (d.t && !cached && fakeBase === null) { const use = Math.abs(S.skew) > 15000; if (use !== CLOCK.use || (use && Math.abs(S.skew - CLOCK.skew) > 15000)) S.dataKey = ''; CLOCK.use = use; CLOCK.skew = S.skew; }
+  if (d.n) S.n = Object.assign({here:0, board:0, links:0, photos:0, takeaways:0, answers:0}, d.n);
+  S.interest = d.interest || {}; S.hello = d.hello || []; S.rx = d.rx || null; S.phase = d.phase || ''; S.reh = !!d.reh;
   const p = d.poll;
-  if (p) { S.pollQ = p.q; S.pollType = p.type; S.pollOpen = !!p.open; S.pollTotal = p.total || 0; S.pollOpts = p.options || [];
+  if (p) { S.pollId = p.id; S.pollQ = p.q; S.pollType = p.type; S.pollOpen = !!p.open; S.pollTotal = p.total || 0; S.pollOpts = p.options || [];
     if (p.type === 'choice') { const m = Object.fromEntries(p.words || []); S.poll = S.pollOpts.map(o => [o, m[o] || 0]); } else S.poll = p.words || []; }
-  else { S.pollQ = ''; S.poll = []; S.pollTotal = 0; S.pollType = 'words'; }
+  else { S.pollId = ''; S.pollQ = ''; S.poll = []; S.pollTotal = 0; S.pollType = 'words'; }
   if (d.videos && d.videos.length) LIVE.videos = d.videos;
-  const c = d.cfg || {}; if (c.at === S.cfgAt) return;
+  const c = d.cfg || {};
+  if (!cached) checkReload(c.reloadAt);
+  if (c.at === S.cfgAt) return;
   const first = S.cfgAt === null, srv = Date.now() + S.skew; S.cfgAt = c.at;
   const rm = c.mode && c.mode !== 'auto' ? c.mode : null;
   if (!first && (rm !== S.remoteMode || (c.pin || null) !== S.pin)) S.override = null;
-  S.remoteMode = rm; S.pin = c.pin || null; S.way = c.way || null;
+  S.remoteMode = rm; S.pin = c.pin || null; S.way = c.way || null; S.flags = c.flags || {};
   S.speaker = c.speaker == null ? null : c.speaker;
-  if (c.theme && c.theme !== S.theme) S.theme = c.theme;
+  // The remote's theme applies when it changes, so the latest of the remote and the T key wins.
+  if (c.theme && c.theme !== S.cfgTheme) { S.cfgTheme = c.theme; S.theme = c.theme; }
   setOverlay(c.overlay || null);
   if (c.ann && c.ann.at !== S.annAt) { S.annAt = c.ann.at; S.ann = c.ann.text; const left = c.ann.at + c.ann.secs * 1000 - srv; S.annUntil = first ? (left > 0 ? Date.now() + left : 0) : Date.now() + c.ann.secs * 1000; }
   if (!c.ann) { S.ann = ''; S.annUntil = 0; S.annAt = null; }
@@ -636,14 +679,14 @@ async function pullState(){
   catch(e) { S.liveOk = false; }
   setConn(); loop(false);
 }
-/* lists (photos, profiles) live in the snapshot. Fetched only when state.snapV changes, kept for offline */
-function applySnap(v, d){ S.snapV = v; S.photos = d.photos || []; S.profiles = d.profiles || []; }
+/* lists (photos, profiles, links, takeaways) live in the snapshot. Fetched only when state.snapV changes, kept for offline */
+function applySnap(v, d){ S.snapV = v; S.photos = d.photos || []; S.profiles = d.profiles || []; S.links = d.links || []; S.takeaways = d.takeaways || []; }
 async function pullSnap(v){
   if (S.snapBusy === v) return; S.snapBusy = v;
   try { const r = await fetch('/api/snap?v=' + encodeURIComponent(v)); if (!r.ok) throw 0; const d = await r.json(); applySnap(v, d); try { localStorage.setItem('md4_snap', JSON.stringify({v, d})); } catch(e) {} loop(false); }
   catch(e) {} finally { S.snapBusy = ''; }
 }
-function setConn(){ const ok = S.liveOk; $('conn').classList.toggle('live', ok); $('connTxt').innerHTML = (S.demo ? 'Demo data&nbsp; ' : '') + (ok ? 'Live' : 'Offline, saved data'); }
+function setConn(){ const ok = S.liveOk; $('conn').classList.toggle('live', ok); $('connTxt').innerHTML = (S.demo ? 'Demo data&nbsp; ' : '') + (ok ? 'Live' : 'Offline, saved data') + (S.reh ? '<b class="reh">Rehearsal</b>' : ''); }
 function setOverlay(o){ S.overlay = o; $('black').classList.toggle('hide', o !== 'black'); $('logo').classList.toggle('hide', o !== 'logo'); if (o === 'check') renderCheck(); $('check').classList.toggle('hide', o !== 'check'); }
 
 /* video, started from the remote */
@@ -767,14 +810,16 @@ function buildStage(){
   slotState.forEach(s => showScene(s, true));
   return true;
 }
-function ctxFor(st){ return {w: st.el.clientWidth / U, h: st.el.clientHeight / U}; }
+// w and h in U: the slot width, and the height left for the scene body under the slot header.
+function ctxFor(st){ const sb = st.el.querySelector('.sb'); return {w: st.el.clientWidth / U, h: (sb ? sb.clientHeight : st.el.clientHeight) / U}; }
 function showScene(st, animate){
   const id = st.scenes[st.idx % st.scenes.length]; st.id = id; st.sub = Date.now();
-  const res = R[id](ctxFor(st)); st.res = res;
   const h2 = st.el.querySelector('h2'), pg = st.el.querySelector('.pager'), sb = st.el.querySelector('.sb');
   const bare = ['welcome','speaker','video','recap'].includes(id);
   st.el.querySelector('.sh').style.visibility = bare && st.scenes.length === 1 ? 'hidden' : '';
   st.el.querySelector('.shrule').style.display = bare ? 'none' : '';
+  if (!h2.textContent) h2.textContent = TITLES[id] || ' '; // so the header has its height before the scene measures its room
+  const res = R[id](ctxFor(st)); st.res = res;
   h2.textContent = res.title; pg.style.setProperty('--dwell', dwell(id) + 's');
   pg.innerHTML = st.scenes.length > 1 ? st.scenes.map((s, i) => `<span class="${i === st.idx % st.scenes.length ? 'on' : ''}">${TITLES[s]}</span>`).join('') : '';
   const paint = () => { sb.innerHTML = res.html; if (res.after) res.after(sb); countUps(sb); reveal(sb, animate); };
@@ -795,8 +840,8 @@ function dataSig(){ return [Math.floor(nowMin()), S.checkedIn, S.speaker, S.wifi
 
 /* ============ Now zone, garden, moments ============ */
 function nowZone(){
-  const d = now(), m = nowMin(), ph = phase(m), mode = S.mode;
-  $('clock').innerHTML = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0') + `<sup>${String(d.getSeconds()).padStart(2,'0')}</sup>`;
+  const d = venue(), m = nowMin(), ph = phase(m), mode = S.mode;
+  $('clock').innerHTML = String(d.h).padStart(2,'0') + ':' + String(d.m).padStart(2,'0') + `<sup>${String(d.s).padStart(2,'0')}</sup>`;
   let label, cdTo, cdTxt, pFrom, pTo, next = '', live = false;
   const P0 = programAt(m), nx = PROGRAM.find(p => toMin(p.s) > m);
   if (m < toMin('09:30')) { label = 'Doors open soon'; cdTo = '09:30'; cdTxt = 'until registration'; pFrom = '08:30'; pTo = '09:30'; }
@@ -917,7 +962,7 @@ async function refresh(){ let ok = 0, tried = 0;
   for (const [k, fn] of JOBS) { const u = feedUrl(k); if (!u) continue; tried++; try { const rows = await getCSV(u); fn(rows); ok++; try { localStorage.setItem('md4_' + k, JSON.stringify(rows)); } catch(e) {} } catch(e) {} }
   S.live = tried > 0 && ok === tried;
   loop(true); }
-function restore(){ try { const v = localStorage.getItem('md4_snap'); if (v) { const x = JSON.parse(v); applySnap(x.v, x.d); } } catch(e) {} try { const v = localStorage.getItem('md4_state'); if (v) applyState(JSON.parse(v)); } catch(e) {} JOBS.forEach(([k, fn]) => { if (!feedUrl(k)) return; try { const v = localStorage.getItem('md4_' + k); if (v) fn(JSON.parse(v)); } catch(e) {} }); }
+function restore(){ try { const v = localStorage.getItem('md4_snap'); if (v) { const x = JSON.parse(v); applySnap(x.v, x.d); } } catch(e) {} try { const v = localStorage.getItem('md4_state'); if (v) applyState(JSON.parse(v), true); } catch(e) {} JOBS.forEach(([k, fn]) => { if (!feedUrl(k)) return; try { const v = localStorage.getItem('md4_' + k); if (v) fn(JSON.parse(v)); } catch(e) {} }); }
 
 /* ============ Demo ============ */
 const DEMO_WORDS = ['clients','funding','confidence','network','clarity','growth','mentors','sales','strategy','leadership','visibility','pitch','focus','partners','ideas','direction','courage','markets','branding','skills','connections','execution','feedback','vision','momentum','investors'];
@@ -960,7 +1005,7 @@ addEventListener('keydown', e => { const k = e.key.toLowerCase();
   else if (k === '0') { S.override = null; S.speaker = null; loop(true); toast('Automatic, following the clock'); }
   else if (k === 'arrowright' || k === 'arrowleft') { const m = nowMin(); let i = S.speaker; if (i === null) { i = 0; SPEAKERS.forEach((s, j) => { if (m >= toMin(s.s)) i = j; }); } S.speaker = Math.max(0, Math.min(SPEAKERS.length - 1, i + (k === 'arrowright' ? 1 : -1))); slotState.forEach(st => { if (st.id === 'speaker') showScene(st, true); }); }
   else if (k === 'n') { slotState.forEach(st => { if (st.scenes.length > 1) { st.idx++; st.since = Date.now(); showScene(st, true); } }); }
-  else if (k === 't') { S.theme = S.theme === 'dark' ? 'light' : 'dark'; applyTheme(true); toast(S.theme === 'dark' ? 'Dark' : 'Light'); }
+  else if (k === 't') { S.theme = wantedTheme() === 'dark' ? 'light' : 'dark'; S.urlTheme = null; S.sheetTheme = ''; applyTheme(true); toast(S.theme === 'dark' ? 'Dark' : 'Light'); }
   else if (k === 'a') { const t = prompt('Announcement for the screen', S.ann); if (t !== null) { S.ann = t.trim(); S.annAt = Date.now(); S.annUntil = S.ann ? Date.now() + 20000 : 0; updateTicker(); } }
   else if (k === 'k') { setOverlay(S.overlay === 'check' ? null : 'check'); }
   else if (k === 'v') stopVideo();
@@ -973,6 +1018,7 @@ addEventListener('keydown', e => { const k = e.key.toLowerCase();
 
 /* ============ Main loop ============ */
 function loop(force){
+  if (WD.frozen) return; // tests only: stands for a main loop that stopped
   demo();
   const mode = S.override || S.remoteMode || S.sheetScene || autoMode(nowMin());
   const modeChanged = mode !== S.mode; S.mode = mode;
@@ -986,6 +1032,32 @@ function loop(force){
     if (st.scenes.length > 1 && Date.now() - st.since > dwell(st.id) * 1000) { st.idx++; st.since = Date.now(); showScene(st, true); }
   });
   nowZone(); garden(); moments(); updateTicker(); checkSparks();
+  reloadPending();
+  WD.tick = Date.now();
+}
+
+/* ============ Keeping the wall alive all day ============ */
+// Errors go into the next heartbeat. Only script errors: a missing image is not an error of the wall.
+const ERR = {last:''};
+addEventListener('error', e => { ERR.last = String(e.message || 'Script error') + (e.lineno ? ' at line ' + e.lineno : ''); });
+addEventListener('unhandledrejection', e => { const r = e.reason; ERR.last = 'Promise: ' + String(r && r.message || r); });
+// Watchdog: the main loop marks WD.tick every second. If it has not for 20 seconds while the page is
+// visible, the page reloads. After a watchdog reload it waits 60 seconds, so a fault cannot reload in a tight loop.
+const WD = {tick:Date.now(), frozen:false};
+setInterval(() => {
+  if (document.visibilityState !== 'visible') { WD.tick = Date.now(); return; }
+  const last = +ss('md_wd') || 0, limit = Date.now() - last < 120000 ? 60000 : 20000;
+  if (Date.now() - WD.tick > limit) { ss('md_wd', Date.now()); location.reload(); }
+}, 2000);
+document.addEventListener('visibilitychange', () => { WD.tick = Date.now(); if (document.visibilityState === 'visible') wake(); });
+// Keep the screen on (Chrome on the wall computer).
+async function wake(){ try { if (navigator.wakeLock && document.visibilityState === 'visible' && !(S.wake && !S.wake.released)) S.wake = await navigator.wakeLock.request('screen'); } catch(e) {} }
+// Heartbeat for the remote's Status tab: what the wall shows and how it runs. First one soon after load.
+function beatBody(){ return {w:innerWidth, h:innerHeight, dpr:devicePixelRatio || 1, layout:(L.wide ? 'wide' : 'standard') + ' ' + L.n, mode:S.mode, scenes:slotState.map(s => s.id).filter(Boolean).slice(0, 8), lite:GOV.lite, fps:GOV.fps, err:ERR.last.slice(0, 280), at:nowMs()}; }
+async function beat(){
+  if (!location.protocol.startsWith('http')) return;
+  const b = beatBody(), sent = ERR.last;
+  try { const r = await fetch('/api/beat', {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify(b), keepalive:true}); if (r.ok && ERR.last === sent) ERR.last = ''; } catch(e) {}
 }
 function logos(){
   const h = U;
@@ -1000,9 +1072,13 @@ addEventListener('resize', resize);
 setInterval(() => loop(false), 1000);
 setInterval(nowZone, 250);
 initVideo(); setConn(); refresh(); setInterval(refresh, CONFIG.refreshSeconds * 1000);
-if (location.protocol.startsWith('http')) { pullState(); setInterval(pullState, CONFIG.stateSeconds * 1000); }
+if (location.protocol.startsWith('http')) { pullState(); setInterval(pullState, CONFIG.stateSeconds * 1000); setTimeout(beat, 8000); setInterval(beat, CONFIG.beatSeconds * 1000); }
 requestAnimationFrame(bgLoop); requestAnimationFrame(tickerLoop);
+wake();
 if (!P.has('quiet')) setTimeout(() => toast('Press F for full screen and H for controls'), 1200);
+// For probes and tests (scripts/probe.cjs, scripts/wall-check.cjs). Reading it changes nothing.
+window.__md = {S, slotState, GOV, RELOAD, CLOCK, WD, ERR, L:() => L, venue, nowMin, beatBody,
+  force(id){ if (!R[id]) return -1; let i = slotState.findIndex(st => st.scenes.includes(id)); if (i < 0) i = 0; const st = slotState[i]; if (!st) return -1; if (!st.scenes.includes(id)) st.scenes.push(id); st.idx = st.scenes.indexOf(id); st.since = Date.now(); showScene(st, true); return i; }};
 })();
 </script>
 </body>
