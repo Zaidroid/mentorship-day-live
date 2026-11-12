@@ -3,7 +3,9 @@
   "private": true,
   "type": "module",
   "description": "Mentorship Day 2026 live big screen, phone page and operator remote",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "REMOTE_PIN=${REMOTE_PIN:-123456} DATA_DIR=dev/blobs PORT=${PORT:-8897} node server/index.mjs",
     "start": "node server/index.mjs",
@@ -13,5 +15,8 @@
   },
   "dependencies": {
     "@netlify/blobs": "^11.1.9"
+  },
+  "devDependencies": {
+    "playwright": "^1.65.0"
   }
 }
