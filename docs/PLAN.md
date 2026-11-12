@@ -317,6 +317,21 @@ WP1 is done (commits `2868682` to `8109f9e`). These points are now fact and over
 * Small changes to version 1 behavior: approving a missing photo or card answers 404, approving a card that changed since the team saw it answers 409.
 * Not verified yet, because nothing of version 2 is deployed: that conditional writes are atomic on Netlify and that reads return an etag there. WP2 checks both on its first deploy.
 
+### 5.14 Settled in WP2
+
+WP2 is done (commits `5717bd1` to `441842a`, 102 API tests). The contract as built is in `docs/API.md`. Where it differs from section 5.7, `docs/API.md` is right. Points that matter beyond the contract:
+
+* `n.here` and the hellos mean first seen on the event day, not first sign in. People who sign in before Tuesday are counted and greeted when they open the page on the day.
+* A pick can come from the advisor preference alone, with no topic behind it. The phone then words the reason from the session's delivery ("Because you asked for advisors joining remotely" or "Because you asked for local advisors").
+* A seat set by the team cannot be changed from the phone.
+* The phone does not poll `/api/me`. It calls it on open and after its own writes.
+* Server limits: reactions at most one batch per phone per 2.5 seconds and 150 per phone; takeaway text over 120 characters is refused; 5 edits per takeaway.
+* A state call costs 10 storage operations in one parallel round, up to 12 while reactions flow.
+* Call budget estimate for one event day with 100 phones under the rules of 5.12, with no shared cache at all: about 44,500 calls, and about 56,500 if every phone sends its full 150 reaction batches. With the shared cache working at 2 seconds: about 21,000.
+* Cache check on the live version 1 with real GET requests, 12 November: the durable layer says `fwd=bypass` on every request that reaches it, and the response carries `netlify-vary: query` although the code does not set it. Five header candidates are ready behind `CDN_POLICY` in `store.mjs`, and `/api/cdn-probe` lets one deploy test them all with `scripts/cdn-check.sh`. This needs the first version 2 deploy.
+* Known limits of the sign in Zaid chose: a script that keeps changing its device id gets 10 guesses per person before that person is locked, and can list names five at a time through search. Both are accepted for an event of this size; the lock and the unlock button are the answer.
+* Not verified until the first version 2 deploy: atomic conditional writes and etags on Netlify, the directory listing format, `context.waitUntil`, and alerts against the real Telegram service.
+
 ### 5.11 Picked for You
 
 Sessions are free choice, but nobody starts from an empty page. On a person's first sign in the server picks one session per block from what they asked for at registration, and stores it as an `auto` star. The person can keep it or change it with one tap.
