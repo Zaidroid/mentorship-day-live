@@ -10,6 +10,8 @@
 <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-title" content="Mentorship Day">
+<script>window.__mdDay = function(){ window.__mdDayLoaded = true; };</script>
+<script async src="/assets/day.js" onload="__mdDay()"></script>
 <style>
 @font-face{font-family:SS3;font-weight:400;font-display:swap;src:url(/assets/ss3-400.woff2) format('woff2')}
 @font-face{font-family:SS3;font-weight:700;font-display:swap;src:url(/assets/ss3-700.woff2) format('woff2')}
@@ -382,7 +384,7 @@ footer{padding:28px 0 calc(var(--dock-h) + var(--pad-h) + 16px)}
   </section>
 </main>
 
-<footer class="wrap">
+<footer class="wrap" id="foot" hidden>
   <div class="logos"><img loading="lazy" decoding="async" src="/assets/mercycorps.png" alt="Mercy Corps"><img loading="lazy" decoding="async" src="/assets/gsg.png" alt="Gaza Sky Geeks"><img loading="lazy" decoding="async" src="/assets/sida.png" alt="Sweden Sverige"><img class="tp" loading="lazy" decoding="async" src="/assets/technopark.png" alt="Palestine TechnoPark"><img loading="lazy" decoding="async" src="/assets/pis.png" alt="Palestine Innovation Summit"></div>
   <div class="band" aria-hidden="true"></div>
   <div class="leaves" aria-hidden="true"></div>
@@ -455,11 +457,11 @@ function dayModel(){
     of:n => sessions.filter(x => x.b === n).sort((a, b) => DAY.rooms.indexOf(a.room) - DAY.rooms.indexOf(b.room)),
     block:n => blocks.find(b => b.n === n), prog:m => DAY.program.find(p => p.mode === m)};
 }
-function loadDay(){
-  const s = document.createElement('script'); s.src = '/assets/day.js'; s.async = true;
-  s.onload = () => { if (window.MD_DAY) { const fresh = JSON.stringify(window.MD_DAY); if (fresh !== JSON.stringify(DAY)) { DAY = window.MD_DAY; renderAll(); } store.set('md_day', fresh); } };
-  document.head.appendChild(s);
-}
+// day.js is requested from the head with async, so it loads while the page is still arriving.
+function dayLoaded(){ if (window.MD_DAY) { const fresh = JSON.stringify(window.MD_DAY); if (fresh !== JSON.stringify(DAY)) { DAY = window.MD_DAY; renderAll(); } store.set('md_day', fresh); } }
+function loadDay(){ if (window.__mdDayLoaded || window.MD_DAY) dayLoaded(); window.__mdDay = dayLoaded; }
+// Without the schedule (first visit, and day.js did not arrive) try again every 10 seconds.
+setInterval(() => { if (DAY || window.MD_DAY || document.hidden) return; const sc = document.createElement('script'); sc.src = '/assets/day.js?r=' + Date.now(); sc.onload = dayLoaded; document.head.appendChild(sc); }, 10000);
 
 /* ---------- clock ---------- */
 // The phone keeps its own clock. When the server time differs by more than 15 seconds (a wrong phone clock, or a
@@ -668,7 +670,7 @@ function openSheet(byHand){
   Object.assign(SI, {step:'find', q:'', list:null, busy:false, err:'', hint:'', pick:null, digits:'', left:null, ok:''});
   sheetOpen = true;
   ['main', 'tabs', 'hd', 'pad'].forEach(id => $(id).inert = true);
-  document.querySelector('footer').inert = true;
+  $('foot').inert = true;
   document.body.classList.add('lock');
   $('scrim').hidden = V !== 'a'; $('sheet').hidden = false; $('sheet').className = 'sheet v' + V;
   if (byHand) { history.pushState({sheet:1}, ''); sheetPushed = true; }
@@ -683,7 +685,7 @@ function closeSheet(){
 function hideSheet(){
   sheetOpen = false; sheetPushed = false;
   ['main', 'tabs', 'hd', 'pad'].forEach(id => $(id).inert = false);
-  document.querySelector('footer').inert = false;
+  $('foot').inert = false;
   document.body.classList.remove('lock');
   $('scrim').hidden = true; $('sheet').hidden = true; $('sheet').innerHTML = ''; $('sheet')._h = null;
   if (store.get('md_m')) { show('meet'); meetPending(); }
@@ -1510,6 +1512,7 @@ setInterval(() => {
 
 function renderAll(){
   if (!DAY) { renderTabs(); return; }
+  $('foot').hidden = false;
   renderTabs(); renderToday(); renderLive(); renderPad(); renderPeople(); renderPhotos(); renderKeep(); renderNet();
 }
 

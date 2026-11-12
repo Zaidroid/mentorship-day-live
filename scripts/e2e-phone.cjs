@@ -680,6 +680,82 @@ async function signInUI(p, person, v) {
     await f.ctx.close();
     await rehearse(null);
   }
+  /* ---------- home screen and calendar ---------- */
+  if (want('pwa')) {
+    part('Home screen: the manifest and icons; the calendar file');
+    const m = await (await fetch(BASE + '/manifest.json')).json().catch(() => null);
+    check('the manifest loads', !!m && m.display === 'standalone' && m.start_url === '/', m ? m.name : 'no manifest');
+    for (const ic of (m && m.icons) || []) { const r = await fetch(BASE + ic.src); check(`icon ${ic.src} is there`, r.ok && (r.headers.get('content-type') || '').startsWith('image/')); }
+    check('a maskable icon is listed', !!m && m.icons.some(i => i.purpose === 'maskable'));
+    const a = await fetch(BASE + '/icons/apple-touch-icon.png'); check('the home screen icon for iPhone is there', a.ok);
+    const p = await phone({ dev: devs.alpha, label: 'pwa' });
+    await go(p, '/?v=a');
+    await p.locator('#blocks a[download]').waitFor();
+    const href = await p.getAttribute('#blocks a[download]', 'href');
+    const ics = await fetch(BASE + href);
+    check('the calendar button gives a calendar file', ics.ok && (ics.headers.get('content-type') || '').includes('text/calendar'), href);
+    check('the page links the manifest and the icon', (await p.locator('link[rel=manifest]').count()) === 1 && (await p.locator('link[rel=apple-touch-icon]').count()) === 1);
+    await p.ctx.close();
+  }
+
+  /* ---------- cold start on a throttled network ---------- */
+  if (want('coldstart') && ENGINE === chromium) {
+    part('Cold start on throttled 3G: time until the page is usable (Chromium only)');
+    // Netlify compresses pages; the local server does not. A small proxy compresses text the same way.
+    const http = require('http'), zlib = require('zlib');
+    const proxy = http.createServer(async (req, res) => {
+      const r = await fetch(BASE + req.url, { headers: { 'x-dev': req.headers['x-dev'] || '' } }).catch(() => null);
+      if (!r) { res.writeHead(502); return res.end(); }
+      const buf = Buffer.from(await r.arrayBuffer()), type = r.headers.get('content-type') || '';
+      const h = { 'content-type': type, 'cache-control': r.headers.get('cache-control') || 'no-cache' };
+      if (/text|javascript|json|svg/.test(type) && /gzip/.test(req.headers['accept-encoding'] || '')) { h['content-encoding'] = 'gzip'; res.writeHead(r.status, h); return res.end(zlib.gzipSync(buf)); }
+      res.writeHead(r.status, h); res.end(buf);
+    });
+    await new Promise(ok => proxy.listen(0, '127.0.0.1', ok));
+    const PROXY = 'http://127.0.0.1:' + proxy.address().port;
+    // Chrome DevTools presets: Slow 3G is 2000 ms round trip and 50 KB/s down; 3G is 562.5 ms and 180 KB/s.
+    const nets = { 'Slow 3G': { latency: 2000, downloadThroughput: 50000, uploadThroughput: 50000 }, '3G': { latency: 562.5, downloadThroughput: 180000, uploadThroughput: 84375 } };
+    const marks = () => { window.__md_t = {}; const t0 = performance.timeOrigin; new MutationObserver(() => { const now = performance.now(); if (!window.__md_t.signin && document.getElementById('siQ')) window.__md_t.signin = now; if (!window.__md_t.myday && document.querySelector('#top article')) window.__md_t.myday = now; if (!window.__md_t.text && document.querySelector('.hd h1')) window.__md_t.text = now; }).observe(document, { childList: true, subtree: true }); };
+    for (const [label, base] of [['compressed, as on Netlify', PROXY], ['uncompressed local server', BASE]]) {
+      for (const [net, cond] of Object.entries(nets)) {
+        const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+        await ctx.addInitScript(marks);
+        const p = await ctx.newPage();
+        const cdp = await ctx.newCDPSession(p);
+        await cdp.send('Network.enable'); await cdp.send('Network.setCacheDisabled', { cacheDisabled: true });
+        await cdp.send('Network.emulateNetworkConditions', { offline: false, ...cond });
+        let bytes = 0; cdp.on('Network.loadingFinished', e => { bytes += e.encodedDataLength; });
+        const t0 = Date.now();
+        await p.goto(base + '/?v=a', { waitUntil: 'commit' });
+        await until(() => p.evaluate(() => window.__md_t && window.__md_t.signin && window.__md_t.myday), 30000, 100);
+        const t = await p.evaluate(() => window.__md_t);
+        const usable = Math.round(t.signin), myday = Math.round(t.myday);
+        const line = `${net}, ${label}: sign in usable at ${usable} ms, My Day painted at ${myday} ms (${Math.round(bytes / 1024)} KB by then)`;
+        if (label.startsWith('compressed') && net === '3G') check('cold start on 3G: usable within 3 seconds', usable <= 3000 && myday <= 3000, line);
+        else if (label.startsWith('compressed')) check('cold start on Slow 3G: sign in usable within 3 seconds', usable <= 3000, line);
+        else console.log('  info  ' + line);
+        await ctx.close();
+      }
+    }
+    // A return visit paints from what the phone kept, before any answer arrives.
+    {
+      const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+      await ctx.addInitScript(([d]) => { if (!localStorage.getItem('md_dev')) { localStorage.setItem('md_dev', d); localStorage.setItem('md_skip', '1'); } }, [devs.alpha]);
+      const p = await ctx.newPage();
+      await p.goto(PROXY + '/?v=a'); await until(async () => (await p.locator('#top article').count()) === 1, 10000); await sleep(1500);
+      await ctx.addInitScript(marks);
+      const cdp = await ctx.newCDPSession(p);
+      await cdp.send('Network.enable');
+      await cdp.send('Network.emulateNetworkConditions', { offline: false, ...nets['Slow 3G'] });
+      await p.goto(PROXY + '/?v=a', { waitUntil: 'commit' });
+      await until(() => p.evaluate(() => window.__md_t && window.__md_t.myday), 30000, 100);
+      const t = await p.evaluate(() => window.__md_t);
+      check('return visit on Slow 3G: My Day paints from the kept data', t.myday <= 3000, `My Day painted at ${Math.round(t.myday)} ms`);
+      await ctx.close();
+    }
+    proxy.close();
+  }
+
   } catch (e) {
     check('no unexpected failure', false, e.message.split('\n')[0]);
   } finally {
