@@ -401,9 +401,13 @@ async function signInUI(p, person, v) {
     check('in the window the card asks How was it?', await until(async () => (await text(p, '#today')).includes('How was it?'), 10000));
     if (!(await p.locator('#tkCard .flb').count())) await p.locator('#tkCard .choice').first().click();
     await p.locator('#tkCard .flb[data-r="4"]').click();
-    await p.fill('#tkCard input[type=text]', 'Write the follow up email the same day.');
     await p.click('#tkCard label.sw');
+    // Type, stay in the field across a refresh of My Day (every 15 s), then tap Send straight from the field.
+    await p.click('#tkCard input[type=text]');
+    await p.keyboard.type('Write the follow up email the same day.', { delay: 25 });
     await shot(p, 'takeaway_before');
+    await sleep(16000);
+    check('typing survives a refresh while the field has focus', (await p.inputValue('#tkCard input[type=text]')) === 'Write the follow up email the same day.');
     await p.click('#tkCard [data-act=tk-send]');
     check('the takeaway is sent with rating, line and name choice', await until(() => body && body.rating === 4 && body.text.startsWith('Write the follow up') && body.showName === true), JSON.stringify(body));
     check('the card says thank you and where the line is', await until(async () => (await text(p, '#today')).includes('Your line is on the big screen')));

@@ -611,7 +611,7 @@ function setMe(d){
   renderAll(); meetPending(); maybeSheet();
 }
 let reloadSeen = null;
-function checkReload(d){ const v = d.cfg && d.cfg.reloadAt; if (reloadSeen === null) { reloadSeen = v; return; } if (v !== reloadSeen && !sheetOpen && !document.activeElement.matches('input,textarea')) location.reload(); }
+function checkReload(d){ const v = d.cfg && d.cfg.reloadAt; if (reloadSeen === null) { reloadSeen = v; return; } const a = document.activeElement; if (v !== reloadSeen && !sheetOpen && !(a && a.matches('input,textarea'))) location.reload(); }
 
 // Touches keep the polling alive; after 10 minutes without one it pauses until the next touch.
 ['pointerdown', 'keydown', 'touchstart'].forEach(ev => document.addEventListener(ev, () => { const was = idle(); lastTouch = Date.now(); if (was) schedule(); }, {passive:true, capture:true}));
@@ -625,7 +625,13 @@ function put(el, html){
   if (a && el.contains(a) && a.matches('input,textarea')) { el._wait = html; return; }
   el.innerHTML = html; el._h = html; el._wait = null;
 }
-document.addEventListener('focusout', () => setTimeout(() => document.querySelectorAll('main div, #pad').forEach(el => { if (el._wait != null) put(el, el._wait); }), 0));
+// After the field is left, render again from the current state (not from HTML kept while typing), a moment later so
+// a tap on a button next to the field lands on the button it started on.
+document.addEventListener('focusout', () => setTimeout(() => {
+  const a = document.activeElement; if (a && a.matches('input,textarea')) return;
+  let any = false; document.querySelectorAll('main div, #pad').forEach(el => { if (el._wait != null) { el._wait = null; el._h = null; any = true; } });
+  if (any) renderAll();
+}, 400));
 let toastT = null;
 function toast(t){ const el = $('toast'); el.textContent = t; el.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('on'), 3800); }
 const sessOf = id => (dayModel() && dayModel().byId[id]) || {b:0, room:'', title:'', names:'', mode:''};
@@ -828,7 +834,7 @@ function signedIn(d){
 }
 async function signOut(){
   try { await api('/api/signout', {body:{}}); } catch(e) { toast(e.message); return; }
-  store.del('md_ans'); await refreshMe(); toast('You are signed out.');
+  store.del('md_ans'); store.set('md_skip', '1'); await refreshMe(); toast('You are signed out.');
 }
 
 /* ---------- My Day ---------- */
@@ -1103,7 +1109,7 @@ function tkSend(b){
 }
 
 /* ---------- Live ---------- */
-let pollMsg = '', pollErr = false, lastPollId = null;
+let pollMsg = '', pollErr = false, lastPollId = null, wordDraft = null;
 function renderLive(force){
   const p = ST && ST.poll, ph = phaseNow();
   // The speaker or video now, during the opening
@@ -1118,8 +1124,8 @@ function renderLive(force){
   else {
     head = `<div class="eyebrow"><i class="dot ${p.open ? 'now' : ''}"></i>${p.open ? 'Live Poll, open now' : 'Live Poll, closed'}</div><h2 style="margin-top:8px" dir="auto">${esc(p.q)}</h2>`;
     if (p.open && p.type === 'choice') head += `<div class="opts" id="pollOpts">${p.options.map(o => `<button type="button" class="opt" data-act="answer" data-o="${esc(o)}" aria-pressed="${mine === o}"><span dir="auto">${esc(o)}</span></button>`).join('')}</div>`;
-    else if (p.open) head += `<label class="f" for="word">Your answer <span>(one or two words)</span></label><div class="form-row"><input type="text" id="word" dir="auto" maxlength="28" autocomplete="off" enterkeyhint="send" value="${esc(mine)}"><button type="button" class="btn" data-act="answer-word">${mine ? 'Change' : 'Send'}</button></div>`;
-    if (lastPollId !== p.id) { if (lastPollId !== null) { pollMsg = ''; pollErr = false; } lastPollId = p.id; }
+    else if (p.open) head += `<label class="f" for="word">Your answer <span>(one or two words)</span></label><div class="form-row"><input type="text" id="word" dir="auto" maxlength="28" autocomplete="off" enterkeyhint="send" value="${esc(wordDraft !== null ? wordDraft : mine)}"><button type="button" class="btn" data-act="answer-word">${mine ? 'Change' : 'Send'}</button></div>`;
+    if (lastPollId !== p.id) { if (lastPollId !== null) { pollMsg = ''; pollErr = false; wordDraft = null; } lastPollId = p.id; }
     const msg = pollMsg || (mine ? (q ? (online ? `Your answer: ${mine}. Sending.` : `Your answer: ${mine}. It sends when you are back online.`) : `Your answer: ${mine}. It is on the big screen.`) : '');
     head += `<div class="msg ${pollErr ? 'err' : 'ok'}" id="pollMsg" role="status"><span dir="auto">${esc(msg)}</span></div>`;
   }
@@ -1146,7 +1152,7 @@ function answer(text){
   const p = ST && ST.poll; if (!p || !p.open) return;
   text = String(text || '').trim();
   if (!text) { pollMsg = 'Type a word first.'; pollErr = true; renderLive(true); return; }
-  pollMsg = ''; pollErr = false;
+  pollMsg = ''; pollErr = false; wordDraft = null;
   enqueue('answer', 'ans' + p.id, {pid:p.id, dev:DEV, text});
   renderLive(true); renderTabs();
 }
@@ -1479,10 +1485,11 @@ document.addEventListener('input', e => {
   if (t.id === 'siQ') siSearch(t.value);
   else if (t.id === 'siD') siDigits(t.value);
   else if (t.dataset.tk) { const x = TKS[+t.dataset.tk]; if (x) x.text = t.value; }
-  else if (FORM && t.closest && t.closest('#cardForm')) FORM.touched = true;
+  else if (t.id === 'word') wordDraft = t.value;
+  else if (FORM && t.closest && t.closest('#cardForm')) { FORM.touched = true; const k = {mName:'name', mCo:'company', mRole:'role', mLi:'linkedin'}[t.id]; if (k) FORM[k] = t.value; }
   else if (t.id === 'mCode' && /^[1-9]\d\d$/.test(t.value)) { /* waits for Connect */ }
 });
-document.addEventListener('change', e => { const t = e.target; if (t.id && t.id.startsWith('tkS')) { const x = TKS[+t.id.slice(3)]; if (x) x.show = t.checked; } if (t.id === 'siH') SI.hello = t.checked; });
+document.addEventListener('change', e => { const t = e.target; if (t.id === 'mOk' && FORM) { FORM.consent = t.checked; FORM.touched = true; } if (t.id && t.id.startsWith('tkS')) { const x = TKS[+t.id.slice(3)]; if (x) x.show = t.checked; } if (t.id === 'siH') SI.hello = t.checked; });
 document.addEventListener('keydown', e => {
   if (e.key !== 'Enter') return;
   const t = e.target;
