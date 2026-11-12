@@ -662,6 +662,150 @@ check('arabic-text', async () => {
   return [ok, out.join('; ')];
 });
 
+/* ---------- Task 9: reactions ---------- */
+
+// A wall page whose state answers carry reactions set by the check: rx.on and the two windows of rx.b.
+// fake.add(kinds) adds to the current window; the window number follows the real state time.
+async function rxWall(url, size, fake, init) {
+  const [width, height] = size.split('x').map(Number);
+  const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 1 });
+  if (init) await ctx.addInitScript(init);
+  const polls = [];
+  await ctx.route('**/api/state', async r => { try {
+    const res = await r.fetch(); const j = await res.json(); polls.push(Date.now());
+    const w = Math.floor(j.t / 4000);
+    if (!fake.wins[w]) fake.wins[w] = [0, 0, 0];
+    fake.pending.forEach(p => { fake.wins[w][0] += p[0]; fake.wins[w][1] += p[1]; fake.wins[w][2] += p[2]; fake.sent += p[0] + p[1] + p[2]; });
+    fake.pending = [];
+    const cur = fake.wins[w], prev = fake.wins[w - 1] || [0, 0, 0];
+    j.rx = { on: fake.on, b: [[w, ...cur], [w - 1, ...prev]], total: fake.total + fake.sent };
+    await r.fulfill({ response: res, body: JSON.stringify(j) });
+  } catch (e) { /* the page closed while this answer was on its way */ } });
+  const p = await ctx.newPage(); const errs = [];
+  p.on('pageerror', e => errs.push('pageerror: ' + e.message));
+  await p.goto(BASE + url);
+  await p.waitForFunction(() => window.__md && window.__md.slotState.length > 0, null, { timeout: 15000 });
+  return { p, ctx, errs, polls, close: () => ctx.close().catch(() => {}) };
+}
+const newFake = () => ({ on: true, wins: {}, pending: [], sent: 0, total: 1200 });
+// Samples window.__md.rx() every 150 ms for ms, and returns the most alive, the samples and the last reading.
+async function rxWatch(p, ms) {
+  let most = 0, last = null; const end = Date.now() + ms, samples = [];
+  while (Date.now() < end) { const r = await md(p, () => window.__md.rx()).catch(() => null); if (r) { most = Math.max(most, r.alive); last = r; samples.push(r); } await sleep(150); }
+  return { most, last, samples };
+}
+
+for (const lite of ['0', '1']) check(`rx-cap-and-grow-lite${lite}`, async () => {
+  // A flood: 30 phones sending full batches every 2 seconds for 10 seconds, about 900 reactions a poll.
+  const fake = newFake();
+  const w = await rxWall(`/screen/?t=10:05&quiet&lite=${lite}`, '1920x1080', fake);
+  await sleep(2500);
+  for (let i = 0; i < 5; i++) { fake.pending.push([300, 300, 300]); await sleep(2000); }
+  const r = await rxWatch(w.p, 7000);
+  const st = r.last.stats;
+  await w.close();
+  const cap = lite === '1' ? 30 : 70;
+  const conserved = st.spawned + st.grown + st.dropped === st.got;
+  const ok = st.got === fake.sent && r.most <= cap && st.maxAlive <= cap && st.maxAlive >= cap * .8 && st.grown > 0 && conserved && st.maxSize > 1.5 && st.maxSize <= 2.4 && !w.errs.length;
+  return [ok, `lite=${lite}: ${fake.sent} reactions sent, ${st.got} received; most alive at once ${st.maxAlive} (cap ${cap}); new shapes ${st.spawned} (claps ${st.spawnedBy.clap}, hearts ${st.spawnedBy.heart}, blooms ${st.spawnedBy.bloom}), grown instead ${st.grown}, dropped ${st.dropped}; every reaction accounted for: ${conserved}; largest shape ${st.maxSize.toFixed(2)} times (limit 2.4); errors ${w.errs.length}`];
+});
+
+check('rx-drawn-shapes', async () => {
+  // Counts any text drawn on the reactions canvas: shapes are paths, never characters.
+  const init = `(() => { window.__rxText = 0; for (const f of ['fillText', 'strokeText']) { const o = CanvasRenderingContext2D.prototype[f]; CanvasRenderingContext2D.prototype[f] = function () { if (this.canvas && (this.canvas.id === 'rx' || !this.canvas.isConnected)) window.__rxText++; return o.apply(this, arguments); }; } })()`;
+  const fake = newFake();
+  const w = await rxWall('/screen/?t=10:05&quiet&lite=0', '1920x1080', fake, init);
+  await sleep(2500);
+  fake.pending.push([8, 8, 8]);
+  await w.p.waitForFunction(() => window.__md.rx().alive >= 6, null, { timeout: 8000 }).catch(() => {});
+  await sleep(600);
+  const r = await md(w.p, () => { const cv = document.getElementById('rx'), c = cv.getContext('2d'), d = c.getImageData(0, 0, cv.width, cv.height).data; let ink = 0; const cols = new Set();
+    for (let i = 3; i < d.length; i += 4 * 7) if (d[i] > 200) { ink++; cols.add(`${d[i - 3] >> 4},${d[i - 2] >> 4},${d[i - 1] >> 4}`); }
+    const rx = window.__md.rx(); return { text: window.__rxText, ink, cols: [...cols].slice(0, 8), kinds: [...new Set(rx.live.map(s => s.kind))].sort(), colors: [...new Set(rx.live.map(s => s.col))].sort(), z: getComputedStyle(cv).zIndex, pe: getComputedStyle(cv).pointerEvents }; });
+  await w.close();
+  const ok = r.text === 0 && r.ink > 50 && r.kinds.join() === 'bloom,clap,heart' && r.colors.every(c => ['#2F9CC3', '#DF6236'].includes(c)) && r.pe === 'none' && +r.z > 40;
+  return [ok, `text drawn on the reactions canvas: ${r.text}; opaque pixels sampled ${r.ink}; kinds in flight ${r.kinds.join(', ')}; colors ${r.colors.join(', ')}; canvas z-index ${r.z}, pointer events ${r.pe}`];
+});
+
+check('rx-rise-and-fade', async () => {
+  const fake = newFake();
+  const w = await rxWall('/screen/?t=10:05&quiet&lite=0', '1920x1080', fake);
+  await sleep(2500);
+  fake.pending.push([0, 1, 0]);
+  await w.p.waitForFunction(() => window.__md.rx().alive === 1, null, { timeout: 8000 });
+  const band = await md(w.p, () => document.getElementById('band').getBoundingClientRect().top);
+  // Track the one shape: born, rises, gone after 3.2 s.
+  const t0 = Date.now(), track = [];
+  while (Date.now() - t0 < 4200) { const s = await md(w.p, () => { const m = window.__md.rx(); return m.alive; }); track.push([Date.now() - t0, s]); await sleep(100); }
+  await w.close();
+  const goneAt = (track.find(x => x[1] === 0) || [null])[0];
+  const ok = goneAt !== null && goneAt > 2600 && goneAt < 3700;
+  return [ok, `one heart: alive from the first sample until ${goneAt} ms (life 3200 ms, sampled every 100 ms from when it was first seen)`];
+});
+
+check('rx-video-hearts', async () => {
+  const fake = newFake();
+  const w = await rxWall('/screen/?t=10:33&quiet&lite=0', '1920x1080', fake);
+  await sleep(2500);
+  await w.p.evaluate(() => { const v = document.getElementById('vid'); v.classList.remove('hide'); v.querySelector('.vmsg').textContent = 'Video placeholder'; });
+  fake.pending.push([20, 20, 20]);
+  await w.p.waitForFunction(() => window.__md.rx().alive >= 10, null, { timeout: 8000 }).catch(() => {});
+  await sleep(1500);
+  const r = await md(w.p, () => { const m = window.__md.rx(); return { live: m.live, dropped: m.stats.dropped, W: innerWidth }; });
+  await w.close();
+  const kinds = [...new Set(r.live.map(s => s.kind))], right = r.live.every(s => s.x >= r.W * .85), op = [...new Set(r.live.map(s => s.alpha))];
+  const ok = r.live.length >= 10 && kinds.join() === 'heart' && right && op.join() === '0.6' && r.dropped === 40;
+  return [ok, `over a video: ${r.live.length} shapes, kinds ${kinds.join(',')}, all on the right edge (x from ${Math.min(...r.live.map(s => s.x))} of ${r.W}): ${right}, opacity ${op.join(',')}, claps and blooms left out ${r.dropped} of 40`];
+});
+
+check('rx-band-and-total', async () => {
+  const fake = newFake();
+  const w = await rxWall('/screen/?t=10:05&quiet&lite=0', '1920x1080', fake);
+  await sleep(2500);
+  const before = await md(w.p, () => window.__md.rx());
+  for (let i = 0; i < 3; i++) { fake.pending.push([60, 60, 60]); await sleep(2000); }
+  await sleep(800);
+  const during = await md(w.p, () => window.__md.rx());
+  await sleep(6500);
+  const after = await md(w.p, () => window.__md.rx());
+  const want = (fake.total + fake.sent).toLocaleString('en-US');
+  await w.close();
+  const w2 = await rxWall('/screen/?t=11:20&quiet', '1920x1080', newFake());
+  await sleep(3500);
+  const live = await md(w2.p, () => window.__md.rx());
+  await w2.close();
+  const ok = +before.band === 0 && during.glow > .4 && +during.band > .4 && +after.band === 0 && during.total === want && live.total === null;
+  return [ok, `band brightness before ${before.band || 0}, during a stream of about 90 a second ${during.band} (glow ${during.glow}), 6.5 s after it stops ${after.band || 0}; now zone total in the Opening "${during.total}" (state says ${want}); in Sessions mode the total shows: ${live.total !== null}`];
+});
+
+check('rx-poll-cadence', async () => {
+  // Real server: reactions switched on from the remote, then off. Requests to /api/state counted by the page.
+  const count = { state: [], rx: 0 };
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1 });
+  const p = await ctx.newPage();
+  p.on('request', r => { const u = new URL(r.url()); if (u.pathname === '/api/state') count.state.push(Date.now()); if (u.pathname === '/api/rx') count.rx++; });
+  const sent = { n: 0 };
+  try {
+    await op({ action: 'rx', mode: 'on' });
+    await p.goto(BASE + '/screen/?t=10:05&quiet');
+    await p.waitForFunction(() => window.__md && window.__md.S.rx && window.__md.S.rx.on, null, { timeout: 15000 });
+    await sleep(1000);
+    // Real reactions from 12 phones, then the wall must have received exactly what they sent.
+    const devs = Array.from({ length: 12 }, () => 'wallrx' + rnd());
+    for (let round = 0; round < 2; round++) { for (const d of devs) { const r = await post('/api/react', d, { c: { clap: 3, heart: 2, bloom: 1 } }); if (r.status === 204) sent.n += 6; } await sleep(2700); }
+    const a0 = Date.now(); const onFrom = count.state.length; await sleep(14000); const onList = count.state.slice(onFrom);
+    const got = await p.evaluate(() => window.__md.rx().stats.got);
+    await op({ action: 'rx', mode: 'off' });
+    await p.waitForFunction(() => window.__md.S.rx && !window.__md.S.rx.on, null, { timeout: 8000 });
+    await sleep(3500);
+    const offFrom = count.state.length; await sleep(15500); const offList = count.state.slice(offFrom);
+    const gaps = l => l.slice(1).map((t, i) => t - l[i]), avg = l => { const g = gaps(l); return g.reduce((a, b) => a + b, 0) / Math.max(1, g.length); };
+    const onAvg = avg(onList), offAvg = avg(offList);
+    const ok = Math.abs(onAvg - 2000) < 250 && Math.abs(offAvg - 3000) < 300 && count.rx === 0 && got === sent.n && sent.n > 0;
+    return [ok, `rx on: ${onList.length} state requests in 14 s, every ${Math.round(onAvg)} ms; rx off: ${offList.length} in 15.5 s, every ${Math.round(offAvg)} ms; /api/rx requests ${count.rx}; reactions sent by 12 phones ${sent.n}, received by the wall ${got}`];
+  } finally { await op({ action: 'rx', mode: 'auto' }).catch(() => {}); await ctx.close().catch(() => {}); }
+});
+
 (async () => {
   if (process.argv.includes('--list')) { CHECKS.forEach(c => console.log(c.name)); return; }
   browser = await chromium.launch();

@@ -289,6 +289,14 @@ m-w{display:inline}
 #conn i{width:calc(var(--u)*.8);height:calc(var(--u)*.8);border-radius:50%;background:rgba(255,255,255,.5)}
 #conn.live i{background:#fff}
 #conn .reh{margin-left:calc(var(--u)*.9);padding:calc(var(--u)*.3) calc(var(--u)*.8);border-radius:calc(var(--u)*.3) calc(var(--u)*1) 0 calc(var(--u)*1);background:#fff;color:var(--teal);font-weight:700}
+/* the band brightens with the rate of reactions (--rxg 0 to 1, set by the reactions loop) */
+.thick{--rxg:0;filter:brightness(calc(1 + var(--rxg) * .16));box-shadow:0 0 calc(var(--u) * 2.8 * var(--rxg)) calc(var(--u) * .35 * var(--rxg)) rgba(47,156,195,calc(.8 * var(--rxg)))}
+/* reactions: drawn shapes rising from the band, above everything but the screen check */
+#rx{position:fixed;inset:0;width:100%;height:100%;display:block;pointer-events:none;z-index:41}
+/* the running total of reactions in the now zone, during the Opening */
+.rxtot{display:flex;align-items:baseline;gap:calc(var(--u)*1);margin-top:calc(var(--u)*1.1)}
+.rxtot b{font-weight:300;font-size:calc(var(--u)*3.4);line-height:.9;letter-spacing:-.02em;color:var(--red)}
+.rxtot span{font-size:calc(var(--u)*1.7);font-weight:600;color:var(--ink2)}
 .leaves{height:calc(var(--u)*2.2);margin-top:calc(var(--u)*.6)}
 .leaves svg{display:block;width:100%;height:100%}
 
@@ -418,6 +426,7 @@ m-w{display:inline}
       <div class="prog"><i id="stProg"></i></div>
       <div class="st-next" id="stNext"></div>
     </div>
+    <div class="rxtot hide" id="rxTot"><b></b><span></span></div>
     <div class="join" id="join"></div>
     <div class="logos" id="logos"></div>
   </aside>
@@ -437,6 +446,7 @@ m-w{display:inline}
 <div class="ov hide" id="help"></div>
 <div class="ov hide" id="check"></div>
 <div class="ov hide" id="vid"><video playsinline preload="auto"></video><div class="vmsg"></div></div>
+<canvas id="rx" aria-hidden="true"></canvas>
 <div id="toast"></div>
 <script src="/assets/qrcode.js"></script>
 <script src="/assets/day.js"></script>
@@ -457,6 +467,7 @@ const CONFIG = {
   theme: 'light',
   refreshSeconds: 60,   // sheet tabs (docs/PLAN.md 5.12: the polling numbers are a budget)
   stateSeconds: 3,
+  rxStateSeconds: 2,    // while reactions are on, the wall (and only the wall) asks every 2 seconds
   beatSeconds: 60
 };
 
@@ -861,6 +872,7 @@ function applyState(d, cached){
   if (d.t && !cached && fakeBase === null) { const use = Math.abs(S.skew) > 15000; if (use !== CLOCK.use || (use && Math.abs(S.skew - CLOCK.skew) > 15000)) S.dataKey = ''; CLOCK.use = use; CLOCK.skew = S.skew; }
   if (d.n) S.n = Object.assign({here:0, board:0, links:0, photos:0, takeaways:0, answers:0}, d.n);
   S.interest = d.interest || {}; S.hello = d.hello || []; S.rx = d.rx || null; S.phase = d.phase || ''; S.reh = !!d.reh;
+  rxEvents(S.rx, cached);
   helloEvents(S.hello, d.t || Date.now(), cached);
   const p = d.poll;
   if (p) { S.pollId = p.id; S.pollQ = p.q; S.pollType = p.type; S.pollOpen = !!p.open; S.pollTotal = p.total || 0; S.pollOpts = p.options || [];
@@ -883,6 +895,11 @@ function applyState(d, cached){
   if (!c.ann) { S.ann = ''; S.annUntil = 0; S.annAt = null; }
   if (c.video && c.video.at !== S.videoAt) { S.videoAt = c.video.at; if (!first || srv - c.video.at < 20000) { if (c.video.id) playVideo(c.video.id); else stopVideo(); } }
 }
+// State is asked for every 3 seconds, every 2 while reactions are on (docs/PLAN.md 5.12 and WP4 task 9). The next
+// request is timed from the start of the last one, so the rate holds however long an answer takes.
+const POLL = {t:0, h:0, gaps:[]};
+const stateGap = () => (S.rx && S.rx.on ? CONFIG.rxStateSeconds : CONFIG.stateSeconds) * 1000;
+async function pollState(){ const t = Date.now(); if (POLL.t) { POLL.gaps.push(t - POLL.t); if (POLL.gaps.length > 40) POLL.gaps.shift(); } POLL.t = t; await pullState(); clearTimeout(POLL.h); POLL.h = setTimeout(pollState, Math.max(250, stateGap() - (Date.now() - t))); }
 async function pullState(){
   try { const r = await fetch('/api/state', {cache:'no-store'}); if (!r.ok) throw 0; const d = await r.json(); applyState(d); S.liveOk = true; try { localStorage.setItem('md4_state', JSON.stringify(d)); } catch(e) {} if (d.snapV && d.snapV !== S.snapV) pullSnap(d.snapV); }
   catch(e) { S.liveOk = false; }
@@ -1507,6 +1524,122 @@ function bgLoop(t){
   pulses.forEach(q => { q.t += .01; const a = nodes[q.a], b = nodes[q.b]; if (!a || !b) return; const x = a.x + (b.x - a.x) * q.t, y = a.y + (b.y - a.y) * q.t; const g = cx.createRadialGradient(x, y, 0, x, y, U * 2.4); g.addColorStop(0, q.c); g.addColorStop(1, 'rgba(255,255,255,0)'); cx.fillStyle = g; cx.beginPath(); cx.arc(x, y, U * 2.4, 0, 6.29); cx.fill(); });
 }
 function burst(n){ for (let i = 0; i < n && nodes.length > 2 && pulses.length < particleMax(); i++) { const a = Math.floor(Math.random() * nodes.length); let b = (a + 1 + Math.floor(Math.random() * (nodes.length - 1))) % nodes.length; pulses.push({a, b, t:0, c: Math.random() < .5 ? 'rgba(223,98,54,.9)' : 'rgba(47,156,195,.9)'}); } }
+/* ============ Reactions (docs/PLAN.md WP4 task 9) ============ */
+// Phones send claps, hearts and blooms (the Summit honeycomb flower). Each shows on its own canvas above the stage
+// as a small shape drawn with paths (never a character), in orange or blue, rising from the band over 3.2 seconds
+// with a slight sway, fading in its last part. rx.b in state holds the current and the previous 4 second window;
+// counts in a window only grow, so the wall remembers what it showed per window and plays only the difference,
+// spread over the next 1.8 seconds. At most 70 shapes are alive (30 in lite, never more than particleMax()):
+// new shapes are let out at the rate that keeps that cap, and what arrives beyond it makes a young shape of the
+// same kind grow instead of adding one. The thick band brightens with the rate. Over a playing video only hearts
+// show, on the right edge, at 60 percent. Nothing shows over the black or logo screen, or with reduced motion.
+const RXK = ['clap', 'heart', 'bloom'], RXC = ['#DF6236', '#2F9CC3'];
+const RX = {cv:null, cx:null, k:1, live:[], due:[], shown:new Map(), ready:false, tokens:3, last:0, hist:[], glow:0, glowSet:-1, drawn:false, sprites:null,
+  stats:{got:0, spawned:0, grown:0, dropped:0, maxAlive:0, maxSize:1, spawnedBy:{clap:0, heart:0, bloom:0}}};
+const rxMax = () => Math.min(GOV.lite ? 30 : 70, particleMax());
+const RX_LIFE = 3200, RX_SPREAD = 1800;
+// The token easing, cubic-bezier(.2,.8,.2,1), for the rise.
+function bez(x1, y1, x2, y2){ const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx, cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by;
+  const X = t => ((ax * t + bx) * t + cx) * t, Y = t => ((ay * t + by) * t + cy) * t, dX = t => (3 * ax * t + 2 * bx) * t + cx;
+  return x => { if (x <= 0) return 0; if (x >= 1) return 1; let t = x; for (let i = 0; i < 6; i++) { const d = dX(t); if (Math.abs(d) < 1e-6) break; t -= (X(t) - x) / d; } return Y(Math.max(0, Math.min(1, t))); }; }
+const easeOut = bez(.2, .8, .2, 1);
+// Shapes in a 100 by 100 box. Hands: two palms leaning together with three short strokes of the clap above.
+function rxPath(c, kind){
+  c.beginPath();
+  if (kind === 'heart') { c.moveTo(50, 88); c.bezierCurveTo(20, 66, 6, 48, 6, 31); c.bezierCurveTo(6, 16, 17, 7, 30, 7); c.bezierCurveTo(39, 7, 46, 12, 50, 19); c.bezierCurveTo(54, 12, 61, 7, 70, 7); c.bezierCurveTo(83, 7, 94, 16, 94, 31); c.bezierCurveTo(94, 48, 80, 66, 50, 88); c.closePath(); c.fill(); return; }
+  if (kind === 'bloom') { // honeycomb flower: six hexagon petals around a lighter centre
+    const r = 12.6, d = r * Math.sqrt(3) + 2.6, hex = (x, y) => { for (let i = 0; i < 6; i++) { const a = Math.PI / 3 * i; c[i ? 'lineTo' : 'moveTo'](x + r * Math.cos(a), y + r * Math.sin(a)); } c.closePath(); };
+    for (let i = 0; i < 6; i++) { const a = Math.PI / 6 + Math.PI / 3 * i; hex(50 + d * Math.cos(a), 50 + d * Math.sin(a)); }
+    c.fill(); c.beginPath(); hex(50, 50); c.globalAlpha = .55; c.fill(); c.globalAlpha = 1; return; }
+  // clap: two hands leaning together, thumbs on the outside, with three short strokes of the clap above
+  const cap = (x, y0, y1, w) => { c.moveTo(x - w / 2, y1); c.lineTo(x - w / 2, y0 + w / 2); c.arc(x, y0 + w / 2, w / 2, Math.PI, 0); c.lineTo(x + w / 2, y1); c.closePath(); };
+  const hand = sx => { c.save(); c.translate(50 + sx * 15.5, 97); c.rotate(-sx * .26); c.scale(sx, 1); c.beginPath();
+    [[-9.6, -49, 6.2], [-3.2, -55, 6.2], [3.2, -54, 6.2], [9.6, -47, 6]].forEach(([x, y, w]) => cap(x, y, -24, w));
+    c.moveTo(-12.7, 0); c.lineTo(-12.7, -28); c.lineTo(12.6, -28); c.lineTo(12.6, -8); c.quadraticCurveTo(12.6, 0, 4, 0); c.closePath();
+    c.save(); c.translate(12, -17); c.rotate(.5); cap(0, -21, 2, 7.4); c.restore();
+    c.fill(); c.restore(); };
+  hand(-1); hand(1);
+  c.lineWidth = 5.5; c.lineCap = 'round'; c.beginPath(); c.moveTo(47, 5); c.lineTo(47, 16); c.moveTo(29, 12); c.lineTo(35, 20); c.moveTo(65, 12); c.lineTo(59, 20); c.stroke();
+}
+function rxSprites(){ const out = {}; RXK.forEach(k => { out[k] = RXC.map(col => { const s = document.createElement('canvas'); s.width = s.height = 128; const c = s.getContext('2d'); c.scale(1.28, 1.28); c.fillStyle = c.strokeStyle = col; rxPath(c, k); return s; }); }); return out; }
+function rxInit(){
+  RX.cv = $('rx'); RX.cx = RX.cv.getContext('2d'); if (!RX.sprites) RX.sprites = rxSprites();
+  RX.k = Math.min(1, 2560 / innerWidth); RX.cv.width = Math.round(innerWidth * RX.k); RX.cv.height = Math.round(innerHeight * RX.k); RX.cx.setTransform(RX.k, 0, 0, RX.k, 0, 0); RX.drawn = true;
+}
+// Called with every fresh state. The first one sets what counts as shown, so a reload does not replay the windows.
+function rxEvents(rx, cached){
+  if (!rx || !Array.isArray(rx.b)) return;
+  const now = performance.now(); let top = -Infinity, got = 0;
+  rx.b.forEach(row => { if (!Array.isArray(row)) return; const w = +row[0], n = [1, 2, 3].map(i => Math.max(0, +row[i] || 0)), was = RX.shown.get(w) || [0, 0, 0];
+    top = Math.max(top, w);
+    const d = n.map((v, i) => Math.max(0, v - was[i])); RX.shown.set(w, n.map((v, i) => Math.max(v, was[i])));
+    if (cached || !RX.ready) return;
+    d.forEach((v, i) => { if (v > 0) { RX.due.push({k:RXK[i], n:v, out:0, from:now}); got += v; } }); });
+  RX.shown.forEach((_, w) => { if (w < top - 6) RX.shown.delete(w); });
+  if (got) { RX.stats.got += got; RX.hist.push([now, got]); }
+  if (!cached) RX.ready = true;
+}
+const rxVideo = () => !$('vid').classList.contains('hide');
+const rxBlocked = () => still() || !$('black').classList.contains('hide') || !$('logo').classList.contains('hide');
+function rxSpawn(kind, video){
+  // Along the band under the stage and the rail, so the clock and the now zone stay clear.
+  const band = $('band').getBoundingClientRect(), st = $('stage').getBoundingClientRect(), W = innerWidth, H = innerHeight, x1 = Math.max(U * 2, st.left), x2 = W - U * 2;
+  const x = video ? W * (.86 + Math.random() * .11) : x1 + Math.random() * (x2 - x1), y0 = (video ? H * .98 : band.top + U * 1.2);
+  const col = kind === 'heart' ? (Math.random() < .8 ? 0 : 1) : kind === 'clap' ? (Math.random() < .3 ? 0 : 1) : (Math.random() < .5 ? 0 : 1);
+  RX.live.push({kind, col, x, y0, rise:(video ? H * .62 : y0) * (.24 + Math.random() * .22), born:performance.now(), w:1, f:1, ph:Math.random() * 6.28, sw:.7 + Math.random() * .6, alpha:video ? .6 : 1, video});
+  RX.stats.spawned++; RX.stats.spawnedBy[kind]++;
+}
+// What arrives beyond the cap: the youngest shape of that kind grows (up to 2.4 times), or the youngest of any kind.
+function rxGrow(kind){
+  let best = null; for (const s of RX.live) if (s.kind === kind && (!best || s.born > best.born)) best = s;
+  if (!best) for (const s of RX.live) if (!best || s.born > best.born) best = s;
+  if (!best) return false; best.w++; RX.stats.grown++; return true;
+}
+const rxSize = w => Math.min(2.4, 1 + .5 * Math.log2(w));
+function rxLoop(t){
+  requestAnimationFrame(rxLoop); if (t - RX.last < 33) return; const dt = Math.min(200, t - (RX.last || t)); RX.last = t;
+  const max = rxMax(), video = rxVideo(), blocked = rxBlocked();
+  RX.tokens = Math.min(4, RX.tokens + dt / 1000 * max / (RX_LIFE / 1000));
+  // Let out what is due, at the cap's own rate.
+  RX.due = RX.due.filter(d => {
+    const want = Math.min(d.n, Math.ceil(d.n * Math.min(1, (t - d.from) / RX_SPREAD)));
+    for (; d.out < want; d.out++) {
+      if (blocked || (video && d.k !== 'heart')) { RX.stats.dropped++; continue; }
+      if (RX.live.length < max && RX.tokens >= 1) { RX.tokens--; rxSpawn(d.k, video); }
+      else if (!rxGrow(d.k)) { if (RX.live.length < max) rxSpawn(d.k, video); else RX.stats.dropped++; }
+    }
+    return d.out < d.n;
+  });
+  RX.live = RX.live.filter(s => t - s.born < RX_LIFE);
+  if (RX.live.length > RX.stats.maxAlive) RX.stats.maxAlive = RX.live.length;
+  // The band: reactions a second over the last 4 seconds, eased.
+  RX.hist = RX.hist.filter(h => t - h[0] < 4000); const rate = RX.hist.reduce((a, h) => a + h[1], 0) / 4;
+  RX.glow += ((blocked ? 0 : Math.min(1, Math.sqrt(rate / 40))) - RX.glow) * Math.min(1, dt / 520);
+  const g = RX.glow < .01 ? 0 : +RX.glow.toFixed(2); if (g !== RX.glowSet) { RX.glowSet = g; document.querySelector('.thick').style.setProperty('--rxg', g); }
+  const c = RX.cx; if (!c) return;
+  if (!RX.live.length) { if (RX.drawn) { c.clearRect(0, 0, innerWidth, innerHeight); RX.drawn = false; } return; }
+  c.clearRect(0, 0, innerWidth, innerHeight); RX.drawn = true;
+  const base = U * 3.4;
+  for (const s of RX.live) {
+    const p = (t - s.born) / RX_LIFE, y = s.y0 - s.rise * easeOut(p), x = s.x + Math.sin(p * 6.28 * s.sw + s.ph) * U * 1.3;
+    s.f += (rxSize(s.w) - s.f) * Math.min(1, dt / 240); if (s.f > RX.stats.maxSize) RX.stats.maxSize = s.f;
+    const pop = p < .08 ? .55 + .45 * easeOut(p / .08) : 1, size = base * s.f * pop, a = s.alpha * (p < .55 ? 1 : Math.max(0, 1 - (p - .55) / .45));
+    c.globalAlpha = a; c.save(); c.translate(x, y); c.rotate(Math.sin(p * 6.28 * s.sw + s.ph + 1) * .14); c.drawImage(RX.sprites[s.kind][s.col], -size / 2, -size / 2, size, size); c.restore();
+  }
+  c.globalAlpha = 1;
+}
+// The running total in the now zone, during the Opening: counts up in place from what it showed.
+const RXT = {shown:null};
+function rxTotal(){
+  const el = $('rxTot'), tot = S.rx ? +S.rx.total || 0 : 0, show = S.mode === 'opening' && tot > 0;
+  el.classList.toggle('hide', !show); if (!show) return;
+  const b = el.querySelector('b'), lab = el.querySelector('span'), t = tot === 1 ? 'reaction from your phones' : 'reactions from your phones';
+  if (lab.textContent !== t) lab.textContent = t;
+  if (b.dataset.to === String(tot)) return; const from = RXT.shown === null ? 0 : RXT.shown; b.dataset.to = tot;
+  if (still() || from === tot) { b.textContent = tot.toLocaleString('en-US'); RXT.shown = tot; return; }
+  const t1 = performance.now(), step = n => { if (b.dataset.to !== String(tot)) return; const f = Math.min(1, (n - t1) / M.x), e = 1 - Math.pow(1 - f, 3); b.textContent = Math.round(from + (tot - from) * e).toLocaleString('en-US'); if (f < 1) requestAnimationFrame(step); else RXT.shown = tot; };
+  requestAnimationFrame(step);
+}
 function checkSparks(){ const total = SESSIONS.reduce((a, s) => a + s.booked, 0) + SLOTS.filter(x => x.status === 'Booked').length + (S.checkedIn || 0) + (S.pollTotal || 0) + S.photos.length + S.profiles.length; if (lastTotal >= 0 && total > lastTotal) burst(1 + Math.floor((total - lastTotal) / 5)); lastTotal = total; if (Math.random() < .12) burst(1); }
 
 /* ============ Operator keys ============ */
@@ -1592,20 +1725,22 @@ function logos(){
   $('logos').innerHTML = `<div><img src="${A.mc}" style="height:${h * 4.2}px" alt="Mercy Corps"><img src="${A.gsg}" style="height:${h * 3.4}px" alt="Gaza Sky Geeks"><img src="${A.sida}" style="height:${h * 3.3}px" alt="Sweden Sverige"></div><div style="justify-content:flex-start;gap:${h * 3}px"><img src="${A.tp}" style="height:${h * 6.6}px" alt="Palestine TechnoPark"><img src="${A.pis}" style="height:${h * 4.8}px" alt="Palestine Innovation Summit"></div>`;
   $('logo').innerHTML = `<div style="display:flex;align-items:center;gap:${h * 6}px"><img src="${A.mc}" style="height:${h * 9}px"><img src="${A.gsg}" style="height:${h * 7.5}px"><img src="${A.sida}" style="height:${h * 7}px"><img src="${A.tp}" style="height:${h * 15}px"><img src="${A.pis}" style="height:${h * 10}px"></div>`;
 }
-function resize(){ L = layout(); S.plan = ''; gardenKey = ''; initBg(); logos(); joinBlock(); tkHtml = ''; if (S.overlay === 'check') renderCheck(); loop(true); }
+function resize(){ L = layout(); S.plan = ''; gardenKey = ''; initBg(); rxInit(); logos(); joinBlock(); tkHtml = ''; if (S.overlay === 'check') renderCheck(); loop(true); }
 
 restore(); S.mode = S.override || autoMode(nowMin()); document.documentElement.dataset.theme = wantedTheme();
 resize(); S.started = true;
 addEventListener('resize', resize);
 setInterval(() => loop(false), 1000);
-setInterval(() => { nowZone(); moments(); }, 250);
+setInterval(() => { nowZone(); moments(); rxTotal(); }, 250);
 initVideo(); setConn(); refresh(); setInterval(refresh, CONFIG.refreshSeconds * 1000);
-if (location.protocol.startsWith('http')) { pullState(); setInterval(pullState, CONFIG.stateSeconds * 1000); setTimeout(beat, 8000); setInterval(beat, CONFIG.beatSeconds * 1000); }
-requestAnimationFrame(bgLoop); requestAnimationFrame(tickerLoop);
+if (location.protocol.startsWith('http')) { pollState(); setTimeout(beat, 8000); setInterval(beat, CONFIG.beatSeconds * 1000); }
+requestAnimationFrame(bgLoop); requestAnimationFrame(tickerLoop); requestAnimationFrame(rxLoop);
 wake();
 if (!P.has('quiet')) setTimeout(() => toast('Press F for full screen and H for controls'), 1200);
 // For probes and tests (scripts/probe.cjs, scripts/wall-check.cjs). Reading it changes nothing.
 window.__md = {S, slotState, GOV, RELOAD, CLOCK, WD, ERR, L:() => L, venue, nowMin, beatBody, bg:() => ({nodes:nodes.length, full:bgN, pulses:pulses.length, max:particleMax()}),
+  rx:() => ({alive:RX.live.length, max:rxMax(), due:RX.due.reduce((n, d) => n + d.n - d.out, 0), glow:+RX.glow.toFixed(3), band:document.querySelector('.thick').style.getPropertyValue('--rxg'), gap:stateGap(), gaps:POLL.gaps.slice(), stats:JSON.parse(JSON.stringify(RX.stats)),
+    live:RX.live.map(s => ({kind:s.kind, col:RXC[s.col], x:Math.round(s.x), alpha:s.alpha, video:s.video, f:+s.f.toFixed(2)})), total:document.getElementById('rxTot').classList.contains('hide') ? null : document.querySelector('#rxTot b').textContent}),
   DIR, content, holdNow, dwellFor, liveNumbers, nextFor:i => nextFor(slotState[i]), bump,
   force(id){ if (!R[id]) return -1; let i = slotState.findIndex(st => st.scenes.includes(id)); if (i < 0) i = 0; const st = slotState[i]; if (!st) return -1; go(st, id, 'force'); return i; }};
 })();
