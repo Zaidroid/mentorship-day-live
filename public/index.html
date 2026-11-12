@@ -154,6 +154,7 @@ footer{padding:20px 0 calc(28px + env(safe-area-inset-bottom))}
   <p class="foot">Gaza Sky Geeks, a program of Mercy Corps, with the support of Sweden</p>
 </footer>
 
+<script src="/assets/day.js"></script>
 <script>
 (function(){
 'use strict';
@@ -164,34 +165,23 @@ let DEV = store.get('md_dev');
 if (!DEV || !/^[a-z0-9]{8,40}$/.test(DEV)) { DEV = Array.from(crypto.getRandomValues(new Uint8Array(12)), b => (b % 36).toString(36)).join(''); store.set('md_dev', DEV); }
 const P = new URLSearchParams(location.search);
 
-/* ---------- schedule (same as the big screen) ---------- */
-const SESSIONS = [
-  {s:'11:00', room:'Room A', t:'Pitching and Outreach to International Clients', who:'Gigi Aulsebrook', mode:'Online'},
-  {s:'11:00', room:'Room B', t:'AI Impact on Technical Jobs', who:'Asem', mode:'In person'},
-  {s:'11:00', room:'Room C', t:'Sales Tactics for Startups and Scaleups', who:'Taylor Mohylsky', mode:'Online'},
-  {s:'12:00', room:'Room A', t:'From Vision to Execution: Turning Ideas into Results', who:'Zyad Alhasan', mode:'In person'},
-  {s:'13:00', room:'Room A', t:'Growing Against the Odds: Building Tech Companies in Uncertain Times', who:'Tom Sperry and Adam Stoll', mode:'Online'},
-  {s:'13:00', room:'Room B', t:'Lead Through Communication', who:'Rania Jaber', mode:'In person'},
-  {s:'13:00', room:'Room C', t:'Personal Branding', who:'Rajai Nuseibeh', mode:'In person'}
-];
-const ONES = [
-  {s:'11:00', e:'12:00', who:'Rand Safi', t:'Founder and Career Conversations', room:'Small Room 1', mode:'In person'},
-  {s:'12:00', e:'13:00', who:'Alan', t:'Founder and Career Conversations', room:'Small Room 1', mode:'In person'},
-  {s:'13:00', e:'14:00', who:'Iyas Hisham Sabri', t:'Fundraising', room:'Small Room 3', mode:'Online'}
-];
-const PROGRAM = [
-  {s:'09:30', e:'10:00', t:'Registration and Coffee', w:'Registration desk'},
-  {s:'10:00', e:'10:30', t:'Opening', w:'Main Hall'},
-  {s:'10:30', e:'10:40', t:'Video Messages', w:'Main Hall'},
-  {s:'10:40', e:'11:00', t:'Coffee Break', w:'Main Hall'},
-  {s:'11:00', e:'11:45', t:'Sessions', w:'Rooms A, B and C', h:'11:00'},
-  {s:'11:45', e:'12:00', t:'Short break', w:'Move to your next room'},
-  {s:'12:00', e:'12:45', t:'Session', w:'Room A', h:'12:00'},
-  {s:'12:45', e:'13:00', t:'Short break', w:'Move to your next room'},
-  {s:'13:00', e:'13:45', t:'Sessions', w:'Rooms A, B and C', h:'13:00'},
-  {s:'13:45', e:'14:00', t:'Short break', w:'One to ones close at 14:00'},
-  {s:'14:00', e:'15:00', t:'Lunch and Networking', w:'Main Hall'}
-];
+/* ---------- schedule, built from /assets/day.js (same as the big screen) ---------- */
+// day.js sets window.MD_DAY. A copy is kept, so a page that cannot load it still has the day.
+const DAY = (() => { const d = window.MD_DAY; if (d) { try { localStorage.setItem('md_day', JSON.stringify(d)); } catch(e) {} return d; } try { return JSON.parse(localStorage.getItem('md_day')); } catch(e) { return null; } })();
+if (!DAY) { setTimeout(() => location.reload(), 10000); return; }
+const advName = k => (DAY.advisors[k] || {name:k}).name;
+const blockOf = n => DAY.blocks.find(b => b.n === n);
+const SESSIONS = DAY.sessions.map(x => ({id:x.id, s:blockOf(x.b).s, room:x.room, t:x.title, who:x.who.map(advName).join(' and '), mode:x.mode}));
+const ONES = DAY.ones.map(o => ({s:o.s, e:o.e, who:advName(o.who), t:o.focus, room:o.room, mode:o.mode}));
+const ONES_END = DAY.ones.reduce((a, o) => o.e > a ? o.e : a, '');
+const PROGRAM = [];
+DAY.program.forEach(p => {
+  const b = p.mode === 'live' && DAY.blocks.find(x => x.s === p.s);
+  if (!b) { PROGRAM.push({s:p.s, e:p.e, t:p.name || p.title, w:p.where}); return; }
+  const n = DAY.sessions.filter(x => x.b === b.n).length, last = b === DAY.blocks[DAY.blocks.length - 1];
+  PROGRAM.push({s:b.s, e:b.e, t:n === 1 ? 'Session' : 'Sessions', w:p.where, h:b.s});
+  PROGRAM.push({s:b.e, e:b.end, t:'Short break', w:last ? 'One to ones close at ' + ONES_END : 'Move to your next room'});
+});
 const toMin = s => { const [h, m] = s.split(':').map(Number); return h * 60 + m; };
 function nowMin(){ if (P.get('t')) return toMin(P.get('t')); const d = new Date(); return d.getHours() * 60 + d.getMinutes(); }
 const mode = m => `<span class="mode ${m === 'Online' ? 'on' : ''}">${m}</span>`;
@@ -210,9 +200,9 @@ function renderToday(){
   let a = `<h3>Today's agenda</h3>`;
   a += `<div class="card" style="padding:4px 16px">${PROGRAM.filter(p => !/break/i.test(p.t)).map(p => `<div class="sess"><div class="t" style="color:${m >= toMin(p.s) && m < toMin(p.e) ? 'var(--red)' : 'inherit'}">${p.s}</div><div><div class="t">${esc(p.t)}</div><div class="w">${esc(p.w)}</div></div></div>`).join('').replace(/border-bottom[^"]*"([^]*)$/, '"$1')}</div>`;
   a += `<h3>Sessions by hour</h3><p class="muted small">Pick one room each hour. Each session is 45 minutes, with about 25 seats.</p>`;
-  ['11:00', '12:00', '13:00'].forEach(hh => {
+  DAY.blocks.map(b => b.s).forEach(hh => {
     a += `<div class="hour"><b>${hh}</b>`;
-    ['Room A', 'Room B', 'Room C'].forEach(r => { const x = SESSIONS.find(y => y.s === hh && y.room === r);
+    DAY.rooms.forEach(r => { const x = SESSIONS.find(y => y.s === hh && y.room === r);
       a += x ? `<div class="sess"><div><span class="pill">${r}</span></div><div><div class="t">${esc(x.t)}</div><div class="w"><span>${esc(x.who)}</span>${mode(x.mode)}</div></div></div>`
              : `<div class="sess free"><div><span class="pill ghost">${r}</span></div><div><div class="t">No session this hour</div></div></div>`; });
     a += `</div>`; });

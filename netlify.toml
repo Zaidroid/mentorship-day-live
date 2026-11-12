@@ -10,3 +10,10 @@
   for = "/assets/*"
   [headers.values]
     Cache-Control = "public, max-age=86400"
+
+# The schedule changes without a new file name, so browsers must check it on every load.
+# no-cache wins even if Netlify combines this with the rule above.
+[[headers]]
+  for = "/assets/day.js"
+  [headers.values]
+    Cache-Control = "no-cache"

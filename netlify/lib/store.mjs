@@ -1,15 +1,13 @@
 // Shared storage and helpers for the Mentorship Day live system.
 // One site wide Blobs store, strong consistency so the screen, phones and remote agree.
 import { getStore } from "@netlify/blobs";
+import { DAY } from "./day.mjs";
 
 export const st = () => getStore({ name: "md26", consistency: "strong" });
 
 export const TAGS = ["Funding", "Clients", "Partnerships", "Hiring", "A New Job", "Mentoring", "Marketing", "Product", "AI and Tech", "Freelancing"];
 
-export const VIDEOS = [
-  { id: "tareq", title: "Tareq Azza", src: "/videos/tareq-azza.mp4" },
-  { id: "kassim", title: "KassimLegal", src: "/videos/kassimlegal.mp4" }
-];
+export const VIDEOS = DAY.videos;
 
 export const DEFAULT_POLLS = [
   { id: "p1", q: "In one word, what do you need most to grow?", type: "words" },

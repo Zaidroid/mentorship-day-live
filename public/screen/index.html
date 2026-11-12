@@ -368,10 +368,14 @@ html,body{width:100%;height:100%;overflow:hidden;color:var(--ink);font-family:SS
 <div class="ov hide" id="vid"><video playsinline preload="auto"></video><div class="vmsg"></div></div>
 <div id="toast"></div>
 <script src="/assets/qrcode.js"></script>
+<script src="/assets/day.js"></script>
 <script>
 (function(){
 'use strict';
-const A = {gigi:'/assets/p_gigi.jpg', taylor:'/assets/p_taylor.jpg', ziad:'/assets/p_ziad.jpg', tom:'/assets/p_tom.jpg', rania:'/assets/p_rania.jpg', rajai:'/assets/p_rajai.jpg', iyas:'/assets/p_iyas.jpg', adam:'/assets/p_adam.jpg', rand:'/assets/p_rand.jpg', alan:'/assets/p_alan.jpg', mc:'/assets/mercycorps.png', gsg:'/assets/gsg.png', sida:'/assets/sida.png', tp:'/assets/technopark.png', pis:'/assets/pis.png'};
+// day.js sets window.MD_DAY. A copy is kept, so a page that cannot load it still has the day.
+const DAY = (() => { const d = window.MD_DAY; if (d) { try { localStorage.setItem('md_day', JSON.stringify(d)); } catch(e) {} return d; } try { return JSON.parse(localStorage.getItem('md_day')); } catch(e) { return null; } })();
+if (!DAY) { setTimeout(() => location.reload(), 10000); return; }
+const A = {mc:'/assets/mercycorps.png', gsg:'/assets/gsg.png', sida:'/assets/sida.png', tp:'/assets/technopark.png', pis:'/assets/pis.png'};
 
 /* ============ Settings ============ */
 const CONFIG = {
@@ -384,49 +388,17 @@ const CONFIG = {
   stateSeconds: 3
 };
 
-const ADVISORS = {
-  gigi:   {name:'Gigi Aulsebrook',   role:'Founder and Director, Gia', photo:A.gigi},
-  taylor: {name:'Taylor Mohylsky',   role:'Growth Advisor, Founders Loft', photo:A.taylor},
-  asem:   {name:'Asem',              role:'', photo:null, noPhoto:true},
-  zyad:   {name:'Zyad Alhasan',      role:'Managing Director, Milestones Training and Consulting', photo:A.ziad},
-  tom:    {name:'Tom Sperry',        role:'Managing Director, Rogue Venture Partners', photo:A.tom},
-  adam:   {name:'Adam Stoll',        role:'', photo:A.adam},
-  rania:  {name:'Rania Jaber',       role:'Assistant Professor, Birzeit University', photo:A.rania},
-  rajai:  {name:'Rajai Nuseibeh',    role:'Managing Partner, Ather Ventures', photo:A.rajai},
-  rand:   {name:'Rand Safi',         role:'Gaza Sky Geeks', photo:A.rand},
-  alan:   {name:'Alan',              role:'Gaza Sky Geeks', photo:A.alan},
-  iyas:   {name:'Iyas Hisham Sabri', role:'CEO, Sabri Invest', photo:A.iyas}
-};
-const ROOMS = ['Room A','Room B','Room C'];
-const BLOCKS = [{n:1,s:'11:00',e:'11:45',end:'12:00'},{n:2,s:'12:00',e:'12:45',end:'13:00'},{n:3,s:'13:00',e:'13:45',end:'14:00'}];
-let SESSIONS = [
-  {b:1, room:'Room A', title:'Pitching and Outreach to International Clients', who:['gigi'], mode:'Online', seats:25, booked:0, ok:true},
-  {b:1, room:'Room B', title:'AI Impact on Technical Jobs', who:['asem'], mode:'In person', seats:25, booked:0, ok:true},
-  {b:1, room:'Room C', title:'Sales Tactics for Startups and Scaleups', who:['taylor'], mode:'Online', seats:25, booked:0, ok:true},
-  {b:2, room:'Room A', title:'From Vision to Execution: Turning Ideas into Results', who:['zyad'], mode:'In person', seats:25, booked:0, ok:true},
-  {b:3, room:'Room A', title:'Growing Against the Odds: Building Tech Companies in Uncertain Times', who:['tom','adam'], mode:'Online', seats:25, booked:0, ok:true},
-  {b:3, room:'Room B', title:'Lead Through Communication', who:['rania'], mode:'In person', seats:25, booked:0, ok:true},
-  {b:3, room:'Room C', title:'Personal Branding', who:['rajai'], mode:'In person', seats:25, booked:0, ok:true}
-];
-const FOCUS = {rand:'Founder and Career Conversations', alan:'Founder and Career Conversations', iyas:'Fundraising'};
-function slotsFor(who, room, start, mode){ const o = []; let m = toMin(start); for (let i = 0; i < 4; i++) { o.push({who, room, s:fmt(m), e:fmt(m+15), mode, status:'Open'}); m += 15; } return o; }
-let SLOTS = [].concat(slotsFor('rand','Small Room 1','11:00','In person'), slotsFor('alan','Small Room 1','12:00','In person'), slotsFor('iyas','Small Room 3','13:00','Online'));
-const PROGRAM = [
-  {s:'09:30', e:'10:00', title:'Registration', sub:'and Coffee', mode:'welcome'},
-  {s:'10:00', e:'10:30', title:'Opening', sub:'Main Hall', mode:'opening'},
-  {s:'10:30', e:'10:40', title:'Video Messages', sub:'Main Hall', mode:'video'},
-  {s:'10:40', e:'11:00', title:'Coffee Break', sub:'Pick your sessions', mode:'choose'},
-  {s:'11:00', e:'12:00', title:'Sessions', sub:'Rooms A, B and C', mode:'live'},
-  {s:'12:00', e:'13:00', title:'Sessions', sub:'Room A', mode:'live'},
-  {s:'13:00', e:'14:00', title:'Sessions', sub:'Rooms A, B and C', mode:'live'},
-  {s:'14:00', e:'15:00', title:'Lunch and Networking', sub:'Main Hall', mode:'lunch'}
-];
-const SPEAKERS = [
-  {s:'10:00', name:'Zaid Salem', org:'Market Access Lead, Gaza Sky Geeks', what:'Welcome and introduction'},
-  {s:'10:05', name:'Rand Safi', org:'Gaza Sky Geeks', what:'Opening remarks'},
-  {s:'10:15', name:'Alaa Alaaedein', org:'Palestine TechnoPark', what:'Opening remarks'}
-];
-const VIDEOS = ['Tareq Azza', 'KassimLegal'];
+/* ============ Schedule, built from /assets/day.js ============ */
+const ADVISORS = {}; Object.keys(DAY.advisors).forEach(k => { ADVISORS[k] = Object.assign({}, DAY.advisors[k]); });
+const ROOMS = DAY.rooms.slice();
+const BLOCKS = DAY.blocks.map(b => Object.assign({}, b));
+let SESSIONS = DAY.sessions.map(s => Object.assign({}, s, {who:s.who.slice(), booked:0, ok:true}));
+const FOCUS = {}; DAY.ones.forEach(o => { FOCUS[o.who] = o.focus; });
+function slotsFor(who, room, start, end, mode){ const o = []; for (let m = toMin(start); m + 15 <= toMin(end); m += 15) o.push({who, room, s:fmt(m), e:fmt(m+15), mode, status:'Open'}); return o; }
+let SLOTS = [].concat(...DAY.ones.map(o => slotsFor(o.who, o.room, o.s, o.e, o.mode)));
+const PROGRAM = DAY.program.map(p => ({s:p.s, e:p.e, title:p.title, sub:p.sub, mode:p.mode}));
+const SPEAKERS = DAY.speakers.map(x => Object.assign({}, x));
+const VIDEOS = DAY.videos.map(v => v.title);
 
 /* ============ Time ============ */
 const P = new URLSearchParams(location.search);
@@ -638,7 +610,7 @@ R.recap = (c) => {
 R.survey = (c) => ({title:'Your Feedback', html:`<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:calc(var(--u)*2.4);text-align:center"><div class="rv">${qrBox(CONFIG.links.survey, Math.min(24, c.w * .5), 'Survey<br>QR code')}</div><div class="rv" style="font-weight:700;font-size:calc(var(--u)*3.6);color:var(--red)">Tell us how it went</div><div class="rv muted" style="font-size:calc(var(--u)*1.9)">Two minutes, on your phone</div></div>`});
 
 /* ============ Live system: phones and the operator remote ============ */
-const LIVE = {videos:[{id:'tareq', title:'Tareq Azza', src:'/videos/tareq-azza.mp4'}, {id:'kassim', title:'KassimLegal', src:'/videos/kassimlegal.mp4'}]};
+const LIVE = {videos:DAY.videos.map(v => Object.assign({}, v))};
 Object.assign(S, {photos:[], profiles:[], pollQ:'', pollType:'words', pollOpts:[], pollTotal:0, pollOpen:true, remoteMode:null, pin:null, way:null, cfgAt:null, videoAt:null, annAt:null, annUntil:0, liveOk:false, skew:0});
 function applyState(d){
   if (d.t) S.skew = d.t - Date.now();
@@ -912,8 +884,9 @@ function table(rows, must){ const hi = rows.findIndex(r => must.every(k => r.map
 function keyFor(name){ const n = name.toLowerCase().replace(/\(.*?\)/g, '').trim(); const k = Object.keys(ADVISORS).find(k => { const a = ADVISORS[k].name.toLowerCase(); return a === n || a.split(' ')[0] === n.split(' ')[0]; }); if (k) return k;
   const nk = n.replace(/[^a-z]/g, ''); if (!ADVISORS[nk]) ADVISORS[nk] = {name:name.replace(/\(.*?\)/g, '').trim(), role:'', photo:null}; return nk; }
 function normTime(t){ const m = String(t).match(/(\d{1,2}):(\d{2})\s*(am|pm)?/i); if (!m) return ''; let h = +m[1]; if (m[3]) { const pm = /pm/i.test(m[3]); if (pm && h < 12) h += 12; if (!pm && h === 12) h = 0; } return String(h).padStart(2,'0') + ':' + m[2]; }
+function sessionId(b, room){ const d = DAY.sessions.find(x => x.b === b && x.room === room); if (d) return d.id; const m = String(room).trim().match(/([A-Z])$/i); return b + (m ? m[1].toUpperCase() : ''); }
 function applySessions(rows){ const t = table(rows, ['block','room','session topic']); const nx = [];
-  t.forEach(r => { const b = parseInt(r.block); if (!b || !r['session topic']) return; nx.push({b, room:r.room, title:r['session topic'], who:r.advisor.split(/\s+and\s+/i).map(keyFor), mode:/online/i.test(r.delivery) ? 'Online' : 'In person', seats:parseInt(r.seats) || 25, booked:parseInt(r.booked) || 0, ok:/confirmed/i.test(r['host status'])}); });
+  t.forEach(r => { const b = parseInt(r.block); if (!b || !r['session topic']) return; nx.push({id:sessionId(b, r.room), b, room:r.room, title:r['session topic'], who:r.advisor.split(/\s+and\s+/i).map(keyFor), mode:/online/i.test(r.delivery) ? 'Online' : 'In person', seats:parseInt(r.seats) || 25, booked:parseInt(r.booked) || 0, ok:/confirmed/i.test(r['host status'])}); });
   if (nx.length) SESSIONS = nx; }
 function applySlots(rows){ const t = table(rows, ['slot','room','start','advisor']);
   const nx = t.filter(r => normTime(r.start) && r.advisor && !/to confirm/i.test(r.advisor)).map(r => { const k = keyFor(r.advisor), s = normTime(r.start); return {who:k, room:r.room, s, e:normTime(r.end) || fmt(toMin(s) + 15), mode:/online/i.test(r.delivery) ? 'Online' : 'In person', status:/booked|taken|assigned/i.test(r.status) ? 'Booked' : 'Open'}; });

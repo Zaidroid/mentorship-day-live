@@ -50,7 +50,9 @@ async function serveStatic(req, res, url) {
       p = path.join(p, "index.html"); st = await fs.stat(p);
     }
     const ext = path.extname(p).toLowerCase();
-    const headers = { "content-type": TYPES[ext] || "application/octet-stream", "cache-control": url.pathname.startsWith("/assets/") ? "public, max-age=86400" : "no-cache" };
+    // Assets are cached for a day, except the schedule, which can change without a new name.
+    const cache = url.pathname.startsWith("/assets/") && url.pathname !== "/assets/day.js" ? "public, max-age=86400" : "no-cache";
+    const headers = { "content-type": TYPES[ext] || "application/octet-stream", "cache-control": cache };
     // Videos need range requests so the browser can seek and start fast.
     const range = req.headers.range && /^bytes=(\d*)-(\d*)$/.exec(req.headers.range);
     if (range && (ext === ".mp4" || ext === ".webm")) {
