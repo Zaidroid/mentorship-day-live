@@ -641,3 +641,70 @@ describe("safety", () => {
     assert.equal((await call(S.base, "GET", "/api/sheet/nosuchtab")).status, 404);
   });
 });
+
+/* ---------- the version 1 operator actions ---------- */
+describe("operator actions", () => {
+  test("screen controls change the public config and are logged", async () => {
+    const ok = async (body, check) => { const r = await op(S.base, body); assert.equal(r.status, 200, JSON.stringify(body) + " " + r.text); if (check) check((await state(S.base)).json.cfg); };
+    await ok({ action: "mode", mode: "lunch" }, c => { assert.equal(c.mode, "lunch"); assert.equal(c.pin, null); });
+    await ok({ action: "pin", scene: "photos" }, c => assert.equal(c.pin, "photos"));
+    await ok({ action: "pin", scene: null }, c => assert.equal(c.pin, null));
+    await ok({ action: "speaker", index: 1 }, c => { assert.equal(c.speaker, 1); assert.equal(c.mode, "opening"); });
+    await ok({ action: "speaker", index: null }, c => assert.equal(c.speaker, null));
+    await ok({ action: "theme", theme: "dark" }, c => assert.equal(c.theme, "dark"));
+    await ok({ action: "overlay", overlay: "check" }, c => assert.equal(c.overlay, "check"));
+    await ok({ action: "overlay", overlay: "nonsense" }, c => assert.equal(c.overlay, null));
+    await ok({ action: "way", way: { registration: "left", rooms: "sideways" } }, c => assert.deepEqual(c.way, { registration: "left" }));
+    await ok({ action: "ann", text: "Lunch is ready in the Main Hall", secs: 500 }, c => { assert.equal(c.ann.text, "Lunch is ready in the Main Hall"); assert.equal(c.ann.secs, 120); });
+    await ok({ action: "reset" }, c => { assert.equal(c.mode, "auto"); assert.equal(c.theme, "light"); assert.equal(c.ann, null); assert.deepEqual(c.way, { registration: "left" }); });
+    const log = (await opGet(S.base)).json.log.map(l => l.what);
+    assert.ok(log.includes("Held the screen on lunch") && log.includes("Reset the screen controls"));
+    for (const body of [{ action: "mode", mode: "party" }, { action: "pin", scene: "nope" }, { action: "video", id: "nope" }]) assert.equal((await op(S.base, body)).status, 400, JSON.stringify(body));
+  });
+
+  test("polls can be added, opened, cleared and deleted", async () => {
+    assert.equal((await op(S.base, { action: "pollAdd", q: "Hi" })).json.error, "Write the question.");
+    assert.equal((await op(S.base, { action: "pollAdd", q: "Pick one please", type: "choice", options: ["Only"] })).json.error, "Add at least two options.");
+    assert.equal((await op(S.base, { action: "pollAdd", q: "Which room was best?", type: "choice", options: ["Room A", "Room B", ""] })).status, 200);
+    let g = (await opGet(S.base)).json;
+    const np = g.polls.find(x => x.q === "Which room was best?");
+    assert.deepEqual(np.options, ["Room A", "Room B"]);
+    assert.equal((await op(S.base, { action: "pollActivate", pid: "nope" })).status, 400);
+    await op(S.base, { action: "pollActivate", pid: np.id });
+    await call(S.base, "POST", "/api/answer", { body: { pid: np.id, text: "Room A" }, headers: { "x-dev": newDev() } });
+    assert.equal((await state(S.base)).json.poll.total, 1);
+    await op(S.base, { action: "pollReset", pid: np.id });
+    assert.equal((await state(S.base)).json.poll.total, 0);
+    await op(S.base, { action: "pollDelete", pid: np.id });
+    g = (await opGet(S.base)).json;
+    assert.ok(!g.polls.some(x => x.id === np.id)); assert.equal(g.cfg.poll, null);
+    assert.equal((await state(S.base)).json.poll, null);
+    await op(S.base, { action: "pollActivate", pid: "p1" });
+  });
+
+  test("the sheet proxy knows only its three tabs", async () => {
+    assert.equal((await call(S.base, "GET", "/api/sheet/people")).status, 404);
+  });
+});
+
+/* ---------- privacy ---------- */
+describe("privacy", () => {
+  test("every public route, read by a stranger after all of the above", async () => {
+    const st = await state(S.base);
+    const sn = await call(S.base, "GET", "/api/snap?v=" + st.json.snapV);
+    await call(S.base, "GET", "/api/snap");
+    for (const p of sn.json.photos) assert.equal((await call(S.base, "GET", "/api/photo/" + p.id)).status, 200);
+    for (const p of sn.json.profiles) assert.match(p.id, /^[pg][a-f0-9]{10}$/);
+    await call(S.base, "GET", "/api/profile", { headers: { "x-dev": newDev() } });
+    await opGet(S.base);
+    assert.ok(sn.json.photos.length >= 1 && sn.json.profiles.length >= 1, "the sweep saw real data");
+  });
+
+  test("no response to any client carries a device id", () => {
+    assert.ok(DEVS.size >= 15, "the test used many devices: " + DEVS.size);
+    assert.ok(seen.length >= 150, "the test recorded many responses: " + seen.length);
+    const hits = [];
+    for (const r of seen) for (const d of DEVS) if (r.text.includes(d) || r.headers.includes(d)) hits.push(`${r.method} ${r.url} (${r.status}) carries ${d}`);
+    assert.deepEqual(hits, []);
+  });
+});
