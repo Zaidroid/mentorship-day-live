@@ -4,14 +4,15 @@
 import { st, readCfg, readPolls, readSnap, tallyFrom, publicCfg, snapVersion, J, CDN, TAGS, VIDEOS } from "../lib/store.mjs";
 import { nowMs, rehearsalOn, phase } from "../lib/day.mjs";
 import { interestFrom } from "../lib/people.mjs";
+import { pollNow } from "../lib/rules.mjs";
 
 export default async () => {
   const s = st();
   const [cfg, polls, snap, ans, stars] = await Promise.all([readCfg(s), readPolls(s), readSnap(s), s.list({ prefix: "ans/" }), s.list({ prefix: "star/" })]);
   const t = nowMs(cfg);
-  const p = cfg.poll && polls.find(x => x.id === cfg.poll.id);
-  // manual is true until the poll schedule exists (WP2): the open poll is always the one the remote chose.
-  const poll = p ? { id: p.id, q: p.q, type: p.type, options: p.options || [], open: !!cfg.poll.open, ...tallyFrom(ans.blobs, p.id, cfg.hidden), manual: true } : null;
+  // The poll follows the schedule unless the remote holds one (plan section 5.8).
+  const cur = pollNow(cfg, polls, t), p = cur && cur.p;
+  const poll = p ? { id: p.id, q: p.q, type: p.type, options: p.options || [], open: cur.open, ...tallyFrom(ans.blobs, p.id, cfg.hidden), manual: cur.manual } : null;
   const links = 0; // connections, from the cx/ key names (WP2)
   const w = Math.floor(t / 4000); // reaction window, from t
   return J({

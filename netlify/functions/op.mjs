@@ -3,6 +3,7 @@ import { st, update, readCfg, updateCfg, mergeCfg, readPolls, updatePolls, readS
 import { pubOk, personPub } from "../lib/ids.mjs";
 import { nowMs, realNow, rehearsalOn, rehearsalFor, isEventDay, localMin } from "../lib/day.mjs";
 import { readPeople, personFrom, personOf, syncTeam, PEOPLE_MAX } from "../lib/people.mjs";
+import { pollNow, autoNow } from "../lib/rules.mjs";
 
 const MODES = ["auto", "welcome", "opening", "video", "choose", "live", "lunch", "close"];
 const SCENES = ["rooms", "choose", "board", "spotlight", "advisors", "meet", "photos", "poll", "pulse", "way", "welcome", "speaker", "recap", "thanks"];
@@ -53,9 +54,9 @@ export default async (req) => {
 
   if (req.method === "GET") {
     const [cfg, polls, snap, photos, profiles, logl, screen, people] = await Promise.all([readCfg(s), readPolls(s), readSnap(s), pendingPhotos(s), pendingProfiles(s), readLog(s), readBeat(s), peopleInfo(s)]);
-    const p = cfg.poll && polls.find(x => x.id === cfg.poll.id);
-    const poll = p ? { ...p, open: !!cfg.poll.open, ...(await tally(s, p.id, [])), manual: true } : null;
-    return J({ cfg, polls, poll, snap, pending: { photos, profiles }, log: logl, videos: VIDEOS, t: nowMs(cfg), reh: rehearsalOn(cfg), screen, pinFails: await pinFails(s), people });
+    const t = nowMs(cfg), cur = pollNow(cfg, polls, t);
+    const poll = cur ? { ...cur.p, open: cur.open, ...(await tally(s, cur.p.id, [])), manual: cur.manual } : null;
+    return J({ cfg, polls, poll, snap, pending: { photos, profiles }, log: logl, videos: VIDEOS, t, reh: rehearsalOn(cfg), screen, pinFails: await pinFails(s), people, auto: autoNow(cfg, polls, t) });
   }
 
   // 256 KB leaves room for the people import in WP2.
@@ -149,15 +150,26 @@ async function act(s, b) {
     else { await s.delete(`ok/pr/${pub}`); await updateSnap(s, sn => dropItem(sn.profiles, pub)); }
     return `${{ approveProfile: "Approved", rejectProfile: "Declined", hideProfile: "Removed" }[a]} the profile of ${p ? p.name : "someone"}`;
   }
+  // Opening or closing a poll from the remote holds it (manual). pollManual {on: false} goes back to the schedule.
   if (a === "pollActivate") {
     const p = (await readPolls(s)).find(x => x.id === b.pid);
     if (!p) throw new Refuse(400, "Unknown poll.");
-    await updateCfg(s, c => { c.poll = { id: p.id, open: true }; });
+    await updateCfg(s, c => { c.poll = { id: p.id, open: true, manual: true }; });
     return `Opened the poll: ${p.q}`;
   }
   if (a === "pollClose") {
-    await updateCfg(s, c => { if (c.poll) c.poll.open = false; });
+    const polls = await readPolls(s);
+    await updateCfg(s, c => { const cur = pollNow(c, polls, nowMs(c)); c.poll = { id: cur ? cur.p.id : null, open: false, manual: true }; });
     return "Closed the poll";
+  }
+  if (a === "pollManual") {
+    if (typeof b.on !== "boolean") throw new Refuse(400, "Say on or off.");
+    const polls = await readPolls(s);
+    await updateCfg(s, c => {
+      if (!b.on) { c.poll = { id: null, open: false, manual: false }; return; }
+      const cur = pollNow(c, polls, nowMs(c)); c.poll = { id: cur ? cur.p.id : null, open: cur ? cur.open : false, manual: true };
+    });
+    return b.on ? "Held the poll" : "Polls follow the schedule again";
   }
   if (a === "pollAdd") {
     const q = clean(b.q, 120); if (q.length < 4) throw new Refuse(400, "Write the question.");
@@ -170,7 +182,7 @@ async function act(s, b) {
   }
   if (a === "pollDelete") {
     await updatePolls(s, polls => polls.filter(x => x.id !== b.pid));
-    await updateCfg(s, c => { if (c.poll && c.poll.id === b.pid) c.poll = null; });
+    await updateCfg(s, c => { if (c.poll && c.poll.id === b.pid) c.poll = { id: null, open: false, manual: false }; });
     return "Deleted a poll";
   }
   if (a === "pollReset") {

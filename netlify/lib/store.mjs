@@ -37,7 +37,8 @@ export const DEFAULT_CFG = {
   ann: null,             // { text, at, secs }, at in the time base of state.t
   video: null,           // { id, at }, at in the time base of state.t; id null means stop
   way: null,             // { registration, rooms, oneToOnes } arrow directions
-  poll: { id: "p1", open: true },
+  poll: { id: null, open: false, manual: false }, // manual false: the poll follows MD_DAY.pollPlan (rules.mjs)
+  rx: "auto",            // reactions: auto (by MD_DAY.reactionWindows), on or off. Never public; state says rx.on
   hidden: [],            // poll words hidden by the operator. Never public
   reloadAt: 0,           // grows when the remote asks the wall to reload. A version, not a clock
   photoAt: null,         // group photo countdown (WP2)

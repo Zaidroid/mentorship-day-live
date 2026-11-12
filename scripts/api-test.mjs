@@ -57,7 +57,7 @@ async function openDirect(dir) {
   process.env.NETLIFY_BLOBS_CONTEXT = Buffer.from(JSON.stringify({ edgeURL: edge, uncachedEdgeURL: edge, siteID: "self-hosted", token })).toString("base64");
   globalThis.Netlify = { env: { get: k => (k === "REMOTE_PIN" ? PIN : process.env[k]) } };
   direct = { stop: () => bs.stop() };
-  if (!lib) lib = { store: await import("../netlify/lib/store.mjs"), ids: await import("../netlify/lib/ids.mjs"), day: await import("../netlify/lib/day.mjs") };
+  if (!lib) lib = { store: await import("../netlify/lib/store.mjs"), ids: await import("../netlify/lib/ids.mjs"), day: await import("../netlify/lib/day.mjs"), rules: await import("../netlify/lib/rules.mjs"), people: await import("../netlify/lib/people.mjs") };
   return lib.store.st();
 }
 
@@ -81,7 +81,8 @@ const opGet = (base, pin) => call(base, "GET", "/api/op", { headers: opHeaders(p
 const state = base => call(base, "GET", "/api/state");
 
 let S; // the main server
-before(async () => { S = await startServer(); });
+// The main server holds poll p1 open, as the remote would; the schedule has its own tests.
+before(async () => { S = await startServer(); await op(S.base, { action: "pollActivate", pid: "p1" }); });
 
 /* ---------- update() ---------- */
 describe("update helper", () => {
@@ -712,13 +713,97 @@ describe("operator actions", () => {
     assert.equal((await state(S.base)).json.poll.total, 0);
     await op(S.base, { action: "pollDelete", pid: np.id });
     g = (await opGet(S.base)).json;
-    assert.ok(!g.polls.some(x => x.id === np.id)); assert.equal(g.cfg.poll, null);
+    assert.ok(!g.polls.some(x => x.id === np.id)); assert.deepEqual(g.cfg.poll, { id: null, open: false, manual: false }, "deleting the held poll goes back to the schedule");
     assert.equal((await state(S.base)).json.poll, null);
     await op(S.base, { action: "pollActivate", pid: "p1" });
   });
 
   test("the sheet proxy knows only its three tabs", async () => {
     assert.equal((await call(S.base, "GET", "/api/sheet/people")).status, 404);
+  });
+});
+
+/* ---------- the poll schedule (plan section 5.8) ---------- */
+describe("poll schedule", () => {
+  let P;
+  const at = async hhmm => { const r = await op(P.base, { action: "rehearsal", hhmm }); assert.equal(r.status, 200, r.text); return (await state(P.base)).json; };
+  const ans = (pid, text = "Funding") => call(P.base, "POST", "/api/answer", { body: { pid, text }, headers: { "x-dev": newDev() } });
+  before(async () => { P = await startServer(); });
+  after(async () => { await P.stop(); });
+
+  test("the open poll follows pollPlan, and the last one shows closed after it", async () => {
+    await openDirect(P.dir);
+    const { pollNow } = lib.rules, { localToMs } = lib.day;
+    const polls = lib.store.DEFAULT_POLLS, cfg = lib.store.mergeCfg(null);
+    const on = hhmm => { const c = pollNow(cfg, polls, localToMs("2026-11-17", hhmm)); return c ? [c.p.id, c.open, c.manual] : null; };
+    assert.equal(on("08:59"), null, "no poll before the first row");
+    assert.deepEqual(on("09:00"), ["p2", true, false]);
+    assert.deepEqual(on("10:39"), ["p2", true, false]);
+    assert.deepEqual(on("10:40"), ["p1", true, false]);
+    assert.deepEqual(on("12:00"), ["p3", true, false]);
+    assert.deepEqual(on("13:40"), ["p4", true, false]);
+    assert.deepEqual(on("14:59"), ["p4", true, false]);
+    assert.deepEqual(on("15:00"), ["p4", false, false]);
+    assert.equal(pollNow(cfg, polls, Date.parse("2026-11-16T12:00:00Z")), null, "a day before: no poll");
+    assert.deepEqual((({ p, open }) => [p.id, open])(pollNow(cfg, polls, Date.parse("2026-11-18T12:00:00Z"))), ["p4", false]);
+    assert.equal((await state(P.base)).json.poll, null, "before the day, nothing is open");
+    assert.equal((await ans("p1")).status, 409);
+  });
+
+  test("answers go to the scheduled poll only, and the poll changes by itself", async () => {
+    let d = await at("09:40");
+    assert.equal(d.poll.id, "p2"); assert.equal(d.poll.open, true); assert.equal(d.poll.manual, false);
+    assert.equal((await ans("p2", "Funding")).status, 200);
+    assert.equal((await ans("p1", "growth")).status, 409);
+    d = await at("10:41");
+    assert.deepEqual([d.poll.id, d.poll.open, d.poll.type], ["p1", true, "words"]);
+    assert.equal((await ans("p1", "growth")).status, 200);
+    assert.equal((await ans("p2", "Funding")).status, 409);
+    d = await at("15:10");
+    assert.deepEqual([d.poll.id, d.poll.open], ["p4", false]);
+    assert.equal((await ans("p4", "listen")).status, 409);
+  });
+
+  test("the remote can hold a poll, close it, and go back to the schedule", async () => {
+    await at("12:10");
+    assert.equal((await op(P.base, { action: "pollActivate", pid: "p2" })).status, 200);
+    let d = (await state(P.base)).json;
+    assert.deepEqual([d.poll.id, d.poll.open, d.poll.manual], ["p2", true, true]);
+    d = await at("13:50");
+    assert.deepEqual([d.poll.id, d.poll.manual], ["p2", true], "a held poll stays when the clock moves");
+    assert.equal((await op(P.base, { action: "pollManual", on: false })).status, 200);
+    d = (await state(P.base)).json;
+    assert.deepEqual([d.poll.id, d.poll.open, d.poll.manual], ["p4", true, false]);
+    assert.equal((await op(P.base, { action: "pollClose" })).status, 200);
+    d = (await state(P.base)).json;
+    assert.deepEqual([d.poll.id, d.poll.open, d.poll.manual], ["p4", false, true], "closing a scheduled poll holds it closed");
+    assert.equal((await ans("p4", "listen")).status, 409);
+    await op(P.base, { action: "pollManual", on: false });
+    assert.equal((await op(P.base, { action: "pollManual", on: true })).status, 200);
+    d = await at("10:00");
+    assert.deepEqual([d.poll.id, d.poll.open, d.poll.manual], ["p4", true, true], "pollManual on freezes the poll of that moment");
+    for (const body of [{ action: "pollManual" }, { action: "pollManual", on: "yes" }]) assert.equal((await op(P.base, body)).status, 400);
+    await op(P.base, { action: "pollManual", on: false });
+    const log = (await opGet(P.base)).json.log.map(l => l.what);
+    assert.ok(log.includes("Held the poll") && log.includes("Polls follow the schedule again"));
+  });
+
+  test("GET /api/op says what the clock rules do now and next", async () => {
+    await at("10:20");
+    let a = (await opGet(P.base)).json.auto;
+    assert.equal(a.now, "10:20"); assert.equal(a.date, "2026-11-17"); assert.equal(a.phase, "day");
+    assert.deepEqual(a.poll, { id: "p2", open: true, manual: false, until: "10:40", next: { id: "p1", at: "10:40" } });
+    assert.deepEqual(a.rx, { mode: "auto", on: true, until: "10:40", next: "14:00" });
+    assert.deepEqual(a.program, { now: { title: "Opening", s: "10:00", e: "10:30" }, next: { title: "Video Messages", s: "10:30" } });
+    assert.deepEqual(a.takeaways, []);
+    await at("11:42");
+    a = (await opGet(P.base)).json.auto;
+    assert.deepEqual(a.takeaways, [1]); assert.equal(a.rx.on, false); assert.equal(a.rx.next, "14:00");
+    await at("13:41");
+    assert.deepEqual((await opGet(P.base)).json.auto.takeaways, [3]);
+    await op(P.base, { action: "rehearsal", hhmm: null });
+    a = (await opGet(P.base)).json.auto;
+    assert.equal(a.phase, "before"); assert.equal(a.poll.id, null); assert.deepEqual(a.poll.next, { id: "p2", at: "09:00" }); assert.equal(a.rx.next, "10:00");
   });
 });
 
