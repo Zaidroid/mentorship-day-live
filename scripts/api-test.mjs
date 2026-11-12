@@ -643,7 +643,7 @@ describe("wipe", () => {
     assert.equal(g.cfg.mode, "auto"); assert.deepEqual(g.cfg.hidden, []); assert.equal(g.cfg.rehearsal, null);
     assert.deepEqual(g.cfg.flags, ALL_FLAGS);
     assert.ok(g.polls.some(x => x.q === "What did you learn today?"));
-    assert.equal(g.screen, null); assert.deepEqual(g.pending, { photos: [], profiles: [] });
+    assert.equal(g.screen, null); assert.deepEqual(g.pending, { photos: [], profiles: [], takeaways: [] });
     assert.equal((await s.get("people", { type: "json" }))[0].name, "Sample Person");
     const st = (await state(W.base)).json;
     assert.deepEqual([st.n.answers, st.n.photos, st.n.board, st.reh], [0, 0, 0, false]);
@@ -1309,6 +1309,127 @@ describe("meet", () => {
     for (const r of res) assert.equal(r.status, 200, r.text);
     const codes = await Promise.all(devs.map(async d => (await me(P.base, d)).json.code));
     assert.equal(new Set(codes).size, 20); assert.ok(codes.every(c => c >= 100 && c <= 999));
+  });
+});
+
+/* ---------- takeaways (plan sections 5.7 to 5.9) ---------- */
+describe("takeaways", () => {
+  let P, L, O, G;
+  const send = (dev, body) => call(P.base, "POST", "/api/takeaway", { body, headers: { "x-dev": dev } });
+  const at = hhmm => op(P.base, { action: "rehearsal", hhmm });
+  before(async () => {
+    P = await startServer(); await openDirect(P.dir);
+    await op(P.base, { action: "peopleImport", people: SAMPLE });
+    L = newDev(); O = newDev(); G = newDev();
+    await claim(P.base, L, { id: pubOf(SAMPLE[0]), last4: SAMPLE[0].last4 });
+    await claim(P.base, O, { id: pubOf(SAMPLE[1]), last4: SAMPLE[1].last4 });
+    await call(P.base, "POST", "/api/guest", { body: { name: "Sami Guest" }, headers: { "x-dev": G } });
+  });
+  after(async () => { await P.stop(); await openDirect(S.dir); });
+
+  test("each block has its window, the last one stays open until 15:00", async () => {
+    const r0 = await send(L, { sid: "1A", rating: 4 });
+    assert.equal(r0.status, 409); assert.equal(r0.json.error, "Takeaways for this session open at 11:40.");
+    const check = async (hhmm, sid, want, msg) => { await at(hhmm); const r = await send(O, { sid, rating: 3 }); assert.equal(r.status, want, `${hhmm} ${sid}: ${r.text}`); if (msg) assert.equal(r.json.error, msg); };
+    await check("11:39", "1B", 409, "Takeaways for this session open at 11:40.");
+    await check("11:40", "1B", 200);
+    await check("12:19", "1C", 200);
+    await check("12:20", "1C", 409, "Takeaways for this session are closed.");
+    await check("12:40", "2A", 200);
+    await check("13:19", "2A", 200);
+    await check("13:20", "2A", 409);
+    await check("13:39", "3A", 409, "Takeaways for this session open at 13:40.");
+    await check("14:59", "3A", 200);
+    await check("15:00", "3B", 409, "Takeaways for this session are closed.");
+  });
+
+  test("a verified person's line goes up at once, with the first name only when allowed", async () => {
+    await at("11:50");
+    const r = await send(L, { sid: "1A", rating: 5, text: "Short pitches win. Lead with the client's problem.", showName: true });
+    assert.equal(r.status, 200, r.text); assert.deepEqual(r.json, { ok: true, status: "approved" });
+    let sn = await snapOf(P.base);
+    const item = sn.takeaways.find(x => x.sid === "1A");
+    assert.deepEqual(Object.keys(item).sort(), ["at", "first", "id", "sid", "text"]);
+    assert.equal(item.first, "Layla"); assert.match(item.id, /^t[a-f0-9]{10}$/);
+    assert.ok(!item.id.includes(pubOf(SAMPLE[0]).slice(1)), "the id does not carry the person id");
+    const st = (await state(P.base)).json;
+    assert.equal(st.n.takeaways, 1); assert.ok(Math.abs(item.at - st.t) < 60000, "at is in the time base of t");
+    const again = await send(L, { sid: "1A", rating: 4, text: "Lead with the problem.", showName: false });
+    assert.equal(again.json.status, "approved");
+    sn = await snapOf(P.base);
+    assert.equal(sn.takeaways.filter(x => x.sid === "1A").length, 1, "a new one replaces the last");
+    assert.equal(sn.takeaways.find(x => x.sid === "1A").first, "", "no name when not allowed");
+    const mine = (await me(P.base, L)).json.takeaways;
+    assert.equal(mine.length, 1);
+    assert.deepEqual(mine[0], { sid: "1A", rating: 4, text: "Lead with the problem.", showName: false, status: "approved", at: mine[0].at });
+  });
+
+  test("a guest's line waits; the team approves, removes or declines it", async () => {
+    const r = await send(G, { sid: "1B", rating: 4, text: "AI will change junior roles first.", showName: true });
+    assert.equal(r.json.status, "pending");
+    let g = (await opGet(P.base)).json;
+    const p = g.pending.takeaways.find(x => x.sid === "1B" && x.text.startsWith("AI will"));
+    assert.ok(p); assert.equal(p.first, "Sami"); assert.equal(p.guest, true); assert.equal(p.rating, 4);
+    assert.ok(!(await snapOf(P.base)).takeaways.some(x => x.sid === "1B"));
+    assert.equal((await op(P.base, { action: "approveTakeaway", sid: "1B", id: p.id, at: p.at + 1 })).status, 409, "a line that changed is not approved");
+    assert.equal((await op(P.base, { action: "approveTakeaway", sid: "1B", id: p.id })).status, 200);
+    let sn = await snapOf(P.base);
+    assert.deepEqual(sn.takeaways.find(x => x.id === p.id), { id: p.id, sid: "1B", text: "AI will change junior roles first.", first: "Sami", at: p.at });
+    assert.ok(!(await opGet(P.base)).json.pending.takeaways.some(x => x.id === p.id));
+    assert.equal((await op(P.base, { action: "hideTakeaway", sid: "1B", id: p.id })).status, 200);
+    assert.ok(!(await snapOf(P.base)).takeaways.some(x => x.id === p.id));
+    assert.equal((await me(P.base, G)).json.takeaways[0].status, "hidden");
+    await send(G, { sid: "1C", rating: 2, text: "Too fast for me." });
+    const q = (await opGet(P.base)).json.pending.takeaways.find(x => x.sid === "1C");
+    assert.equal((await op(P.base, { action: "rejectTakeaway", sid: "1C", id: q.id })).status, 200);
+    assert.equal((await me(P.base, G)).json.takeaways.find(x => x.sid === "1C").status, "declined");
+    const log = (await opGet(P.base)).json.log.map(l => l.what);
+    assert.ok(["Approved a takeaway", "Removed a takeaway from the wall", "Declined a takeaway"].every(x => log.includes(x)));
+  });
+
+  test("a rating alone needs nobody; trustTakeaways off makes everyone wait", async () => {
+    const r = await send(O, { sid: "1A", rating: 3 });
+    assert.equal(r.json.status, "none");
+    assert.ok(!(await opGet(P.base)).json.pending.takeaways.some(x => x.sid === "1A"));
+    await op(P.base, { action: "flags", name: "trustTakeaways", on: false });
+    assert.equal((await send(O, { sid: "1A", rating: 3, text: "Good examples." })).json.status, "pending");
+    await op(P.base, { action: "flags", name: "trustTakeaways", on: true });
+    const anon = await send(newDev(), { sid: "1A", rating: 5, text: "Loved it", showName: true });
+    assert.equal(anon.json.status, "pending", "a phone that never signed in waits like a guest");
+  });
+
+  test("refusals", async () => {
+    const bad = async (body, status, msg) => { const r = await send(L, body); assert.equal(r.status, status, JSON.stringify(body) + " " + r.text); if (msg) assert.equal(r.json.error, msg); };
+    await bad({ sid: "9Z", rating: 3 }, 400, "Pick a session.");
+    await bad({ sid: "__proto__", rating: 3 }, 400);
+    for (const rating of [0, 6, "3", 3.5, null]) await bad({ sid: "1A", rating }, 400, "Tap a rating from 1 to 5.");
+    await bad({ sid: "1A", rating: 3, text: 5 }, 400);
+    await bad({ sid: "1A", rating: 3, text: "x".repeat(121) }, 400, "Keep it to 120 characters.");
+    await bad({ sid: "1A", rating: 3, text: "see www.example.com" }, 422, "Please leave out links.");
+    await bad({ sid: "1A", rating: 3, text: "https://x.y" }, 422, "Please leave out links.");
+    await bad({ sid: "1A", rating: 3, text: "call 059 123 4567" }, 422, "Please leave out phone numbers.");
+    await bad({ sid: "1A", rating: 3, text: "رقمي ٠٥٩١٢٣٤٥٦٧" }, 422, "Please leave out phone numbers.");
+    await bad({ sid: "1A", rating: 3, text: "what a shit talk" }, 422, "Please change the wording.");
+    assert.equal((await send(L, { sid: "1A", rating: 3, text: "In 2026 we grew 300 percent" })).status, 200, "short numbers are fine");
+    assert.equal((await call(P.base, "POST", "/api/takeaway", { body: { sid: "1A", rating: 3 } })).status, 400, "x-dev is required");
+    await op(P.base, { action: "flags", name: "takeaways", on: false });
+    await bad({ sid: "1A", rating: 3 }, 409, "Takeaways are switched off right now.");
+    await op(P.base, { action: "flags", name: "takeaways", on: true });
+    for (let i = 0; i < 5; i++) await send(L, { sid: "1C", rating: 3 });
+    await bad({ sid: "1C", rating: 4 }, 429, "You have changed this takeaway enough times. Thank you!");
+    for (const body of [{ action: "approveTakeaway", sid: "1A", id: "t0000000000" }, { action: "hideTakeaway", sid: "1A", id: "nope" }, { action: "rejectTakeaway", sid: "XX", id: "t0000000000" }]) assert.ok([400, 404].includes((await op(P.base, body)).status), JSON.stringify(body));
+    assert.equal((await op(P.base, { action: "approveTakeaway", sid: "1A", id: "t0000000000" })).status, 404);
+  });
+
+  test("Repair Lists rebuilds the takeaways from the approval markers", async () => {
+    const before = (await snapOf(P.base)).takeaways.map(x => x.id).sort();
+    const s = await openDirect(P.dir);
+    const cur = await s.get("snap", { type: "json" });
+    await s.setJSON("snap", { ...cur, takeaways: [] });
+    const r = await op(P.base, { action: "repair" });
+    assert.equal(r.json.takeaways, before.length);
+    assert.deepEqual((await snapOf(P.base)).takeaways.map(x => x.id).sort(), before);
+    await op(P.base, { action: "rehearsal", hhmm: null });
   });
 });
 

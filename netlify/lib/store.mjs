@@ -3,7 +3,7 @@
 import { getStore } from "@netlify/blobs";
 import crypto from "node:crypto";
 import { DAY, realNow } from "./day.mjs";
-import { pubOk } from "./ids.mjs";
+import { pubOk, takeawayId } from "./ids.mjs";
 export { devOk } from "./ids.mjs";
 
 export const st = () => getStore({ name: "md26", consistency: "strong" });
@@ -192,6 +192,8 @@ export function updateSnap(s, fn) {
 // The version clients compare to know when to fetch the snapshot again. links is the number of connections.
 export const snapVersion = (snap, links = 0) => `${snap.at || 0}.${links}`;
 export const photoItem = (id, m) => ({ id, name: m.name || "", caption: m.caption || "", at: m.at || 0 });
+// A takeaway on the wall: the first name only when the person allowed it.
+export const takeawayItem = (sid, pub, t) => ({ id: takeawayId(sid, pub), sid, text: t.text, first: t.showName ? t.first || "" : "", at: t.at });
 export const profileItem = (pub, p) => ({ id: pub, name: p.name, company: p.company, role: p.role, looking: p.looking, offer: p.offer, linkedin: p.linkedin, at: p.at });
 export function putItem(list, item) { dropItem(list, item.id); list.push(item); list.sort((a, b) => b.at - a.at); }
 export function dropItem(list, id) { const i = list.findIndex(x => x.id === id); if (i >= 0) list.splice(i, 1); }
@@ -255,12 +257,17 @@ export function tallyFrom(blobs, pid, hidden) {
 async function mapLimit(items, n, fn) { const out = []; for (let i = 0; i < items.length; i += n) out.push(...await Promise.all(items.slice(i, i + n).map(fn))); return out; }
 export function rebuild(s) {
   return updateSnap(s, async snap => {
-    const [okPh, okPr] = await Promise.all([s.list({ prefix: "ok/ph/" }), s.list({ prefix: "ok/pr/" })]);
+    const [okPh, okPr, okTk] = await Promise.all([s.list({ prefix: "ok/ph/" }), s.list({ prefix: "ok/pr/" }), s.list({ prefix: "ok/tk/" })]);
     const photos = await mapLimit(okPh.blobs.map(b => b.key.slice(6)), 16, async id => { const m = await s.getMetadata(`ph/${id}`); return m ? photoItem(id, m.metadata) : null; });
     // Profiles are keyed by public id. Anything else under ok/pr/ is skipped, so no device id reaches the snapshot.
     const profiles = await mapLimit(okPr.blobs.map(b => b.key.slice(6)).filter(pubOk), 16, async pub => { const p = await s.get(`pr/${pub}`, { type: "json" }); return p ? profileItem(pub, p) : null; });
+    // Takeaways: ok/tk/<sid>~<pub>, only those that are approved and have text.
+    const takeaways = await mapLimit(okTk.blobs.map(b => b.key.slice(6).split("~")).filter(([sid, pub]) => sid && pubOk(pub)), 16, async ([sid, pub]) => {
+      const t = await s.get(`tk/${sid}/${pub}`, { type: "json" }); return t && t.text && t.status === "approved" ? takeawayItem(sid, pub, t) : null;
+    });
     snap.photos = photos.filter(Boolean).sort((x, y) => y.at - x.at);
     snap.profiles = profiles.filter(Boolean).sort((x, y) => y.at - x.at);
+    snap.takeaways = takeaways.filter(Boolean).sort((x, y) => y.at - x.at);
   });
 }
 

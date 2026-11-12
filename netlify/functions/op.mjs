@@ -5,6 +5,9 @@ import { nowMs, realNow, rehearsalOn, rehearsalFor, isEventDay, localMin } from 
 import { readPeople, personFrom, personOf, syncTeam, PEOPLE_MAX } from "../lib/people.mjs";
 import { pollNow, autoNow } from "../lib/rules.mjs";
 import { approveCard, unlistCard } from "../lib/board.mjs";
+import { placeTakeaway, takeawayPub } from "../lib/tk.mjs";
+import { takeawayId } from "../lib/ids.mjs";
+import { SESSIONS } from "../lib/people.mjs";
 
 const MODES = ["auto", "welcome", "opening", "video", "choose", "live", "lunch", "close"];
 const SCENES = ["rooms", "choose", "board", "spotlight", "advisors", "meet", "photos", "poll", "pulse", "way", "welcome", "speaker", "recap", "thanks"];
@@ -42,6 +45,16 @@ async function peopleInfo(s) {
 }
 async function mapLimit(items, n, fn) { const out = []; for (let i = 0; i < items.length; i += n) out.push(...await Promise.all(items.slice(i, i + n).map(fn))); return out; }
 
+// Takeaways waiting for the team, oldest first. id and sid are what the approval actions take.
+async function pendingTakeaways(s) {
+  const keys = (await s.list({ prefix: "q/tk/" })).blobs.map(b => b.key.slice(5).split("~")).filter(([sid, pub]) => sid && pubOk(pub));
+  const out = await mapLimit(keys, 16, async ([sid, pub]) => {
+    const t = await s.get(`tk/${sid}/${pub}`, { type: "json" });
+    return t ? { id: takeawayId(sid, pub), sid, text: t.text, rating: t.rating, first: t.first || "", showName: !!t.showName, guest: pub[0] === "g", at: t.at } : null;
+  });
+  return out.filter(Boolean).sort((a, b) => a.at - b.at);
+}
+
 async function pendingProfiles(s) {
   const ids = (await s.list({ prefix: "q/pr/" })).blobs.map(b => b.key.slice(5));
   const out = [];
@@ -54,10 +67,10 @@ export default async (req) => {
   const s = st(), who = whoOf(req);
 
   if (req.method === "GET") {
-    const [cfg, polls, snap, photos, profiles, logl, screen, people] = await Promise.all([readCfg(s), readPolls(s), readSnap(s), pendingPhotos(s), pendingProfiles(s), readLog(s), readBeat(s), peopleInfo(s)]);
+    const [cfg, polls, snap, photos, profiles, takeaways, logl, screen, people] = await Promise.all([readCfg(s), readPolls(s), readSnap(s), pendingPhotos(s), pendingProfiles(s), pendingTakeaways(s), readLog(s), readBeat(s), peopleInfo(s)]);
     const t = nowMs(cfg), cur = pollNow(cfg, polls, t);
     const poll = cur ? { ...cur.p, open: cur.open, ...(await tally(s, cur.p.id, [])), manual: cur.manual } : null;
-    return J({ cfg, polls, poll, snap, pending: { photos, profiles }, log: logl, videos: VIDEOS, t, reh: rehearsalOn(cfg), screen, pinFails: await pinFails(s), people, auto: autoNow(cfg, polls, t) });
+    return J({ cfg, polls, poll, snap, pending: { photos, profiles, takeaways }, log: logl, videos: VIDEOS, t, reh: rehearsalOn(cfg), screen, pinFails: await pinFails(s), people, auto: autoNow(cfg, polls, t) });
   }
 
   // 256 KB leaves room for the people import in WP2.
@@ -151,6 +164,20 @@ async function act(s, b) {
     return `${{ approveProfile: "Approved", rejectProfile: "Declined", hideProfile: "Removed" }[a]} the profile of ${p ? p.name : "someone"}`;
   }
   // Opening or closing a poll from the remote holds it (manual). pollManual {on: false} goes back to the schedule.
+  // Takeaways are named by sid and their public id (pending.takeaways, snap.takeaways).
+  if (a === "approveTakeaway" || a === "rejectTakeaway" || a === "hideTakeaway") {
+    if (typeof b.sid !== "string" || !Object.hasOwn(SESSIONS, b.sid) || typeof b.id !== "string" || !/^t[a-f0-9]{10}$/.test(b.id)) throw new Refuse(400, "Unknown takeaway.");
+    const pub = await takeawayPub(s, b.sid, b.id);
+    if (!pub) throw new Refuse(404, "That takeaway is gone.");
+    const status = { approveTakeaway: "approved", rejectTakeaway: "declined", hideTakeaway: "hidden" }[a];
+    const t = await update(s, `tk/${b.sid}/${pub}`, v => {
+      if (a === "approveTakeaway" && !v.text) throw new Refuse(409, "This takeaway has no text to show.");
+      if (a === "approveTakeaway" && b.at && v.at !== b.at) throw new Refuse(409, "This takeaway just changed. Look at it again.");
+      v.status = status;
+    });
+    await placeTakeaway(s, b.sid, pub, t);
+    return { approveTakeaway: "Approved a takeaway", rejectTakeaway: "Declined a takeaway", hideTakeaway: "Removed a takeaway from the wall" }[a];
+  }
   if (a === "pollActivate") {
     const p = (await readPolls(s)).find(x => x.id === b.pid);
     if (!p) throw new Refuse(400, "Unknown poll.");
@@ -226,7 +253,7 @@ async function act(s, b) {
   }
   if (a === "repair") {
     const snap = await rebuild(s);
-    return { note: "Repaired the lists", extra: { photos: snap.photos.length, profiles: snap.profiles.length } };
+    return { note: "Repaired the lists", extra: { photos: snap.photos.length, profiles: snap.profiles.length, takeaways: snap.takeaways.length } };
   }
   if (a === "rx") {
     if (!["auto", "on", "off"].includes(b.mode)) throw new Refuse(400, "Say auto, on or off.");

@@ -24,6 +24,9 @@ export function normName(n) {
 }
 
 export const guestPub = dev => "g" + mac(dev).slice(0, 10);
+// The public id of a takeaway: a keyed hash of session and person, so a quote shown without a name
+// cannot be traced to a card on the board.
+export const takeawayId = (sid, pub) => "t" + mac("tk|" + sid + "|" + pub).slice(0, 10);
 export const personId = (name, last4) => mac(normName(name) + "|" + last4).slice(0, 10);
 export const personPub = pid => "p" + pid;
 export const k4Of = (pid, last4) => mac(pid + ":" + last4);
