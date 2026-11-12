@@ -5,9 +5,12 @@ const B = process.env.BASE || 'http://localhost:8897';
   const phone = await b.newContext({ ...devices['iPhone 13'] }); const p = await phone.newPage();
   p.on('pageerror', e => errs.push('phone: ' + e.message));
   await p.goto(B + '/?t=11:20'); await p.waitForTimeout(800);
+  // The first visit opens the sign in sheet. This phone uses the page without signing in, so its card waits for the remote.
+  await p.click('[data-act=si-skip]'); await p.waitForTimeout(400);
   await p.screenshot({ path: 'dev/shots/ph_today.png', fullPage: false });
   await p.click('#t-poll'); await p.waitForTimeout(500);
-  await p.fill('#word', 'Confidence'); await p.click('#sendWord'); await p.waitForTimeout(900);
+  await p.fill('#word', 'Confidence'); await p.click('[data-act=answer-word]'); await p.waitForTimeout(900);
+  console.log('poll msg:', await p.textContent('#pollMsg'));
   await p.screenshot({ path: 'dev/shots/ph_poll.png' });
   await p.click('#t-photo'); await p.setInputFiles('#file', 'scripts/sample.jpg'); await p.waitForTimeout(800);
   await p.fill('#cap', 'Coffee break in the Main Hall'); await p.fill('#pname', 'E2E Tester'); await p.click('#send'); await p.waitForTimeout(900);
@@ -15,9 +18,9 @@ const B = process.env.BASE || 'http://localhost:8897';
   await p.screenshot({ path: 'dev/shots/ph_photo.png' });
   await p.click('#t-meet'); await p.waitForTimeout(500);
   await p.fill('#mName', 'E2E Tester'); await p.fill('#mCo', 'Test Co');
-  await p.click('#mLook .tag:has-text("Funding")'); await p.click('#mOffer .tag:has-text("Marketing")');
+  await p.click('#mLook .tagb[data-t="Funding"]'); await p.click('#mOffer .tagb[data-t="Marketing"]');
   await p.check('#mOk'); await p.click('#mSend'); await p.waitForTimeout(900);
-  console.log('meet status:', await p.textContent('#myCard .status'));
+  console.log('meet status:', await p.textContent('#mcCard .status'));
   await p.screenshot({ path: 'dev/shots/ph_meet.png', fullPage: true });
 
   const rc = await b.newContext({ viewport: { width: 420, height: 900 } }); const r = await rc.newPage();
