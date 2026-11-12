@@ -45,9 +45,19 @@ export const FLAGS = { trustProfiles: true, trustTakeaways: true, trustPhotos: f
 export const PUBLIC_CFG = ["mode", "pin", "speaker", "theme", "overlay", "ann", "video", "way", "reloadAt", "photoAt", "finale", "flags", "at"];
 export const publicCfg = cfg => Object.fromEntries(PUBLIC_CFG.map(k => [k, cfg[k] === undefined ? null : cfg[k]]));
 
-const NOSTORE = { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" };
+const NOSTORE = { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", "x-content-type-options": "nosniff" };
 export function J(data, status = 200, extra = {}) {
   return new Response(JSON.stringify(data), { status, headers: { ...NOSTORE, ...extra } });
+}
+// Reads a JSON object body of at most max bytes. Returns { body } or { error } with a ready response.
+export async function readBody(req, max, bad = "Send the request as JSON.") {
+  const big = () => ({ error: J({ error: "That request is too large." }, 413) });
+  if ((+req.headers.get("content-length") || 0) > max) return big();
+  let buf; try { buf = await req.arrayBuffer(); } catch { return { error: J({ error: bad }, 400) }; }
+  if (buf.byteLength > max) return big();
+  let body; try { body = JSON.parse(new TextDecoder().decode(buf)); } catch { return { error: J({ error: bad }, 400) }; }
+  if (!body || typeof body !== "object" || Array.isArray(body)) return { error: J({ error: bad }, 400) };
+  return { body };
 }
 // Every CDN cache header is made here, so the cache policy changes in one place (docs/PLAN.md section 5.12).
 // Only answers that are the same for every anonymous client may use it.
@@ -227,9 +237,19 @@ export async function readLog(s, n = 40) {
   });
 }
 
+const sha = v => crypto.createHash("sha256").update(String(v)).digest();
 export function pinOk(req) {
   const want = (globalThis.Netlify && Netlify.env.get("REMOTE_PIN")) || "";
-  const got = req.headers.get("x-pin") || "";
-  return !!want && got === want;
+  return !!want && crypto.timingSafeEqual(sha(req.headers.get("x-pin") || ""), sha(want));
 }
+// Wrong PINs are counted in 10 minute buckets (pinfail/<bucket>/<rand>), for the alert in WP2.
+// At most 500 markers per bucket, so a flood cannot fill the store.
+const PIN_BUCKET = 10 * 60 * 1000;
+const pinPrefix = () => `pinfail/${Math.floor(realNow() / PIN_BUCKET)}/`;
+export async function countPinFail(s) {
+  const pre = pinPrefix(), { blobs } = await s.list({ prefix: pre });
+  if (blobs.length < 500) await s.set(pre + Date.now().toString(36) + crypto.randomBytes(4).toString("hex"), "");
+  return blobs.length + 1;
+}
+export async function pinFails(s) { return (await s.list({ prefix: pinPrefix() })).blobs.length; }
 export function whoOf(req) { let w = req.headers.get("x-who") || ""; try { w = decodeURIComponent(w); } catch {} return clean(w, 30) || "Someone"; }

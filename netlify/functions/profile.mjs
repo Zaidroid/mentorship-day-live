@@ -1,6 +1,6 @@
 // Networking Board profiles. One profile per person, keyed by the public id (pub), never by device.
 // The phone sends its device id in the x-dev header. New or edited profiles wait for approval.
-import { st, clean, isBad, updateSnap, dropItem, J, TAGS } from "../lib/store.mjs";
+import { st, clean, isBad, updateSnap, dropItem, readBody, J, TAGS } from "../lib/store.mjs";
 import { devOk, pubFor } from "../lib/ids.mjs";
 
 function pickTags(v) { return Array.isArray(v) ? [...new Set(v.filter(t => TAGS.includes(t)))].slice(0, 3) : []; }
@@ -19,7 +19,7 @@ export default async (req) => {
     return J({ status, profile: p, id: pub });
   }
 
-  let b; try { b = await req.json(); } catch { return J({ error: "Send the profile as JSON." }, 400); }
+  const { body: b, error } = await readBody(req, 4096, "Send the profile as JSON."); if (error) return error;
   const dev = devOf(req, b);
   if (!devOk(dev)) return J({ error: "Unknown device." }, 400);
   const name = clean(b.name, 40), company = clean(b.company, 50), role = clean(b.role, 50);

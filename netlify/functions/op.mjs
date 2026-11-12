@@ -1,5 +1,5 @@
 // Operator remote API. Every call needs the team PIN. Every change is logged with who made it.
-import { st, update, readCfg, updateCfg, mergeCfg, readPolls, updatePolls, readSnap, updateSnap, putItem, dropItem, photoItem, profileItem, tally, log, readLog, pinOk, whoOf, idOk, clean, J, Refuse, VIDEOS, FLAGS, rebuild, wipeAll, readBeat } from "../lib/store.mjs";
+import { st, update, readCfg, updateCfg, mergeCfg, readPolls, updatePolls, readSnap, updateSnap, putItem, dropItem, photoItem, profileItem, tally, log, readLog, pinOk, whoOf, idOk, clean, J, Refuse, readBody, countPinFail, pinFails, VIDEOS, FLAGS, rebuild, wipeAll, readBeat } from "../lib/store.mjs";
 import { pubOk } from "../lib/ids.mjs";
 import { nowMs, realNow, rehearsalOn, rehearsalFor, isEventDay, localMin } from "../lib/day.mjs";
 
@@ -21,17 +21,18 @@ async function pendingProfiles(s) {
 }
 
 export default async (req) => {
-  if (!pinOk(req)) return J({ error: "Wrong PIN." }, 401);
+  if (!pinOk(req)) { await countPinFail(st()).catch(() => {}); return J({ error: "Wrong PIN." }, 401); }
   const s = st(), who = whoOf(req);
 
   if (req.method === "GET") {
     const [cfg, polls, snap, photos, profiles, logl, screen] = await Promise.all([readCfg(s), readPolls(s), readSnap(s), pendingPhotos(s), pendingProfiles(s), readLog(s), readBeat(s)]);
     const p = cfg.poll && polls.find(x => x.id === cfg.poll.id);
     const poll = p ? { ...p, open: !!cfg.poll.open, ...(await tally(s, p.id, [])), manual: true } : null;
-    return J({ cfg, polls, poll, snap, pending: { photos, profiles }, log: logl, videos: VIDEOS, t: nowMs(cfg), reh: rehearsalOn(cfg), screen });
+    return J({ cfg, polls, poll, snap, pending: { photos, profiles }, log: logl, videos: VIDEOS, t: nowMs(cfg), reh: rehearsalOn(cfg), screen, pinFails: await pinFails(s) });
   }
 
-  let b; try { b = await req.json(); } catch { return J({ error: "Bad request." }, 400); }
+  // 256 KB leaves room for the people import in WP2.
+  const { body: b, error } = await readBody(req, 256 * 1024, "Bad request."); if (error) return error;
   try {
     const r = await act(s, b);
     const { note, extra } = typeof r === "string" ? { note: r, extra: {} } : r;

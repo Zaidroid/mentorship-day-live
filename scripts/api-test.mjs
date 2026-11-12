@@ -264,9 +264,9 @@ const snapOf = async base => { const st = await state(base); return (await call(
 
 describe("state", () => {
   test("has the documented shape, and nothing private", async () => {
-    await call(S.base, "POST", "/api/answer", { body: { pid: "p1", text: "clarity", dev: newDev() } });
+    await call(S.base, "POST", "/api/answer", { body: { pid: "p1", text: "clarity" }, headers: { "x-dev": newDev() } });
     await op(S.base, { action: "hideWord", word: "secretword" });
-    await call(S.base, "POST", "/api/answer", { body: { pid: "p1", text: "secretword", dev: newDev() } });
+    await call(S.base, "POST", "/api/answer", { body: { pid: "p1", text: "secretword" }, headers: { "x-dev": newDev() } });
     const r = await state(S.base);
     assert.equal(r.status, 200);
     const d = r.json;
@@ -290,7 +290,8 @@ describe("state", () => {
     assert.ok(d.tags.includes("Funding"));
     assert.deepEqual(d.videos.map(v => v.id), ["tareq", "kassim"]);
     assert.equal(r.headers.get("cache-control"), "public, max-age=0, must-revalidate");
-        await op(S.base, { action: "showWord", word: "secretword" });
+    assert.equal(r.headers.get("x-content-type-options"), "nosniff");
+    await op(S.base, { action: "showWord", word: "secretword" });
   });
 
   test("on Netlify the CDN keeps state for 2 seconds", async () => {
@@ -308,10 +309,10 @@ describe("photos and the snapshot", () => {
     const r = await upload(S.base, dev);
     assert.equal(r.status, 200, r.text); id = r.json.id;
     const pub = await call(S.base, "GET", "/api/photo/" + id);
-    assert.equal(pub.status, 404);
+    assert.equal(pub.status, 404); assert.equal(pub.headers.get("x-content-type-options"), "nosniff");
     const team = await call(S.base, "GET", "/api/photo/" + id, { headers: { "x-pin": PIN } });
     assert.equal(team.status, 200); assert.equal(team.headers.get("content-type"), "image/jpeg");
-    assert.equal(team.headers.get("cache-control"), "no-store");
+    assert.equal(team.headers.get("cache-control"), "no-store"); assert.equal(team.headers.get("x-content-type-options"), "nosniff");
     const s = await openDirect(S.dir);
     const m = (await s.getMetadata("ph/" + id)).metadata;
     assert.equal(m.pub, lib.ids.guestPub(dev)); assert.equal(m.dev, undefined);
@@ -333,7 +334,7 @@ describe("photos and the snapshot", () => {
     assert.equal(old.headers.get("cache-control"), "no-store", "a stale version is answered but not cached");
     assert.equal(old.json.v, st1.json.snapV);
     const img = await call(S.base, "GET", "/api/photo/" + id);
-    assert.equal(img.status, 200); assert.match(img.headers.get("cache-control"), /immutable/);
+    assert.equal(img.status, 200); assert.match(img.headers.get("cache-control"), /immutable/); assert.equal(img.headers.get("x-content-type-options"), "nosniff");
   });
 
   test("on Netlify the snapshot is cached for an hour, keyed on v only", async () => {
@@ -388,7 +389,7 @@ describe("photos and the snapshot", () => {
 
 describe("answers", () => {
   test("one answer per phone per poll, a new one replaces it", async () => {
-    const d = newDev(), ans = (body, h = { "x-dev": d }) => call(S.base, "POST", "/api/answer", { body: h["x-dev"] ? { ...body, dev: h["x-dev"] } : body });
+    const d = newDev(), ans = (body, h = { "x-dev": d }) => call(S.base, "POST", "/api/answer", { body, headers: h });
     const t0 = (await state(S.base)).json.poll.total;
     assert.equal((await ans({ pid: "p1", text: "Momentum!" })).json.word, "momentum");
     assert.equal((await ans({ pid: "p1", text: "focus" })).status, 200);
@@ -571,7 +572,7 @@ describe("wipe", () => {
   test("deletes what people and the team made, keeps people, polls and directions", async () => {
     const W = await startServer();
     const d = newDev();
-    await call(W.base, "POST", "/api/answer", { body: { pid: "p1", text: "growth", dev: d } });
+    await call(W.base, "POST", "/api/answer", { body: { pid: "p1", text: "growth" }, headers: { "x-dev": d } });
     const ph = await upload(W.base, d); await op(W.base, { action: "approvePhoto", id: ph.json.id });
     const pr = await call(W.base, "POST", "/api/profile", { body: { name: "Yousef Amin", company: "CloudBridge", role: "CTO", looking: ["Hiring"], offer: ["Mentoring"], consent: true }, headers: { "x-dev": d } });
     await op(W.base, { action: "approveProfile", id: pr.json.id });
@@ -606,5 +607,37 @@ describe("wipe", () => {
     assert.deepEqual([sn.json.photos, sn.json.profiles, sn.json.takeaways], [[], [], []]);
     await W.stop();
     await openDirect(S.dir);
+  });
+});
+
+/* ---------- safety ---------- */
+describe("safety", () => {
+  test("wrong PINs are refused and counted", async () => {
+    const s = await openDirect(S.dir);
+    const count = async () => (await s.list({ prefix: "pinfail/" })).blobs.length;
+    const c0 = await count();
+    assert.equal((await opGet(S.base, "000000")).status, 401);
+    assert.equal((await op(S.base, { action: "reload" }, "")).status, 401);
+    assert.equal((await call(S.base, "GET", "/api/op")).status, 401);
+    assert.equal((await call(S.base, "GET", "/api/photo/nosuchphoto1", { headers: { "x-pin": "nope" } })).status, 404);
+    assert.equal((await call(S.base, "GET", "/api/photo/nosuchphoto1")).status, 404);
+    assert.equal(await count(), c0 + 4, "three wrong PINs on the remote, one on a photo, none without a PIN");
+    assert.ok((await opGet(S.base)).json.pinFails >= 4);
+  });
+
+  test("bodies are capped and must be JSON objects", async () => {
+    const d = newDev();
+    assert.equal((await call(S.base, "POST", "/api/answer", { body: { pid: "p1", text: "a".repeat(3000) }, headers: { "x-dev": d } })).status, 413);
+    assert.equal((await call(S.base, "POST", "/api/answer", { body: [1], headers: { "x-dev": d } })).status, 400);
+    assert.equal((await call(S.base, "POST", "/api/profile", { body: { name: "x".repeat(5000) }, headers: { "x-dev": d } })).status, 413);
+    assert.equal((await call(S.base, "POST", "/api/profile", { body: "null", raw: true, headers: { "x-dev": d, "content-type": "application/json" } })).status, 400);
+    assert.equal((await op(S.base, { action: "ann", text: "x".repeat(300 * 1024) })).status, 413);
+    assert.equal((await op(S.base, "nope")).status, 400);
+    assert.equal((await op(S.base, { action: "nope" })).json.error, "Unknown action.");
+  });
+
+  test("every JSON answer says nosniff", async () => {
+    for (const r of [await state(S.base), await opGet(S.base), await call(S.base, "GET", "/api/profile")]) assert.equal(r.headers.get("x-content-type-options"), "nosniff");
+    assert.equal((await call(S.base, "GET", "/api/sheet/nosuchtab")).status, 404);
   });
 });
