@@ -17,10 +17,12 @@ export async function approveCard(s, pub, p) {
 // The lock covers the self hosted server, where onlyIfNew is not atomic.
 export async function ensureCode(s, pub, p) {
   if (p && p.code && (await s.get(`code/${p.code}`)) === pub) return p.code;
+  // The code is read back after the write: if onlyIfNew turns out not to be atomic on Netlify and another
+  // card won the same number, this one tries again instead of sharing it.
   const code = await withLock("codes", async () => {
     for (let i = 0; i < 60; i++) {
       const n = 100 + crypto.randomInt(900);
-      if ((await s.set(`code/${n}`, pub, { onlyIfNew: true })).modified) return n;
+      if ((await s.set(`code/${n}`, pub, { onlyIfNew: true })).modified && (await s.get(`code/${n}`)) === pub) return n;
     }
     return null;
   });
