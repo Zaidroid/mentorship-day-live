@@ -64,7 +64,9 @@ No lane edits `netlify/` after WP2. If a lane finds a server bug, it stops, repo
 Verified on 12 November by running the code:
 
 * Version 1 works end to end locally: wall, phone page, remote, poll, photo wall, Networking Board, announcements, moments, ticker, light and dark themes, three layouts.
-* It has never been deployed. The Netlify project exists and `REMOTE_PIN` is set there.
+* Version 1 (`main`, commit `c423a9a`) was deployed to Netlify on 12 November with Zaid's go. Pages, state, the sheet proxy and the PIN refusal all answer. `REMOTE_PIN` is set on the project.
+* Measured on the live site: the CDN cache for `/api/state` works only inside one edge node. Ten requests on one connection gave nine hits. Ten requests on separate connections gave no hits at all, and every response says `"Netlify Durable"; fwd=bypass`, so the shared durable cache is not in use even though the header asks for it. The request headers a browser sends for `cache: 'no-store'` made no difference.
+* The Netlify account is on the Free plan: 125,000 function calls a month. One hundred phones polling state every 6 seconds for the day is about 330,000 requests. Without a working shared cache that is over the limit. See section 5.12.
 * The schedule is written three times: `public/screen/index.html`, `public/index.html`, and the Screen Feed sheet. The two files use different shapes.
 * The wall polls `/api/state` every 3 seconds, the phone every 12. There is no push channel, and Netlify Functions cannot hold one open. Version 2 stays on polling.
 * Public profile ids are device ids. A device id is also the only credential a phone has, so anyone reading `/api/state` can edit another person's card. WP1 fixes this.
@@ -239,14 +241,14 @@ All new phone endpoints take `x-dev`. All errors are `{error: "plain sentence"}`
 | `POST /api/signout` | | `{ok}` | Deletes `who/<dev>` only |
 | `GET /api/me` | | `{status, me, stars, profile, code, links, takeaways, feedback}` | `status` is `none`, `guest` or `person`. `me` has `pub, name, first, company, title, linkedin, suggest, rooms, slot, photoOk`. `stars` is `{1: {sid, by, why}}` where `by` is `own`, `auto` or `team` and `why` is the registration topic behind an automatic pick. Replaces `GET /api/profile` on the phone |
 | `POST /api/star` | `{b, sid}` | `{ok, stars}` | `sid` null removes. One per block. Always stored as `own`, and replaces an automatic pick |
-| `POST /api/react` | `{c: {clap, heart, bloom}}` | 204 | Each count capped at 12. One batch per phone per second. 409 when reactions are off |
+| `POST /api/react` | `{c: {clap, heart, bloom}}` | 204 | Each count capped at 30. One batch per phone per 3 seconds. 409 when reactions are off |
 | `POST /api/profile` | as today | `{ok, status}` | Auto approved for a verified person when `flags.trustProfiles` is on. Assigns the meet code on approval |
 | `POST /api/meet` | `{code}` | `{ok, person}` | Both must be on the board. Not yourself. Same pair twice is fine and does nothing. 5 wrong codes per phone per 10 minutes, 60 connections per person |
 | `POST /api/takeaway` | `{sid, rating, text, showName}` | `{ok, status}` | Rating 1 to 5, required. Text optional, 120 characters, through `clean` and `isBad`, no links, no runs of 7 or more digits. Open only in the session's window, see 5.8 |
 | `POST /api/feedback` | `{overall, recommend, text}` | `{ok}` | Only in phase `after` |
 | `POST /api/forget` | | `{ok}` | Removes my card, connections, stars, takeaway text and name. Keeps ratings without the name |
 | `GET /api/ics?s=1A,2A` | | calendar file | Times converted from `Asia/Hebron`. Alarm 5 minutes before |
-| `POST /api/beat` | `{w, h, dpr, layout, mode, scenes, lite, fps, err, at}` | 204 | From the wall every 30 seconds. Body capped at 1 KB |
+| `POST /api/beat` | `{w, h, dpr, layout, mode, scenes, lite, fps, err, at}` | 204 | From the wall every 60 seconds. Body capped at 1 KB |
 | `GET /api/export/:what` | | CSV with a UTF 8 byte order mark | Needs `x-pin`. `what` is `takeaways`, `ratings`, `polls`, `board`, `links`, `feedback`, `signins` |
 | `POST /api/photo` | as today | as today | With a valid `x-pin` the photo is approved at once (team upload) |
 
@@ -279,6 +281,23 @@ New `op` actions, all logged: `peopleImport {people}`, `peopleUnlock {id}`, `reh
 ### 5.10 Alerts
 
 Optional, only when `ALERT_TELEGRAM_BOT` and `ALERT_TELEGRAM_CHAT` are set. One helper `alert(kind, text)`, at most one message per kind per 3 minutes, 2.5 second timeout, never fails the request. Kinds: photos waiting, guest card or takeaway waiting, a person locked out, an error reported by the wall, 50 wrong PINs in 10 minutes. The message carries a count and the remote link, never a name.
+
+### 5.12 Function Call Budget
+
+The Free plan allows 125,000 function calls in the month, and rehearsals and tests on the live address in November count too. What happens at the limit is not confirmed, so the build treats it as a wall: the whole event day must fit in 60,000 calls, leaving the rest for rehearsals and the on site test.
+
+Rules:
+
+1. The shared durable cache must work for `/api/state` and `/api/snap`, or the polling design changes. First step in WP2: find out why the response says `"Netlify Durable"; fwd=bypass`. Read the current Netlify caching docs. Things to try on a deploy, one at a time, with ten requests on separate connections after each: `max-age` in place of `s-maxage` in `Netlify-CDN-Cache-Control`, a longer time (5, 10, 30 seconds), dropping `must-revalidate` from `Cache-Control`. Record what works in this section.
+2. If the durable cache cannot be made to work at 2 seconds: state is cached for the longest time that does work, and anything that must feel instant on the wall (reactions) moves to its own small route with its own short cache, polled only by the wall.
+3. Phones poll state every 15 seconds by default, every 6 seconds only on the Live and People tabs, never while hidden, and stop after 10 minutes without a touch until the next touch.
+4. Reactions: one batch per phone every 3 seconds at most, sent only when there is something to send, and at most 150 batches per phone in the day, enforced on the phone.
+5. The remote polls `/api/op` every 8 seconds, only while visible.
+6. The wall polls state every 3 seconds, the sheet tabs every 60 seconds, and sends a beat every 60 seconds.
+7. The simulator counts every request it makes per route and prints the total a real day would cost. WP7 does not pass unless that total is under 60,000 with the cache hit rate measured on the live site.
+8. Live load tests are short: 2 minutes, once per deploy.
+
+If the budget cannot be met, the fallbacks are, in order: a paid Netlify plan for November, or the self hosted server on Zaid's own machine behind a public HTTPS address doing the API work. Both are Zaid's decision (section 10). In both cases the printed QR address stays the Netlify one: with the self hosted fallback, Netlify keeps serving the pages and a `[[redirects]]` rule with status 200 in `netlify.toml` passes `/api/*` through to the self hosted server, which uses no function calls.
 
 ### 5.11 Picked for You
 
@@ -340,6 +359,7 @@ Done when: `npm test`, `npm run test:api` and `npm run probe` pass, and no respo
 
 Read first: sections 5.3 to 5.10.
 
+0. P0, first. The function call budget in section 5.12: make the durable cache work or change the polling design, and write the result into 5.12. Needs Zaid's go for each deploy.
 1. P0. `who`, `claim`, `guest`, `signout`, `me`, with limits and lockout. `peopleImport`, `peopleUnlock`.
 2. P0. `star` and `interest` in state. Picked sessions on first sign in as in 5.11, with an API test for each of the six rules.
 3. P0. Poll schedule as in 5.8, with `pollManual`.
@@ -370,7 +390,7 @@ Read first: section 4, section 7, the whole of `public/screen/index.html`, then 
 
 Keep: the three layouts, the U unit, both themes, every keyboard key, every URL option, the offline behavior.
 
-1. P0. Plumbing. `day.js`, state and snap, the clock rule, heartbeat every 30 seconds, reload when `cfg.reloadAt` is newer than page load (never during a video or a moment), `navigator.wakeLock`, `window.onerror` into the next beat, a watchdog that reloads if the main loop has not ticked for 20 seconds. Expose `window.__md = {S, slotState, force(id)}` for probes. `theme=` in the URL wins over `cfg.theme`, and the T key workaround leaves `scripts/wall-urls.cjs`. Fix the Today's Advisors overflow at 3840x1920 and remove its entry from `scripts/probe-known.json`.
+1. P0. Plumbing. `day.js`, state and snap, the clock rule, polling as section 5.12 says, heartbeat every 60 seconds, reload when `cfg.reloadAt` is newer than page load (never during a video or a moment), `navigator.wakeLock`, `window.onerror` into the next beat, a watchdog that reloads if the main loop has not ticked for 20 seconds. Expose `window.__md = {S, slotState, force(id)}` for probes. `theme=` in the URL wins over `cfg.theme`, and the T key workaround leaves `scripts/wall-urls.cjs`. Fix the Today's Advisors overflow at 3840x1920 and remove its entry from `scripts/probe-known.json`.
 2. P0. Performance governor. Measure frame time for the first 6 seconds and then on a rolling 120 frames. If the average stays over 22 ms for 3 seconds, set `data-lite` on the root: no `backdrop-filter` (glass becomes a solid fill at .86 alpha), no blur in reveals, half the background nodes, at most 30 effect particles. Never switch back in the same session. Report `lite` and fps in the beat. `?lite=1` and `?lite=0` force it. The screen check view shows fps and lite state.
 3. P0. Motion system, as in section 7.2. One set of duration and easing tokens. Scene change, title change, leaf pills, blue rules and numbers each get one treatment, used everywhere.
 4. P0. The director. Replace fixed rotation with `nextFor(slot)`:
@@ -400,7 +420,7 @@ Read first: section 4, section 7, `public/index.html`, the `mobile-first-pwa` sk
 
 Four tabs in a bar at the bottom, inside the safe area: My Day, Live, People, Photos. The header shrinks to the title and the blue rule.
 
-1. P0. Shell. Paint at once from the last state, snap and `me` kept in `localStorage`, then refresh. No skeletons, no spinners over content. Poll state every 6 seconds while visible, every 1.5 seconds on the Live tab while reactions are on, never while hidden. A thin banner when offline, and a queue that sends answers, stars and takeaways when the connection returns. `dir="auto"` on all typed text. Touch targets at least 44 px. `navigator.vibrate(10)` on a successful send where it exists.
+1. P0. Shell. Paint at once from the last state, snap and `me` kept in `localStorage`, then refresh. No skeletons, no spinners over content. Poll state as section 5.12 says: every 15 seconds by default, every 6 seconds on the Live and People tabs, never while hidden, paused after 10 minutes without a touch. The phone never polls faster for reactions: its own taps animate locally. A thin banner when offline, and a queue that sends answers, stars and takeaways when the connection returns. `dir="auto"` on all typed text. Touch targets at least 44 px. `navigator.vibrate(10)` on a successful send where it exists.
 2. P0. Sign in, shown on first open as a sheet over My Day. Step 1: "Find your name", a search field, results as you type. Step 2: "Last 4 digits of your mobile number", four boxes, numeric keyboard. Step 3: one switch, "Say hello to me on the big screen", on by default, first name only. Links: "I am not on the list" for guests, and "Not now" to skip. Wrong code shows how many tries are left. A signed in person can sign out from the bottom of My Day.
 3. P0. My Day. The top card follows this table. It checks the clock every 15 seconds.
 
@@ -422,7 +442,7 @@ Four tabs in a bar at the bottom, inside the safe area: My Day, Live, People, Ph
 
    Below the card: the three blocks with a star per session (one per block, tapping another moves it), One to Ones with "Book yours at the registration desk", the full agenda folded. An automatic pick shows a small "Picked for you" tag until the person keeps or changes it. If the import carried assigned rooms, that session is starred already and labeled "Your seat".
 4. P0. Live tab. The current poll, exactly as today, with the answer field or the choices first. Numbers of the day from `n`.
-5. P1. Reactions on the Live tab and as a floating pad on My Day while `rx.on`: three large round buttons with the drawn shapes. Each tap animates on the phone at once. Taps are batched and sent every 1.2 seconds.
+5. P1. Reactions on the Live tab and as a floating pad on My Day while `rx.on`: three large round buttons with the drawn shapes. Each tap animates on the phone at once. Taps are batched and sent every 3 seconds at most, with the daily cap from section 5.12.
 6. P1. Takeaways. In the window: the session (starred, or a short picker, or "I was not in a session"), five flowers to tap for the rating, one optional line "One thing you are taking away", a switch "Show my first name", Send. Afterward the card shows "Thank you" and whether the line is on the wall or waiting.
 7. P1. People tab. Top: my card. For a verified person the form opens filled in from registration (name, company, role from job title, LinkedIn) with suggested tags from topics (mapping in section 10, the person confirms). Consent line: "Show my card and my connections on the big screen and to other attendees today." Once on the board: my 3 digit code, large, with a QR of `<site>/?m=<code>`, and "Your 3 people to meet". Ranking: 2 points for each tag they offer that I look for, 2 for each tag they look for that I offer, 1 for each shared "looking for" tag; ties go to people with fewer connections, then to a stable hash of the two ids. Each suggestion shows one reason line, for example "Can help you with Funding". "We met" opens a field for the other person's code; opening the page with `?m=` does the same without typing. Progress shows as a flower with three petals. Then: My Connections with LinkedIn buttons, then everyone, with the tag filter that exists today.
 8. P0. Photos tab. Today's upload, plus one line: "Make sure the people in your photo are happy to be on the big screen." P1: a grid of approved photos below, tap to open.
@@ -505,7 +525,7 @@ Send him: both variants of each, at 390x844 for the phone and 3840x1920 for the 
 The Netlify store is shared by every deploy of the site, so tests on the live address write live data. Run them before real data exists, then wipe.
 
 1. `curl -sI` on state twice: CDN hit on the second.
-2. `npm run load -- --base https://mentorship-day-live.netlify.app --allow-remote`: p95 for state under 800 ms, no 5xx.
+2. `npm run load -- --base https://mentorship-day-live.netlify.app --allow-remote`, for 2 minutes only because every call counts against the monthly limit: p95 for state under 800 ms, no 5xx, and the cache hit rate printed.
 3. Zaid's phone on mobile data: sign in as a sample person, star, answer, react, upload a photo.
 4. Remote on a second phone: approve, announce, rehearsal on and off.
 5. Wipe Test Data.
@@ -556,6 +576,7 @@ Never cut: the id fix, sign in, My Day, the poll schedule, the heartbeat, the pe
 
 Nothing below is invented in the build. Each stays out or stays a draft until answered.
 
+0. Hosting: the Netlify account is on the Free plan with 125,000 function calls a month, and a full day of 100 phones can pass that if the shared cache cannot be fixed (section 5.12). Decide whether to move to a paid plan for November as insurance, or to run the self hosted server as the main site. Also confirm what Netlify does when the Free limit is reached.
 1. Print: the QR address `https://mentorship-day-live.netlify.app/` is final and can go on the day card and badges now. The tracker says print by 13 November. Suggested line for the card: "Scan, find your name, confirm with the last 4 digits of your mobile number."
 2. Answered 12 November: for now everyone in the response sheet is accepted. Say if that changes before the import on Tuesday morning.
 3. Answered 12 November: free choice, with a session picked for each person by advisor, topic and time. The topic to session table in section 5.11 is my draft of that. Please approve or correct it.
