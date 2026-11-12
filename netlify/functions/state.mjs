@@ -4,7 +4,8 @@
 import { st, readCfg, readPolls, readSnap, tallyFrom, publicCfg, snapVersion, J, CDN, TAGS, VIDEOS } from "../lib/store.mjs";
 import { nowMs, rehearsalOn, phase } from "../lib/day.mjs";
 import { interestFrom } from "../lib/people.mjs";
-import { pollNow } from "../lib/rules.mjs";
+import { pollNow, rxOn } from "../lib/rules.mjs";
+import { rxLists, rxRead } from "../lib/rx.mjs";
 
 // The newest 12 hellos: hi/<t>~<pub>~<first name>. Only the first name and the time leave the server.
 function hellos(blobs) {
@@ -14,24 +15,25 @@ function hellos(blobs) {
 
 export default async () => {
   const s = st();
-  const [cfg, polls, snap, ans, stars, here, hi] = await Promise.all([readCfg(s), readPolls(s), readSnap(s), s.list({ prefix: "ans/" }), s.list({ prefix: "star/" }), s.list({ prefix: "here/" }), s.list({ prefix: "hi/" })]);
+  // One round of reads and lists, all in parallel; a second round only for reactions in the last two minutes.
+  const [cfg, polls, snap, ans, stars, here, hi, rxl] = await Promise.all([readCfg(s), readPolls(s), readSnap(s), s.list({ prefix: "ans/" }), s.list({ prefix: "star/" }), s.list({ prefix: "here/" }), s.list({ prefix: "hi/" }), rxLists(s)]);
   const t = nowMs(cfg);
+  const rx = await rxRead(s, rxl, t, rxOn(cfg, t));
   // The poll follows the schedule unless the remote holds one (plan section 5.8).
   const cur = pollNow(cfg, polls, t), p = cur && cur.p;
   const poll = p ? { id: p.id, q: p.q, type: p.type, options: p.options || [], open: cur.open, ...tallyFrom(ans.blobs, p.id, cfg.hidden), manual: cur.manual } : null;
   const links = 0; // connections, from the cx/ key names (WP2)
-  const w = Math.floor(t / 4000); // reaction window, from t
   return J({
     t, reh: rehearsalOn(cfg), phase: phase(t),
     cfg: publicCfg(cfg),
     poll,
-    rx: { on: false, b: [[w, 0, 0, 0], [w - 1, 0, 0, 0]], total: 0 },
+    rx,
     n: { here: here.blobs.length, board: snap.profiles.length, links, photos: snap.photos.length, takeaways: snap.takeaways.length, answers: ans.blobs.length },
     interest: interestFrom(stars.blobs),
     hello: cfg.flags.hello ? hellos(hi.blobs) : [],
     snapV: snapVersion(snap, links),
     tags: TAGS, videos: VIDEOS
-  }, 200, CDN(2));
+  }, 200, CDN(rx.on ? 1 : 2));
 };
 
 export const config = { path: "/api/state", method: ["GET"] };

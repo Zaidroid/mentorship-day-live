@@ -228,6 +228,11 @@ async function act(s, b) {
     const snap = await rebuild(s);
     return { note: "Repaired the lists", extra: { photos: snap.photos.length, profiles: snap.profiles.length } };
   }
+  if (a === "rx") {
+    if (!["auto", "on", "off"].includes(b.mode)) throw new Refuse(400, "Say auto, on or off.");
+    await updateCfg(s, c => { c.rx = b.mode; });
+    return { auto: "Reactions follow the clock", on: "Turned reactions on", off: "Turned reactions off" }[b.mode];
+  }
   if (a === "peopleImport") {
     // Rows come reduced from the remote (WP6): no email, no full number. last4 is turned into k4 here and dropped.
     if (!Array.isArray(b.people)) throw new Refuse(400, "Send the people as a list.");

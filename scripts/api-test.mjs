@@ -1095,6 +1095,106 @@ describe("cards, here and hello", () => {
   });
 });
 
+/* ---------- reactions (plan sections 5.6 and 5.12) ---------- */
+describe("reactions", () => {
+  let P;
+  const react = (dev, c) => call(P.base, "POST", "/api/react", { body: { c }, headers: { "x-dev": dev } });
+  const rx = async () => (await call(P.base, "GET", "/api/rx")).json;
+  before(async () => { P = await startServer(); await openDirect(P.dir); });
+  after(async () => { await P.stop(); await openDirect(S.dir); });
+
+  test("reactions follow the clock windows, unless the remote says on or off", async () => {
+    assert.equal((await react(newDev(), { clap: 1 })).status, 409, "off before the day");
+    await op(P.base, { action: "rehearsal", hhmm: "10:05" });
+    assert.equal((await state(P.base)).json.rx.on, true);
+    await op(P.base, { action: "rx", mode: "off" });
+    assert.equal((await state(P.base)).json.rx.on, false);
+    const no = await react(newDev(), { clap: 1 });
+    assert.equal(no.status, 409); assert.equal(no.json.error, "Reactions are closed right now.");
+    await op(P.base, { action: "rx", mode: "auto" });
+    await op(P.base, { action: "rehearsal", hhmm: "10:45" });
+    assert.equal((await state(P.base)).json.rx.on, false);
+    await op(P.base, { action: "rehearsal", hhmm: "14:30" });
+    assert.equal((await rx()).on, true);
+    await op(P.base, { action: "rehearsal", hhmm: null });
+    await op(P.base, { action: "rx", mode: "on" });
+    assert.equal((await state(P.base)).json.rx.on, true, "on from the remote works on any day");
+    for (const mode of ["yes", undefined, "ON"]) assert.equal((await op(P.base, { action: "rx", mode })).status, 400);
+    assert.ok((await opGet(P.base)).json.log.some(l => l.what === "Turned reactions on"));
+  });
+
+  test("a batch shows in the current window and the total, the same in state and in /api/rx", async () => {
+    const d = newDev();
+    const t0 = (await rx()).total;
+    const r = await react(d, { clap: 3, heart: 99, bloom: -4, other: 5 });
+    assert.equal(r.status, 204, r.text);
+    const st = (await state(P.base)).json, x = await rx();
+    assert.equal(st.rx.total, t0 + 33, "heart is capped at 30, a negative count is 0");
+    assert.deepEqual(Object.keys(x).sort(), ["b", "on", "t", "total"]);
+    assert.equal(x.total, st.rx.total); assert.equal(x.on, true);
+    const both = st.rx.b[0].slice(1).map((v, i) => v + st.rx.b[1][i + 1]);
+    assert.deepEqual(both, [3, 30, 0]);
+    assert.equal(st.rx.b[0][0], Math.floor(st.t / 4000));
+    const s = await openDirect(P.dir);
+    const keys = (await s.list({ prefix: "rx/" })).blobs.map(b => b.key);
+    assert.ok(keys.some(k => k.includes(d)), "the device id stays in the key name, on the server");
+  });
+
+  test("one batch per phone per 3 seconds, 150 per phone, 400 per window from everyone", async () => {
+    const d = newDev();
+    assert.equal((await react(d, { bloom: 1 })).status, 204);
+    const fast = await react(d, { bloom: 1 });
+    assert.equal(fast.status, 429); assert.equal(fast.json.error, "One moment, then send again.");
+    await sleep(2600);
+    assert.equal((await react(d, { bloom: 1 })).status, 204);
+    const s = await openDirect(P.dir);
+    const tired = newDev();
+    await s.setJSON(`rxd/${tired}`, { at: 0, n: 150 });
+    assert.equal((await react(tired, { clap: 1 })).json.error, "That is all the reactions for today. Thank you!");
+    const { winOf, minOf } = lib.rx || (lib.rx = await import("../netlify/lib/rx.mjs"));
+    const w = winOf((await rx()).t);
+    for (const ww of [w, w + 1]) await Promise.all(Array.from({ length: 400 }, (_, i) => s.set(`rx/${minOf(ww)}/${ww}/flood${i}~1~0~0~aa`, "")));
+    const full = await react(newDev(), { clap: 1 });
+    assert.equal(full.status, 429); assert.equal(full.json.error, "Too many reactions at once. Try again in a moment.");
+    for (const ww of [w, w + 1]) { const { blobs } = await s.list({ prefix: `rx/${minOf(ww)}/${ww}/flood` }); await Promise.all(blobs.map(b => s.delete(b.key))); }
+  });
+
+  test("refusals", async () => {
+    const d = newDev();
+    assert.equal((await react(d, {})).json.error, "Nothing to send.");
+    assert.equal((await react(d, { clap: 0, heart: "x" })).status, 400);
+    assert.equal((await call(P.base, "POST", "/api/react", { body: { c: [1, 2] }, headers: { "x-dev": d } })).status, 400);
+    assert.equal((await call(P.base, "POST", "/api/react", { body: { c: { clap: 1 } } })).status, 400, "x-dev is required");
+    assert.equal((await call(P.base, "POST", "/api/react", { body: { c: { clap: 1 }, pad: "x".repeat(300) }, headers: { "x-dev": d } })).status, 413);
+    assert.equal((await call(P.base, "GET", "/api/react")).status, 405);
+    assert.equal((await call(P.base, "POST", "/api/rx", { body: {} })).status, 405);
+  });
+
+  test("closed minutes are summed once, so the total stays and costs a few lists", async () => {
+    const s = await openDirect(P.dir), { minOf } = lib.rx;
+    const x0 = await rx(), m = minOf(Math.floor(x0.t / 4000));
+    // batches in a minute long past, and in a minute ahead (left by a rehearsal that stopped)
+    for (const [mm, i] of [[m - 30, 0], [m - 30, 1], [m + 500, 2]]) await s.set(`rx/${mm}/${mm * 15 + 3}/old${i}~2~1~1~bb`, "");
+    const results = await Promise.all(Array.from({ length: 5 }, () => rx()));
+    for (const r of results) assert.equal(r.total, x0.total + 12, "every reader sees the same total");
+    const sums = (await s.list({ prefix: "rxm/" })).blobs.map(b => b.key);
+    assert.deepEqual(sums.filter(k => k.startsWith(`rxm/${m - 30}~`)), [`rxm/${m - 30}~4~2~2`], "summed once, under one name");
+    assert.ok(sums.includes(`rxm/${m + 500}~2~1~1`));
+    // the summed batches can even go; the sum keeps the total
+    for (const k of (await s.list({ prefix: `rx/${m - 30}/` })).blobs) await s.delete(k.key);
+    assert.equal((await rx()).total, x0.total + 12);
+  });
+
+  test("on Netlify state is cached 1 second while reactions are on, 2 when off; /api/rx 1 second", async () => {
+    await openDirect(P.dir);
+    const stateFn = (await import("../netlify/functions/state.mjs")).default, rxFn = (await import("../netlify/functions/rx.mjs")).default;
+    assert.match((await stateFn(new Request("http://localhost/api/state"))).headers.get("netlify-cdn-cache-control"), /maxage=1\b/);
+    assert.match((await rxFn(new Request("http://localhost/api/rx"))).headers.get("netlify-cdn-cache-control"), /maxage=1\b/);
+    await op(P.base, { action: "rx", mode: "off" });
+    assert.match((await stateFn(new Request("http://localhost/api/state"))).headers.get("netlify-cdn-cache-control"), /maxage=2\b/);
+  });
+});
+
 /* ---------- stars, interest and Picked for You (plan section 5.11) ---------- */
 describe("stars and picks", () => {
   let P, s, n = 0;
