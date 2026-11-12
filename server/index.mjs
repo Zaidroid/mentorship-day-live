@@ -26,6 +26,15 @@ const edge = `http://127.0.0.1:${bport}`;
 process.env.NETLIFY_BLOBS_CONTEXT = Buffer.from(JSON.stringify({ edgeURL: edge, uncachedEdgeURL: edge, siteID: "self-hosted", token })).toString("base64");
 globalThis.Netlify = { env: { get: k => process.env[k] } };
 
+// Tests only: MD_TEST_FAKE_NOW pretends the real time is this instant, and lets it run on from there.
+// It exists so scripts/api-test.mjs can test the event day guards on any day. Never set it for real use.
+if (process.env.MD_TEST_FAKE_NOW) {
+  const off = Date.parse(process.env.MD_TEST_FAKE_NOW) - Date.now();
+  if (Number.isNaN(off)) throw new Error("MD_TEST_FAKE_NOW is not a date.");
+  globalThis.__mdTestClock = () => Date.now() + off;
+  console.warn(`Test clock: the server pretends the real time is ${process.env.MD_TEST_FAKE_NOW}.`);
+}
+
 // Load every function and its route from its exported config.
 const fnDir = path.join(root, "netlify/functions");
 const routes = [];
@@ -77,7 +86,7 @@ http.createServer(async (req, res) => {
     const body = ["GET", "HEAD"].includes(req.method) ? undefined : Buffer.concat(chunks);
     try {
       const out = await r.handler(new Request(url, { method: req.method, headers: req.headers, body }), { params: m.groups || {} });
-      const headers = Object.fromEntries(out.headers); delete headers["netlify-cdn-cache-control"];
+      const headers = Object.fromEntries(out.headers); delete headers["netlify-cdn-cache-control"]; delete headers["netlify-vary"];
       res.writeHead(out.status, headers);
       res.end(Buffer.from(await out.arrayBuffer()));
     } catch (e) { console.error(e); res.writeHead(500); res.end("Server error"); }

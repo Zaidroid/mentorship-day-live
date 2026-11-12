@@ -1,6 +1,7 @@
 // Operator remote API. Every call needs the team PIN. Every change is logged with who made it.
-import { st, update, readCfg, updateCfg, mergeCfg, readPolls, updatePolls, readSnap, updateSnap, putItem, dropItem, photoItem, profileItem, tally, log, readLog, pinOk, whoOf, idOk, clean, J, Refuse, VIDEOS } from "../lib/store.mjs";
+import { st, update, readCfg, updateCfg, mergeCfg, readPolls, updatePolls, readSnap, updateSnap, putItem, dropItem, photoItem, profileItem, tally, log, readLog, pinOk, whoOf, idOk, clean, J, Refuse, VIDEOS, FLAGS, rebuild, wipeAll, readBeat } from "../lib/store.mjs";
 import { pubOk } from "../lib/ids.mjs";
+import { nowMs, realNow, rehearsalOn, rehearsalFor, isEventDay, localMin } from "../lib/day.mjs";
 
 const MODES = ["auto", "welcome", "opening", "video", "choose", "live", "lunch", "close"];
 const SCENES = ["rooms", "choose", "board", "spotlight", "advisors", "meet", "photos", "poll", "pulse", "way", "welcome", "speaker", "recap", "thanks"];
@@ -24,24 +25,25 @@ export default async (req) => {
   const s = st(), who = whoOf(req);
 
   if (req.method === "GET") {
-    const [cfg, polls, snap, photos, profiles, logl] = await Promise.all([readCfg(s), readPolls(s), readSnap(s), pendingPhotos(s), pendingProfiles(s), readLog(s)]);
+    const [cfg, polls, snap, photos, profiles, logl, screen] = await Promise.all([readCfg(s), readPolls(s), readSnap(s), pendingPhotos(s), pendingProfiles(s), readLog(s), readBeat(s)]);
     const p = cfg.poll && polls.find(x => x.id === cfg.poll.id);
-    const poll = p ? { ...p, open: !!cfg.poll.open, ...(await tally(s, p.id, [])) } : null;
-    return J({ cfg, polls, poll, snap, pending: { photos, profiles }, log: logl, videos: VIDEOS, t: Date.now() });
+    const poll = p ? { ...p, open: !!cfg.poll.open, ...(await tally(s, p.id, [])), manual: true } : null;
+    return J({ cfg, polls, poll, snap, pending: { photos, profiles }, log: logl, videos: VIDEOS, t: nowMs(cfg), reh: rehearsalOn(cfg), screen });
   }
 
   let b; try { b = await req.json(); } catch { return J({ error: "Bad request." }, 400); }
   try {
-    const note = await act(s, b);
+    const r = await act(s, b);
+    const { note, extra } = typeof r === "string" ? { note: r, extra: {} } : r;
     await log(s, who, note);
-    return J({ ok: true });
+    return J({ ok: true, ...extra });
   } catch (e) {
     if (e instanceof Refuse) return J({ error: e.message }, e.status);
     throw e;
   }
 };
 
-// One operator action. Returns the line for the log, or throws a Refuse.
+// One operator action. Returns the line for the log (or { note, extra } to add to the answer), or throws a Refuse.
 // Shared JSON (cfg, polls, snap) changes only through updateCfg, updatePolls and updateSnap.
 async function act(s, b) {
   const a = b.action;
@@ -62,7 +64,7 @@ async function act(s, b) {
   if (a === "video") {
     const v = b.id === null ? null : VIDEOS.find(x => x.id === b.id);
     if (b.id !== null && !v) throw new Refuse(400, "Unknown video.");
-    await updateCfg(s, c => { c.video = { id: v ? v.id : null, at: Date.now() }; });
+    await updateCfg(s, c => { c.video = { id: v ? v.id : null, at: nowMs(c) }; });
     return v ? `Played the ${v.title} video` : "Stopped the video";
   }
   if (a === "theme") {
@@ -77,7 +79,7 @@ async function act(s, b) {
   }
   if (a === "ann") {
     const text = clean(b.text, 140);
-    await updateCfg(s, c => { c.ann = text ? { text, at: Date.now(), secs: Math.max(8, Math.min(120, parseInt(b.secs) || 20)) } : null; });
+    await updateCfg(s, c => { c.ann = text ? { text, at: nowMs(c), secs: Math.max(8, Math.min(120, parseInt(b.secs) || 20)) } : null; });
     return text ? `Announced: ${text}` : "Cleared the announcement";
   }
   if (a === "way") {
@@ -153,8 +155,38 @@ async function act(s, b) {
     return `${a === "hideWord" ? "Hid" : "Restored"} the word ${w}`;
   }
   if (a === "reset") {
-    await updateCfg(s, c => ({ ...mergeCfg(null), poll: c.poll, way: c.way, hidden: c.hidden }));
+    // Screen controls go back to automatic. Polls, directions, hidden words, switches and a rehearsal stay.
+    await updateCfg(s, c => ({ ...mergeCfg(null), poll: c.poll, way: c.way, hidden: c.hidden, flags: c.flags, rehearsal: c.rehearsal, reloadAt: c.reloadAt }));
     return "Reset the screen controls";
+  }
+  if (a === "rehearsal") {
+    if (b.hhmm === null) { await updateCfg(s, c => { c.rehearsal = null; }); return "Stopped the rehearsal"; }
+    if (typeof b.hhmm !== "string" || !/^([01]\d|2[0-3]):[0-5]\d$/.test(b.hhmm)) throw new Refuse(400, "Give the rehearsal time as HH:MM.");
+    const real = realNow();
+    if (isEventDay(real)) throw new Refuse(409, "A rehearsal cannot start on the day of the event.");
+    await updateCfg(s, c => { c.rehearsal = rehearsalFor(b.hhmm, real); });
+    return `Started a rehearsal at ${b.hhmm}`;
+  }
+  if (a === "wipe") {
+    if (String(b.phrase || "").trim() !== "RESET MD26") throw new Refuse(400, "Type RESET MD26 to wipe the test data.");
+    const real = realNow(), m = localMin(real);
+    if (isEventDay(real) && m >= 8 * 60 && m < 16 * 60) throw new Refuse(409, "Wiping is blocked between 08:00 and 16:00 on the day of the event.");
+    const n = await wipeAll(s);
+    return { note: "Wiped the test data", extra: { deleted: n } };
+  }
+  if (a === "reload") {
+    await updateCfg(s, c => { c.reloadAt = Math.max(Date.now(), (c.reloadAt || 0) + 1); });
+    return "Asked the wall to reload";
+  }
+  if (a === "flags") {
+    if (typeof b.name !== "string" || !Object.hasOwn(FLAGS, b.name)) throw new Refuse(400, "Unknown switch.");
+    if (typeof b.on !== "boolean") throw new Refuse(400, "Say on or off.");
+    await updateCfg(s, c => { c.flags[b.name] = b.on; });
+    return `Turned ${b.name} ${b.on ? "on" : "off"}`;
+  }
+  if (a === "repair") {
+    const snap = await rebuild(s);
+    return { note: "Repaired the lists", extra: { photos: snap.photos.length, profiles: snap.profiles.length } };
   }
   throw new Refuse(400, "Unknown action.");
 }

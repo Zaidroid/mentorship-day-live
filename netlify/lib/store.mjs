@@ -1,7 +1,8 @@
 // Shared storage and helpers for the Mentorship Day live system.
 // One site wide Blobs store, strong consistency so the screen, phones and remote agree.
 import { getStore } from "@netlify/blobs";
-import { DAY } from "./day.mjs";
+import crypto from "node:crypto";
+import { DAY, realNow } from "./day.mjs";
 import { pubOk } from "./ids.mjs";
 export { devOk } from "./ids.mjs";
 
@@ -24,8 +25,8 @@ export const DEFAULT_CFG = {
   speaker: null,         // opening speaker index, or null to follow the clock
   theme: "light",
   overlay: null,         // black, logo, check, or null
-  ann: null,             // { text, at, secs }
-  video: null,           // { id, at } ; id null means stop
+  ann: null,             // { text, at, secs }, at in the time base of state.t
+  video: null,           // { id, at }, at in the time base of state.t; id null means stop
   way: null,             // { registration, rooms, oneToOnes } arrow directions
   poll: { id: "p1", open: true },
   hidden: [],            // poll words hidden by the operator. Never public
@@ -33,6 +34,7 @@ export const DEFAULT_CFG = {
   photoAt: null,         // group photo countdown (WP2)
   finale: null,          // lunch finale step (WP2)
   flags: {},             // feature switches that differ from FLAGS
+  rehearsal: null,       // { shift, until, hhmm, at } while a rehearsal runs. Never public
   at: 0                  // moves forward on every write, so clients can tell the config changed
 };
 
@@ -192,6 +194,24 @@ export function rebuild(s) {
     snap.photos = photos.filter(Boolean).sort((x, y) => y.at - x.at);
     snap.profiles = profiles.filter(Boolean).sort((x, y) => y.at - x.at);
   });
+}
+
+// Wipe Test Data: deletes everything people and the remote made, keeps the people list, the polls
+// and the This Way directions. The snapshot is rebuilt last. Returns how many keys were deleted.
+const WIPE_PREFIXES = ["who/", "dv/", "here/", "hi/", "fail/", "star/", "rx/", "rxt/", "code/", "cx/", "tk/", "fb/", "pinfail/", "ans/", "ph/", "pr/", "q/", "ok/", "byd/", "log/"];
+export async function wipeAll(s) {
+  const lists = await Promise.all(WIPE_PREFIXES.map(prefix => s.list({ prefix })));
+  const keys = lists.flatMap(l => l.blobs.map(b => b.key));
+  await mapLimit(keys.concat(["beat", "snap"]), 20, k => s.delete(k));
+  await updateCfg(s, c => ({ ...mergeCfg(null), way: c.way }));
+  await rebuild(s);
+  return keys.length;
+}
+
+// The last heartbeat of the wall, with its age in seconds.
+export async function readBeat(s) {
+  const b = await s.get("beat", { type: "json" });
+  return b ? { ...b, age: Math.max(0, Math.round((realNow() - b.rt) / 1000)) } : null;
 }
 
 export async function log(s, who, what) {

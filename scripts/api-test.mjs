@@ -279,7 +279,7 @@ describe("state", () => {
     assert.ok(d.poll.words.some(([w]) => w === "clarity"));
     assert.deepEqual(d.cfg.flags, { trustProfiles: true, trustTakeaways: true, trustPhotos: false });
     assert.equal(d.reh, false); assert.equal(d.phase, "before");
-    assert.ok(Math.abs(d.t - Date.now()) < 60 * 1000, "t is the server time");
+    assert.ok(Math.abs(d.t - Date.parse(BEFORE_DAY)) < 10 * 60 * 1000, "t follows the server clock");
     assert.equal(d.rx.on, false); assert.equal(d.rx.total, 0); assert.equal(d.rx.b.length, 2);
     assert.equal(d.rx.b[0][0], Math.floor(d.t / 4000)); assert.equal(d.rx.b[1][0], d.rx.b[0][0] - 1);
     assert.deepEqual(d.rx.b.map(x => x.slice(1)), [[0, 0, 0], [0, 0, 0]]);
@@ -406,5 +406,205 @@ describe("answers", () => {
     await op(S.base, { action: "pollClose" });
     assert.equal((await ans({ pid: "p2", text: "Funding" })).status, 409);
     await op(S.base, { action: "pollActivate", pid: "p1" });
+  });
+});
+
+/* ---------- clock, phase and rehearsal ---------- */
+describe("clock", () => {
+  test("venue time and phase come from Asia/Hebron, with the right offset in winter and summer", async () => {
+    await openDirect(S.dir);
+    const { localDate, localMin, localToMs, phase, fmtMin } = lib.day;
+    const at = iso => Date.parse(iso);
+    assert.equal(localToMs("2026-11-17", "10:55"), at("2026-11-17T08:55:00Z"));
+    assert.equal(localToMs("2026-07-01", "12:00"), at("2026-07-01T09:00:00Z"));
+    assert.equal(localDate(at("2026-11-16T22:00:00Z")), "2026-11-17");
+    assert.equal(fmtMin(localMin(at("2026-11-17T07:30:00Z"))), "09:30");
+    assert.equal(phase(at("2026-11-16T12:00:00Z")), "before");
+    assert.equal(phase(at("2026-11-17T06:59:59Z")), "before");
+    assert.equal(phase(at("2026-11-17T07:00:00Z")), "day");
+    assert.equal(phase(at("2026-11-17T12:59:59Z")), "day");
+    assert.equal(phase(at("2026-11-17T13:00:00Z")), "after");
+    assert.equal(phase(at("2026-11-18T08:00:00Z")), "after");
+  });
+
+  test("a rehearsal counts only until it ends, and never on the real event day", async () => {
+    await openDirect(S.dir);
+    const { nowMs, rehearsalOn, rehearsalFor, localDate } = lib.day;
+    const real = Date.parse("2026-11-13T10:00:00Z");
+    globalThis.__mdTestClock = () => real;
+    try {
+      const cfg = { rehearsal: rehearsalFor("09:40", real) };
+      assert.ok(rehearsalOn(cfg)); assert.equal(nowMs(cfg), Date.parse("2026-11-17T07:40:00Z"));
+      cfg.rehearsal.until = real - 1;
+      assert.ok(!rehearsalOn(cfg)); assert.equal(nowMs(cfg), real);
+      const onDay = Date.parse("2026-11-17T06:00:00Z");
+      const c2 = { rehearsal: rehearsalFor("12:00", onDay - 3600e3) };
+      globalThis.__mdTestClock = () => onDay;
+      assert.equal(localDate(onDay), "2026-11-17"); assert.ok(!rehearsalOn(c2)); assert.equal(nowMs(c2), onDay);
+    } finally { delete globalThis.__mdTestClock; }
+  });
+
+  test("op rehearsal moves t, phase and reh for everyone, and stops", async () => {
+    await openDirect(S.dir);
+    const { localDate, localMin } = lib.day;
+    assert.equal((await op(S.base, { action: "rehearsal", hhmm: "10:55" })).status, 200);
+    let d = (await state(S.base)).json;
+    assert.equal(d.reh, true); assert.equal(d.phase, "day");
+    assert.equal(localDate(d.t), "2026-11-17");
+    assert.ok(Math.abs(localMin(d.t) - (10 * 60 + 55)) < 1, "the clock reads 10:55 on the day");
+    assert.ok(!JSON.stringify(d.cfg).includes("shift"));
+    const g = await opGet(S.base);
+    assert.equal(g.json.reh, true); assert.equal(g.json.cfg.rehearsal.hhmm, "10:55");
+    // announcements and videos carry times in the same clock as t
+    await op(S.base, { action: "ann", text: "Rehearsal check", secs: 10 });
+    await op(S.base, { action: "video", id: "tareq" });
+    d = (await state(S.base)).json;
+    assert.ok(Math.abs(d.cfg.ann.at - d.t) < 5000 && Math.abs(d.cfg.video.at - d.t) < 5000);
+    await op(S.base, { action: "ann", text: "" }); await op(S.base, { action: "video", id: null });
+    // Reset screen controls keeps the rehearsal
+    await op(S.base, { action: "reset" });
+    assert.equal((await state(S.base)).json.reh, true);
+    assert.equal((await op(S.base, { action: "rehearsal", hhmm: null })).status, 200);
+    d = (await state(S.base)).json;
+    assert.equal(d.reh, false); assert.equal(d.phase, "before");
+    assert.ok(Math.abs(d.t - Date.parse(BEFORE_DAY)) < 10 * 60 * 1000);
+    for (const hhmm of ["25:00", "1055", "10:5", undefined, 1055]) assert.equal((await op(S.base, { action: "rehearsal", hhmm })).status, 400, String(hhmm));
+  });
+});
+
+/* ---------- the event day guards, on servers with their own clock ---------- */
+describe("event day guards", () => {
+  test("07:30 on the day: no rehearsal, a stored one is ignored, wipe still allowed", async () => {
+    const E = await startServer("2026-11-17T07:30:00+02:00");
+    const r = await op(E.base, { action: "rehearsal", hhmm: "10:00" });
+    assert.equal(r.status, 409); assert.equal(r.json.error, "A rehearsal cannot start on the day of the event.");
+    const s = await openDirect(E.dir);
+    await s.setJSON("cfg", { rehearsal: { shift: 3 * 3600e3, until: Date.now() + 3600e3, hhmm: "10:30", at: Date.now() } });
+    const d = (await state(E.base)).json;
+    assert.equal(d.reh, false); assert.equal(d.phase, "before");
+    assert.ok(Math.abs(d.t - Date.parse("2026-11-17T07:30:00+02:00")) < 5 * 60 * 1000);
+    assert.equal((await op(E.base, { action: "wipe", phrase: "RESET MD26" })).status, 200);
+    await E.stop();
+  });
+
+  test("10:00 on the day: wipe is refused", async () => {
+    const E = await startServer("2026-11-17T10:00:00+02:00");
+    const r = await op(E.base, { action: "wipe", phrase: "RESET MD26" });
+    assert.equal(r.status, 409); assert.equal(r.json.error, "Wiping is blocked between 08:00 and 16:00 on the day of the event.");
+    assert.equal((await state(E.base)).json.phase, "day");
+    await E.stop();
+  });
+
+  test("16:00 on the day: wipe is allowed again, and the phase is after", async () => {
+    const E = await startServer("2026-11-17T16:00:00+02:00");
+    assert.equal((await op(E.base, { action: "wipe", phrase: "RESET MD26" })).status, 200);
+    assert.equal((await state(E.base)).json.phase, "after");
+    await E.stop();
+    await openDirect(S.dir);
+  });
+});
+
+/* ---------- reload, flags, repair, beat ---------- */
+describe("operator tools", () => {
+  test("reload grows reloadAt every time", async () => {
+    const r0 = (await state(S.base)).json.cfg.reloadAt;
+    await op(S.base, { action: "reload" });
+    const r1 = (await state(S.base)).json.cfg.reloadAt;
+    await op(S.base, { action: "reload" });
+    const r2 = (await state(S.base)).json.cfg.reloadAt;
+    assert.ok(r1 > r0 && r2 > r1);
+    await op(S.base, { action: "reset" });
+    assert.equal((await state(S.base)).json.cfg.reloadAt, r2, "Reset screen controls never makes the wall reload");
+  });
+
+  test("flags switch only known features, with a real on or off", async () => {
+    assert.equal((await op(S.base, { action: "flags", name: "trustPhotos", on: true })).status, 200);
+    assert.equal((await state(S.base)).json.cfg.flags.trustPhotos, true);
+    await op(S.base, { action: "reset" });
+    assert.equal((await state(S.base)).json.cfg.flags.trustPhotos, true, "switches survive Reset screen controls");
+    assert.equal((await op(S.base, { action: "flags", name: "trustPhotos", on: false })).status, 200);
+    assert.equal((await state(S.base)).json.cfg.flags.trustPhotos, false);
+    assert.equal((await op(S.base, { action: "flags", name: "everything", on: true })).status, 400);
+    assert.equal((await op(S.base, { action: "flags", name: "__proto__", on: true })).status, 400);
+    assert.equal((await op(S.base, { action: "flags", name: "trustPhotos", on: "yes" })).status, 400);
+  });
+
+  test("repair rebuilds the snapshot from the approval markers", async () => {
+    const d = newDev();
+    const ph = await upload(S.base, d, { caption: "Networking at lunch" });
+    await op(S.base, { action: "approvePhoto", id: ph.json.id });
+    const before = await snapOf(S.base);
+    const s = await openDirect(S.dir);
+    // drift: the snapshot lost a photo and gained a card with a device id as its id
+    await s.setJSON("snap", { at: before.at, photos: [], profiles: [{ id: d, name: "Ghost" }], takeaways: [] });
+    await s.set("ok/pr/" + d, "");
+    await s.setJSON("pr/" + d, { name: "Ghost", at: 1 });
+    const r = await op(S.base, { action: "repair" });
+    assert.equal(r.status, 200);
+    assert.equal(r.json.photos, before.photos.length); assert.equal(r.json.profiles, before.profiles.length);
+    const after = await snapOf(S.base);
+    assert.deepEqual(after.photos.map(p => p.id), before.photos.map(p => p.id));
+    assert.deepEqual(after.profiles.map(p => p.id), before.profiles.map(p => p.id));
+    assert.ok(after.at > before.at);
+    await s.delete("ok/pr/" + d); await s.delete("pr/" + d);
+  });
+
+  test("the wall heartbeat is stored, cleaned, and shown to the remote", async () => {
+    const beat = { w: 3840, h: 1920, dpr: 1, layout: "wide", mode: "live", scenes: ["rooms", "photos", "poll"], lite: false, fps: 59.7, err: "", at: Date.now() };
+    const r = await call(S.base, "POST", "/api/beat", { body: beat });
+    assert.equal(r.status, 204);
+    let g = (await opGet(S.base)).json.screen;
+    assert.equal(g.w, 3840); assert.deepEqual(g.scenes, ["rooms", "photos", "poll"]); assert.equal(g.fps, 59.7);
+    assert.ok(g.age >= 0 && g.age < 5);
+    await call(S.base, "POST", "/api/beat", { body: { w: "<b>", err: "x".repeat(500), layout: "<script>", scenes: "rooms,poll" } });
+    g = (await opGet(S.base)).json.screen;
+    assert.equal(g.w, null); assert.equal(g.err.length, 300); assert.ok(!g.layout.includes("<")); assert.equal(g.scenes, "rooms,poll");
+    assert.equal((await call(S.base, "POST", "/api/beat", { body: { err: "y".repeat(1100) } })).status, 413);
+    assert.equal((await call(S.base, "POST", "/api/beat", { body: "{nope", raw: true })).status, 400);
+    assert.equal((await call(S.base, "POST", "/api/beat", { body: [1, 2] })).status, 400);
+    assert.equal((await call(S.base, "GET", "/api/beat")).status, 405);
+  });
+});
+
+/* ---------- wipe, on its own server with data ---------- */
+describe("wipe", () => {
+  test("deletes what people and the team made, keeps people, polls and directions", async () => {
+    const W = await startServer();
+    const d = newDev();
+    await call(W.base, "POST", "/api/answer", { body: { pid: "p1", text: "growth", dev: d } });
+    const ph = await upload(W.base, d); await op(W.base, { action: "approvePhoto", id: ph.json.id });
+    const pr = await call(W.base, "POST", "/api/profile", { body: { name: "Yousef Amin", company: "CloudBridge", role: "CTO", looking: ["Hiring"], offer: ["Mentoring"], consent: true }, headers: { "x-dev": d } });
+    await op(W.base, { action: "approveProfile", id: pr.json.id });
+    await op(W.base, { action: "way", way: { registration: "left", rooms: "up right" } });
+    await op(W.base, { action: "pollAdd", q: "What did you learn today?", type: "words" });
+    await op(W.base, { action: "mode", mode: "lunch" });
+    await op(W.base, { action: "hideWord", word: "growth" });
+    await op(W.base, { action: "flags", name: "trustPhotos", on: true });
+    await op(W.base, { action: "rehearsal", hhmm: "11:00" });
+    await opGet(W.base, "wrong");
+    await call(W.base, "POST", "/api/beat", { body: { w: 1920, h: 1080 } });
+    const s = await openDirect(W.dir);
+    await s.setJSON("people", [{ id: "0123456789", name: "Sample Person" }]);
+    for (const k of ["who/" + d, "dv/g0123456789/" + d, "here/g0123456789", "hi/1~g0123456789~Layla", "fail/0123456789/" + d + "~1", "star/1/g0123456789/1A~own", "rx/1/" + d + "~1~0~0~ab", "rxt/1/1~ab", "code/123", "cx/ga~gb~1", "tk/1A/g0123456789", "fb/g0123456789"]) await s.set(k, "x");
+    assert.equal((await op(W.base, { action: "wipe", phrase: "reset md26" })).status, 400);
+    assert.equal((await op(W.base, { action: "wipe" })).status, 400);
+    const r = await op(W.base, { action: "wipe", phrase: "RESET MD26" });
+    assert.equal(r.status, 200, r.text); assert.ok(r.json.deleted >= 20, String(r.json.deleted));
+    const keys = (await s.list()).blobs.map(b => b.key);
+    assert.deepEqual(keys.filter(k => !k.startsWith("log/")).sort(), ["cfg", "people", "polls", "snap"]);
+    const g = (await opGet(W.base)).json;
+    assert.deepEqual(g.log.map(l => l.what), ["Wiped the test data"]);
+    assert.deepEqual(g.cfg.way, { registration: "left", rooms: "up right" });
+    assert.equal(g.cfg.mode, "auto"); assert.deepEqual(g.cfg.hidden, []); assert.equal(g.cfg.rehearsal, null);
+    assert.deepEqual(g.cfg.flags, { trustProfiles: true, trustTakeaways: true, trustPhotos: false });
+    assert.ok(g.polls.some(x => x.q === "What did you learn today?"));
+    assert.equal(g.screen, null); assert.deepEqual(g.pending, { photos: [], profiles: [] });
+    assert.equal((await s.get("people", { type: "json" }))[0].name, "Sample Person");
+    const st = (await state(W.base)).json;
+    assert.deepEqual([st.n.answers, st.n.photos, st.n.board, st.reh], [0, 0, 0, false]);
+    const sn = await call(W.base, "GET", "/api/snap?v=" + st.snapV);
+    assert.deepEqual([sn.json.photos, sn.json.profiles, sn.json.takeaways], [[], [], []]);
+    await W.stop();
+    await openDirect(S.dir);
   });
 });
