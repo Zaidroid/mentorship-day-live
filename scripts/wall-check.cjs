@@ -296,6 +296,129 @@ check('motion-cloud-and-moment', async () => {
   return [!bad.length && words > 0 && kept.stillNew === kept.words && lines > 0 && panel > 0, `cloud words rising: ${words}, 2.5 s later the same words are still the ones that rose (${kept.stillNew} of ${kept.words}, no repaint cut them); moment panel comes forward: ${panel > 0}; moment lines rising: ${lines}; faults: ${bad.join('; ') || 'none'}`];
 });
 
+/* ---------- Task 4: the director ---------- */
+
+// A wall page that sees no data at all: empty state and snap, no sheet. The schedule still comes from day.js.
+const EMPTY_STATE = () => ({ t: Date.now(), reh: false, phase: 'day', cfg: { mode: 'auto', pin: null, speaker: null, theme: 'light', overlay: null, ann: null, video: null, way: null, reloadAt: 0, photoAt: null, finale: null, links: null, flags: {}, at: 1 }, poll: null, rx: { on: false, b: [], total: 0 }, n: { here: 0, board: 0, links: 0, photos: 0, takeaways: 0, answers: 0 }, interest: {}, hello: [], snapV: '0.0', tags: [], videos: [] });
+async function emptyWall(url, size) {
+  const [width, height] = size.split('x').map(Number);
+  const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 1 });
+  await ctx.route('**/api/state', r => r.fulfill({ contentType: 'application/json', body: JSON.stringify(EMPTY_STATE()) }));
+  await ctx.route('**/api/snap**', r => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ at: 0, v: '0.0', photos: [], profiles: [], links: [], takeaways: [] }) }));
+  await ctx.route('**/api/sheet/**', r => r.fulfill({ status: 503, body: 'no sheet in this check' }));
+  await ctx.route('**/api/beat', r => r.fulfill({ status: 204, body: '' }));
+  const p = await ctx.newPage(); const errs = [];
+  p.on('pageerror', e => errs.push('pageerror: ' + e.message));
+  await p.goto(BASE + url);
+  await p.waitForFunction(() => window.__md && window.__md.slotState.length > 0, null, { timeout: 15000 });
+  return { p, ctx, errs, close: () => ctx.close().catch(() => {}) };
+}
+// Turns every rotating slot n times (the N key) and records what each slot showed and whether it had content.
+async function turns(p, n) {
+  const seen = [];
+  for (let k = 0; k < n; k++) {
+    await p.keyboard.press('n'); await sleep(700);
+    seen.push(...await p.evaluate(() => window.__md.slotState.map((st, i) => {
+      const sb = st.el.querySelector('.sb'), text = sb.innerText.trim(), media = sb.querySelectorAll('img,svg').length;
+      return { slot: i, role: st.role, id: st.id, content: window.__md.content(st.id), filled: text.length > 0 || media > 0, turn: st.turn };
+    })));
+  }
+  return seen;
+}
+
+check('director-never-empty', async () => {
+  const views = [['3840x1920', '/screen/?t=09:40&quiet'], ['1920x1080', '/screen/?t=11:20&quiet'], ['3840x1080', '/screen/?t=11:20&quiet'], ['3840x1920', '/screen/?t=14:20&quiet']];
+  const out = []; let bad = [];
+  for (const [size, url] of views) for (const empty of [false, true]) {
+    const w = empty ? await emptyWall(url, size) : await wall(url, size);
+    await sleep(3500);
+    const seen = await turns(w.p, 12);
+    const log = await md(w.p, () => window.__md.DIR.log.filter(x => x.to));
+    await w.close();
+    const shown = [...new Set(seen.map(s => s.id))];
+    seen.filter(s => s.content === 'no' || !s.filled).forEach(s => bad.push(`${size} ${empty ? 'empty' : 'seed'}: slot ${s.slot} showed ${s.id} (${s.content}, filled ${s.filled})`));
+    log.filter(x => x.content === 'no' && x.why !== 'force').forEach(x => bad.push(`${size} ${empty ? 'empty' : 'seed'}: director chose ${x.to} without content`));
+    // A join prompt at most once in four turns of a slot.
+    const bySlot = {}; log.forEach(x => { (bySlot[x.slot] = bySlot[x.slot] || []).push(x); });
+    Object.values(bySlot).forEach(list => { let lastJoin = -9; list.forEach((x, i) => { if (x.content === 'join') { if (i - lastJoin < 4) bad.push(`${size} ${empty ? 'empty' : 'seed'}: join prompt ${x.to} after ${i - lastJoin} turns`); lastJoin = i; } }); });
+    out.push(`${size}${url.match(/t=[\d:]+/)[0]}${empty ? ' empty' : ''}: ${shown.join(',')}`);
+  }
+  bad = [...new Set(bad)];
+  return [!bad.length, `12 turns per view; shown: ${out.join(' | ')}; faults: ${bad.slice(0, 6).join('; ') || 'none'}`];
+});
+
+async function teamPhoto(caption) {
+  const fs = require('fs'), path = require('path');
+  const r = await fetch(BASE + '/api/photo', { method: 'POST', headers: { 'content-type': 'image/jpeg', 'x-pin': PIN, 'x-who': 'Wall check', 'x-name': 'Wall%20Check', 'x-caption': encodeURIComponent(caption) }, body: fs.readFileSync(path.join(__dirname, 'sample.jpg')) });
+  return r.status;
+}
+async function waitFor(p, fn, ms, arg) { const end = Date.now() + ms; while (Date.now() < end) { const v = await p.evaluate(fn, arg).catch(() => null); if (v) return v; await sleep(200); } return null; }
+
+check('director-bump-waits', async () => {
+  // Two slots at 3840x1920: the secondary rotates Networking Board, Photo Wall, Live Poll and more.
+  const w = await wall('/screen/?t=11:20&quiet', '3840x1920');
+  await sleep(4000);
+  const sec = 1;
+  await w.p.evaluate(i => window.__md.force('spotlight'), sec);
+  const t0 = await md(w.p, () => window.__md.slotState[1].since);
+  const st1 = await teamPhoto('Wall check photo one');
+  const switched = await waitFor(w.p, () => { const st = window.__md.slotState[1]; return st.id === 'photos' ? { at: st.since, bumps: window.__md.DIR.log.filter(x => x.bump) } : null; }, 16000);
+  const waited = switched ? switched.at - t0 : -1;
+  // A second new photo within 90 seconds: no bump.
+  await w.p.evaluate(() => window.__md.force('spotlight'));
+  const t1 = await md(w.p, () => window.__md.slotState[1].since);
+  await teamPhoto('Wall check photo two');
+  await sleep(11000);
+  const after = await md(w.p, () => ({ id: window.__md.slotState[1].id, since: window.__md.slotState[1].since, bumps: window.__md.DIR.log.filter(x => x.bump).length }));
+  await w.close();
+  const ok = st1 === 200 && switched && waited >= 8000 && waited < 9800 && after.since === t1 && after.bumps === 1;
+  return [ok, `photo approved ${Math.round((switched ? switched.bumps[0].at - t0 : 0) / 100) / 10} s into Advisor Spotlight; Photo Wall came after ${waited} ms (rule: 8000); second photo 30 s later: slot still on ${after.id} after 11 s, bumps logged ${after.bumps} (rule: once per 90 s)`];
+});
+
+check('director-poll-bump', async () => {
+  const s0 = await state();
+  if (!s0.poll || !s0.poll.open) return [false, 'no open poll on the server; run scripts/seed.sh first'];
+  const w = await wall('/screen/?t=11:20&quiet', '3840x1920');
+  await sleep(4000);
+  await w.p.evaluate(() => window.__md.force('pulse'));
+  const t0 = await md(w.p, () => window.__md.slotState[1].since);
+  for (const word of ['clarity', 'focus', 'courage']) await fetch(BASE + '/api/answer', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ pid: s0.poll.id, dev: 'wallcheck' + rnd(), text: word }) });
+  const sw = await waitFor(w.p, () => { const st = window.__md.slotState[1]; return st.id === 'poll' ? { at: st.since, why: window.__md.DIR.log.filter(x => x.bump === 'poll').map(x => x.why) } : null; }, 16000);
+  await w.close();
+  const waited = sw ? sw.at - t0 : -1;
+  return [!!sw && waited >= 8000 && waited < 9800, `three answers sent 0.1 s into Live Numbers; Live Poll came after ${waited} ms (${sw ? sw.why.join(', ') : 'no bump'})`];
+});
+
+check('director-clock', async () => {
+  const w = await wall('/screen/?t=11:49:56&quiet', '3840x1920');
+  await sleep(1500);
+  const before = await md(w.p, () => window.__md.slotState[0].id);
+  const at = await waitFor(w.p, () => window.__md.slotState[0].id === 'choose' ? window.__md.venue() : null, 10000);
+  await w.close();
+  const w2 = await wall('/screen/?t=11:59:56&quiet', '3840x1920');
+  await sleep(1500);
+  const b2 = await md(w2.p, () => window.__md.slotState[0].id);
+  const at2 = await waitFor(w2.p, () => window.__md.slotState[0].id === 'rooms' ? window.__md.venue() : null, 10000);
+  await w2.close();
+  await op({ action: 'mode', mode: 'lunch' });
+  let held;
+  try { const w3 = await wall('/screen/?t=11:52&quiet', '3840x1920'); await sleep(4500); held = await md(w3.p, () => ({ mode: window.__md.S.mode, ids: window.__md.slotState.map(s => s.id) })); await w3.close(); }
+  finally { await op({ action: 'mode', mode: 'auto' }); }
+  const f = v => v ? `${v.h}:${String(v.m).padStart(2, '0')}:${String(v.s).padStart(2, '0')}` : 'never';
+  const ok = before === 'rooms' && at && at.m === 50 && b2 === 'choose' && at2 && at2.h === 12 && held.mode === 'lunch' && !held.ids.includes('choose');
+  return [ok, `primary at 11:49:57: ${before}, Choose Your Sessions from ${f(at)}; at 11:59:57: ${b2}, Rooms from ${f(at2)}; remote holds lunch at 11:52: ${held.mode}, slots ${held.ids.join(',')}`];
+});
+
+check('director-dwell', async () => {
+  const w = await wall('/screen/?t=11:20&quiet', '3840x1920');
+  await sleep(4000);
+  await w.p.evaluate(() => window.__md.force('photos'));
+  const r = await md(w.p, () => ({ photos: window.__md.S.photos.length, dwell: window.__md.dwellFor(window.__md.slotState[1]), tick: window.__md.slotState[1].res.tick }));
+  await w.close();
+  const want = Math.max(20, Math.min(45, 4 * r.photos));
+  return [r.dwell === want && r.tick >= 4 && r.tick <= 7, `${r.photos} photos: Photo Wall dwell ${r.dwell} s (rule: 4 s a photo within 20 to 45 = ${want}), big photo changes every ${r.tick.toFixed(1)} s`];
+});
+
 (async () => {
   if (process.argv.includes('--list')) { CHECKS.forEach(c => console.log(c.name)); return; }
   browser = await chromium.launch();

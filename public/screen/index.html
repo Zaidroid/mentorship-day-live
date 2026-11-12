@@ -67,6 +67,8 @@ html,body{width:100%;height:100%;overflow:hidden;color:var(--ink);font-family:SS
 .pager{margin-left:auto;display:flex;gap:calc(var(--u)*1.8);font-size:calc(var(--u)*1.5);font-weight:600;color:var(--ink3)}
 .pager span{position:relative;padding-bottom:calc(var(--u)*.7);white-space:nowrap;transition:color var(--t-s) var(--ease)}
 .pager span.on{color:var(--ink)}
+.pager .segs{display:flex;gap:calc(var(--u)*.6);margin-bottom:calc(var(--u)*.4)}
+.pager .segs span{width:calc(var(--u)*2.6);height:3px;padding:0;background:var(--soft2)}
 .pager span.on:after{content:"";position:absolute;left:0;bottom:0;height:3px;width:100%;background:var(--teal);transform-origin:left;transform:scaleX(var(--p,0));transition:transform 1s linear}
 .shrule{height:calc(var(--u)*.4);background:var(--teal);margin:calc(var(--u)*-1) 0 calc(var(--u)*2.4);width:calc(var(--u)*12)}
 .sb{position:relative;flex:1;min-height:0;display:flex;flex-direction:column}
@@ -517,12 +519,14 @@ function layout(){
   return {wide, stageW, n: stageW >= 290 ? 3 : (stageW >= 125 ? 2 : 1)};
 }
 let L = {wide:false, stageW:100, n:1};
+// The slots and the scenes each may show. Roles: pinned (a scene held from the remote or the URL), single
+// (one slot does it all), primary (the big slot) and secondary. Which scene shows when is the director's job.
 function plan(){
-  const pin = P.get('scene') || S.pin; if (pin && R[pin]) return [[pin]];
-  const set = SETS[S.mode], sec = set.s.filter(id => !(L.wide && RAIL_HAS.includes(id)) && !(id === 'way' && !S.way));
-  if (!sec.length || L.n === 1) return [set.p.concat(sec)];
-  if (L.n === 2 || sec.length < 2) return [set.p, sec];
-  return [set.p, sec.filter((_, i) => i % 2 === 0), sec.filter((_, i) => i % 2 === 1)];
+  const pin = P.get('scene') || S.pin; if (pin && R[pin]) return [{role:'pinned', scenes:[pin]}];
+  const set = SETS[S.mode], sec = set.s.filter(id => !(L.wide && RAIL_HAS.includes(id)));
+  if (!sec.length || L.n === 1) return [{role:'single', scenes:set.p.concat(sec)}];
+  if (L.n === 2 || sec.length < 2) return [{role:'primary', scenes:set.p}, {role:'secondary', scenes:sec}];
+  return [{role:'primary', scenes:set.p}, {role:'secondary', scenes:sec.filter((_, i) => i % 2 === 0)}, {role:'secondary', scenes:sec.filter((_, i) => i % 2 === 1)}];
 }
 
 /* ============ Scenes ============ */
@@ -688,6 +692,7 @@ function applyState(d, cached){
   if (p) { S.pollId = p.id; S.pollQ = p.q; S.pollType = p.type; S.pollOpen = !!p.open; S.pollTotal = p.total || 0; S.pollOpts = p.options || [];
     if (p.type === 'choice') { const m = Object.fromEntries(p.words || []); S.poll = S.pollOpts.map(o => [o, m[o] || 0]); } else S.poll = p.words || []; }
   else { S.pollId = ''; S.pollQ = ''; S.poll = []; S.pollTotal = 0; S.pollType = 'words'; }
+  if (!cached) answerEvents();
   if (d.videos && d.videos.length) LIVE.videos = d.videos;
   const c = d.cfg || {};
   if (!cached) checkReload(c.reloadAt);
@@ -710,7 +715,7 @@ async function pullState(){
   setConn(); loop(false);
 }
 /* lists (photos, profiles, links, takeaways) live in the snapshot. Fetched only when state.snapV changes, kept for offline */
-function applySnap(v, d){ S.snapV = v; S.photos = d.photos || []; S.profiles = d.profiles || []; S.links = d.links || []; S.takeaways = d.takeaways || []; }
+function applySnap(v, d){ snapEvents(d); S.snapV = v; S.photos = d.photos || []; S.profiles = d.profiles || []; S.links = d.links || []; S.takeaways = d.takeaways || []; }
 async function pullSnap(v){
   if (S.snapBusy === v) return; S.snapBusy = v;
   try { const r = await fetch('/api/snap?v=' + encodeURIComponent(v)); if (!r.ok) throw 0; const d = await r.json(); applySnap(v, d); try { localStorage.setItem('md4_snap', JSON.stringify({v, d})); } catch(e) {} loop(false); }
@@ -762,7 +767,7 @@ function matchesFor(p){ const out = []; (S.profiles || []).forEach(q => { if (q.
 let meetI = 0;
 R.meet = (c) => {
   const list = S.profiles || [];
-  if (!list.length) return {title:'Networking Board', html:emptyJoin('Join the Networking Board', 'Add your name, company and what you are looking for. Your card appears here and helps the right people find you.', c)};
+  if (!list.length) return {title:'Networking Board', state:'join', html:emptyJoin('Join the Networking Board', 'Add your name, company and what you are looking for. Your card appears here and helps the right people find you.', c)};
   const p = list[meetI % list.length], mt = matchesFor(p), wide = c.w >= 76, bal = tagBalance().slice(0, wide ? 7 : 4), mx = Math.max(1, ...bal.map(x => Math.max(x.lk, x.of)));
   const card = `<div class="card glass rv"><div style="display:flex;align-items:center;gap:calc(var(--u)*2)"><div class="ini">${esc(initials(p.name))}</div><div style="min-width:0"><div class="nm">${esc(p.name)}</div><div class="co">${esc([p.role, p.company].filter(Boolean).join(', '))}</div></div></div>
     ${(p.looking || []).length ? `<div class="tagrow"><em>Looking for</em>${p.looking.map(t => `<span class="tg lk">${esc(t)}</span>`).join('')}</div>` : ''}
@@ -783,8 +788,9 @@ const phUrl = id => '/api/photo/' + encodeURIComponent(id);
 function phCap(x){ if (!x.caption && !x.name) return ''; return `<div class="cap">${x.caption ? `<b>${esc(x.caption)}</b>` : ''}${x.name ? `<span>${x.caption ? 'Shared by ' : 'Shared by '}${esc(x.name)}</span>` : ''}</div>`; }
 R.photos = (c) => {
   const list = S.photos || [];
-  if (!list.length) return {title:'Photo Wall', html:emptyJoin('Share your photos of the day', 'Scan the code, take a photo and send it. The team approves every photo before it appears here.', c)};
-  const f = list[photoI % list.length], tick = {tick:7, onTick:() => { photoI++; return list.length > 1; }};
+  if (!list.length) return {title:'Photo Wall', state:'join', html:emptyJoin('Share your photos of the day', 'Scan the code, take a photo and send it. The team approves every photo before it appears here.', c)};
+  // The scene stays 4 seconds a photo (20 to 45 seconds, see dwellFor), so the big photo changes every 4 to 7 seconds.
+  const f = list[photoI % list.length], tick = {tick:Math.max(4, Math.min(7, Math.max(20, Math.min(45, 4 * list.length)) / list.length)), onTick:() => { photoI++; return list.length > 1; }};
   if (c.w < 76 || list.length < 3) return {title:'Photo Wall', html:`<div class="pw"><div class="ph big rv"><img src="${phUrl(f.id)}" alt="">${phCap(f)}</div></div>`, ...tick};
   const n = Math.min(4, list.length - 1), others = []; for (let i = 1; i <= n; i++) others.push(list[(photoI + i) % list.length]);
   const cols = n >= 3 ? '2fr 1fr 1fr' : '2fr 1fr';
@@ -792,26 +798,20 @@ R.photos = (c) => {
 };
 
 /* Live Numbers */
+// Live Numbers: the numbers that grow during the day (above zero only), filled up with facts of the day.
 R.pulse = (c) => {
-  const booked = SESSIONS.reduce((a, s) => a + (s.booked || 0), 0), oo = SLOTS.filter(x => x.status === 'Booked').length, k = [];
-  if (S.checkedIn) k.push([S.checkedIn, 'people checked in']);
-  if (booked) k.push([booked, 'session seats booked']);
-  if (oo) k.push([oo, 'one to ones booked']);
-  k.push([S.pollTotal || 0, 'poll answers']);
-  k.push([(S.photos || []).length, 'photos shared']);
-  k.push([(S.profiles || []).length, 'on the Networking Board']);
+  const live = liveNumbers(), k = live.slice(0, 6);
   if (k.length < 6) k.push([advisorCount(), 'advisors today']);
   if (k.length < 6) k.push([SESSIONS.length, 'sessions today']);
-  const cols = c.w >= 76 ? 3 : 2;
+  const cols = c.w >= 76 && k.length > 4 ? 3 : 2;
   return {title:'Live Numbers', html:`<div class="pulse" style="grid-template-columns:repeat(${cols},minmax(0,1fr))">${k.slice(0, cols * 2).map(x => `<div class="kpi rv"><b data-count="${x[0]}">0</b><span>${x[1]}</span><i class="dr"></i></div>`).join('')}</div>`};
 };
 
 /* This Way */
 const DEG = {'right':0, 'down right':45, 'down':90, 'down left':135, 'left':180, 'up left':225, 'up':270, 'up right':315};
 const ARROW = '<svg viewBox="0 0 100 100" aria-hidden="true"><path d="M18,50 H78 M56,27 L79,50 L56,73" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-const WAYS = [{k:'registration', t:'Registration', s:'Badges and one to one bookings'}, {k:'rooms', t:'Rooms A, B and C', s:'Sessions'}, {k:'oneToOnes', t:'One to Ones', s:'Small Rooms 1 and 3', blue:true}];
 R.way = (c) => {
-  const items = WAYS.filter(w => S.way && S.way[w.k]), row = c.w >= 165;
+  const items = wayItems(), row = c.w >= 165;
   return {title:'This Way', html:`<div class="way" style="grid-template-columns:${row ? `repeat(${items.length},minmax(0,1fr))` : '1fr'}"><div class="here rv" style="grid-column:1/-1">You are in the Main Hall</div>${items.map(w => `<div class="wy glass rv"><div class="arr leaf lf ${w.blue ? 'blue' : ''}"><i style="rotate:${DEG[S.way[w.k]] || 0}deg">${ARROW}</i></div><div style="min-width:0"><b>${esc(w.t)}</b><span>${esc(w.s)}</span></div></div>`).join('')}</div>`};
 };
 
@@ -889,26 +889,146 @@ function setTitle(h2, text, animate){
   old.animate([{transform:'none'}, {transform:'translateY(-110%)'}], {duration:M.s, easing:M.io, fill:'forwards'}).finished.then(() => { if (+h2.dataset.g === g) put(true); }, () => {});
 }
 
+/* ============ The director ============ */
+// Decides what each slot shows next (nextFor). In order:
+//  1. A scene held from the remote or the URL wins: plan() then gives one pinned slot.
+//  2. The clock, when the wall runs by itself: from 10 minutes before a block the primary slot holds
+//     Choose Your Sessions for that block, and during a block it holds Rooms. With a single slot the held
+//     scene comes back after every other scene.
+//  3. A bump: a new photo, three new poll answers within 10 seconds, a new connection or a new takeaway puts
+//     its scene at the front of one secondary slot, once the current scene has shown for 8 seconds. Each
+//     scene bumps at most once per 90 seconds, and not while it is on screen already.
+//  4. Otherwise the next scene of the slot that has content. Photo Wall and Networking Board with nothing to
+//     show become a join prompt, at most once in four turns of the slot.
+// It never shows a scene without content. Dwell follows content: photos 4 seconds a photo within 20 to 45,
+// the poll longer while answers arrive.
+const DIR = {log:[], last:{}, photoIds:null, links:null, tkIds:null, ans:[], pollId:null, pollTotal:0};
+const WAYS = [{k:'registration', t:'Registration', s:'Badges and one to one bookings'}, {k:'rooms', t:'Rooms A, B and C', s:'Sessions'}, {k:'oneToOnes', t:'One to Ones', s:'Small Rooms 1 and 3', blue:true}];
+const wayItems = () => WAYS.filter(w => S.way && S.way[w.k]);
+// Numbers that grow during the day, above zero only. Live Numbers needs three of them.
+function liveNumbers(){
+  const n = S.n || {}, booked = SESSIONS.reduce((a, s) => a + (s.booked || 0), 0), oo = SLOTS.filter(x => x.status === 'Booked').length;
+  return [[n.here, 'people here'], [S.checkedIn, 'people checked in'], [booked, 'session seats booked'], [oo, 'one to ones booked'], [n.answers || S.pollTotal, 'poll answers'],
+    [n.photos || S.photos.length, 'photos shared'], [n.board || S.profiles.length, 'on the Networking Board'], [n.links, 'connections made'], [n.takeaways, 'takeaways shared']].filter(x => +x[0] > 0);
+}
+// 'yes': has content. 'join': empty, but can show as an invitation to join. 'no': not now.
+function content(id){
+  switch (id) {
+    case 'way': return wayItems().length ? 'yes' : 'no';
+    case 'pulse': return liveNumbers().length >= 3 ? 'yes' : 'no';
+    case 'photos': return S.photos.length ? 'yes' : 'join';
+    case 'meet': return S.profiles.length ? 'yes' : 'join';
+    case 'poll': { if (!S.pollQ) return 'no'; const has = S.pollType === 'choice' ? S.pollTotal > 0 : (S.pollTotal > 0 || S.poll.length > 0); return has ? 'yes' : (S.pollOpen ? 'join' : 'no'); }
+    case 'board': { const m = nowMin(); return SLOTS.some(x => toMin(x.e) > m) ? 'yes' : 'no'; }
+    case 'voices': return (S.takeaways || []).length ? 'yes' : 'no';
+    default: return R[id] ? 'yes' : 'no';
+  }
+}
+const autoRun = () => !S.override && !S.remoteMode && !S.sheetScene && !(P.get('scene') || S.pin);
+function holdNow(){
+  if (!autoRun()) return null; const m = nowMin();
+  for (const b of BLOCKS) { const s = toMin(b.s); if (m >= s - 10 && m < s) return {id:'choose', b}; if (m >= s && m < toMin(b.e)) return {id:'rooms', b}; }
+  return null;
+}
+function dwellFor(st){
+  if (st.id === 'photos' && S.photos.length) return Math.max(20, Math.min(45, 4 * S.photos.length));
+  if (st.id === 'poll') return Math.min(40, dwell('poll') + (st.extra || 0));
+  return dwell(st.id);
+}
+function nextFor(st){
+  if (st.role === 'pinned') return st.scenes[0];
+  const hold = st.role === 'secondary' ? null : holdNow();
+  if (st.role === 'primary' && hold) return hold.id;
+  if (st.role === 'single' && hold && st.id !== hold.id) return hold.id;
+  if (st.bump) { const b = st.bump; st.bump = null; if (b !== st.id && content(b) !== 'no') return b; }
+  const list = st.scenes.filter(id => !(hold && id === hold.id)), n = list.length;
+  if (!n) return hold ? hold.id : st.scenes[0];
+  let i = list.indexOf(st.id); if (i < 0 && st.last) i = list.indexOf(st.last);
+  for (let k = 1; k <= n; k++) { const id = list[(i + k + n) % n], c = content(id); if (c === 'yes' || (c === 'join' && st.turn - st.joinAt >= 4)) return id; }
+  // Nothing new qualifies: keep the current scene if it has content, else an invitation, else the advisors.
+  if (st.id && content(st.id) === 'yes') return st.id;
+  return list.find(id => content(id) === 'join') || (hold ? hold.id : 'advisors');
+}
+function go(st, id, why){
+  const c = content(id);
+  DIR.log.push({at:Date.now(), slot:slotState.indexOf(st), from:st.id, to:id, why, content:c}); if (DIR.log.length > 300) DIR.log.splice(0, 100);
+  st.turn++; if (c === 'join') st.joinAt = st.turn;
+  const hold = holdNow(); if (!(hold && hold.id === id)) st.last = id;
+  st.id = id; st.since = Date.now(); st.extra = 0;
+  showScene(st, true);
+}
+// Nothing else to show: the scene stays for another round. That is a turn too, so an invitation to join can
+// still come once in four turns when one scene is all a slot has.
+function stay(st, why){
+  st.turn++; st.since = Date.now();
+  DIR.log.push({at:st.since, slot:slotState.indexOf(st), from:st.id, to:st.id, why:why + ', stays', content:content(st.id)}); if (DIR.log.length > 300) DIR.log.splice(0, 100);
+}
+// Puts a scene at the front of one secondary slot (or the single slot). Returns the slot, or null.
+function bump(id, why){
+  const now = Date.now();
+  if (now - (DIR.last[id] || 0) < 90000) return null;
+  if (slotState.some(st => st.id === id)) return null;
+  const st = slotState.find(x => (x.role === 'secondary' || x.role === 'single') && x.scenes.includes(id)); if (!st) return null;
+  DIR.last[id] = now; st.bump = id;
+  DIR.log.push({at:now, slot:slotState.indexOf(st), bump:id, why});
+  return st;
+}
+// What changed in the data: new photos, connections and takeaways in a snap, answers in a state.
+function snapEvents(d){
+  const ids = new Set((d.photos || []).map(p => p.id)), tk = new Set((d.takeaways || []).map(t => t.id)), links = (d.links || []).length;
+  if (DIR.photoIds && [...ids].some(x => !DIR.photoIds.has(x))) bump('photos', 'new photo');
+  if (DIR.links !== null && links > DIR.links) bump('meet', 'new connection');
+  if (DIR.tkIds && [...tk].some(x => !DIR.tkIds.has(x))) bump('voices', 'new takeaway');
+  DIR.photoIds = ids; DIR.links = links; DIR.tkIds = tk;
+}
+function answerEvents(){
+  const now = Date.now();
+  if (S.pollId !== DIR.pollId) { DIR.pollId = S.pollId; DIR.pollTotal = S.pollTotal; DIR.ans = []; return; }
+  const d = S.pollTotal - DIR.pollTotal; DIR.pollTotal = S.pollTotal; if (d <= 0) return;
+  for (let k = 0; k < Math.min(d, 20); k++) DIR.ans.push(now);
+  DIR.ans = DIR.ans.filter(t => now - t <= 10000);
+  slotState.forEach(st => { if (st.id === 'poll') st.extra = Math.min(20, (st.extra || 0) + 4); });
+  if (DIR.ans.length >= 3 && bump('poll', DIR.ans.length + ' answers in 10 seconds')) DIR.ans = [];
+}
+
 /* ============ Rendering engine ============ */
 const slotState = [];
 function buildStage(){
-  const p = plan(), key = S.mode + '|' + L.n + '|' + L.wide + '|' + p.map(a => a.join(',')).join('/');
+  const p = plan(), key = S.mode + '|' + L.n + '|' + L.wide + '|' + p.map(a => a.role + ':' + a.scenes.join(',')).join('/');
   if (key === S.plan) return false; S.plan = key;
   const stage = $('stage'), mom = $('moment');
   stage.querySelectorAll('.slot').forEach(s => s.remove()); slotState.length = 0;
-  p.forEach((scenes, i) => {
+  p.forEach((a, i) => {
     const el = document.createElement('section'); el.className = 'slot'; el.style.flex = i === 0 ? (p.length > 1 ? '1.55 1 0' : '1 1 0') : '1 1 0';
     el.innerHTML = `<div class="sh"><h2></h2><div class="pager"></div></div><div class="shrule"></div><div class="sb"></div>`;
     stage.insertBefore(el, mom);
-    slotState.push({el, scenes, idx:0, since:Date.now(), sub:Date.now(), id:null});
+    slotState.push({el, role:a.role, scenes:a.scenes, id:null, since:Date.now(), sub:Date.now(), turn:0, joinAt:-99, bump:null, last:null, extra:0, gen:0});
   });
-  slotState.forEach(s => showScene(s, true));
+  slotState.forEach(st => go(st, nextFor(st), 'start'));
   return true;
+}
+// The tabs beside the slot title: the scenes of this slot that have something to show now. When they do not
+// fit beside the title, the ones furthest ahead drop out; when fewer than two names fit, slim segments show
+// instead, one per scene, the current one filling as it shows.
+const pagerTabs = st => st.role === 'pinned' ? [] : (st.scenes.includes(st.id) ? [] : [st.id]).concat(st.scenes.filter(id => id === st.id || content(id) !== 'no'));
+function pagerFor(st){
+  const pg = st.el.querySelector('.pager');
+  const tabs = pagerTabs(st); st.tabsKey = st.id + '|' + tabs.join();
+  if (tabs.length < 2) { pg.innerHTML = ''; return; }
+  pg.innerHTML = tabs.map(id => `<span class="${id === st.id ? 'on' : ''}">${TITLES[id]}</span>`).join('');
+  const cv = document.createElement('canvas').getContext('2d'); cv.font = `700 ${(U * 3.4).toFixed(1)}px SS3`;
+  const room = st.el.clientWidth - cv.measureText(st.res ? st.res.title : '').width - U * 4;
+  const spans = [...pg.children], w = spans.map(x => x.offsetWidth), gap = U * 1.8, cur = Math.max(0, tabs.indexOf(st.id));
+  let total = w.reduce((a, b) => a + b, 0) + gap * (w.length - 1);
+  const n = spans.length, order = spans.map((_, i) => i).filter(i => i !== cur).sort((a, b) => (b - cur + n) % n - (a - cur + n) % n);
+  let left = n;
+  for (const i of order) { if (total <= room) break; spans[i].style.display = 'none'; total -= w[i] + gap; left--; }
+  if (total > room || left < 2) pg.innerHTML = `<div class="segs">${tabs.map(id => `<span class="${id === st.id ? 'on' : ''}"></span>`).join('')}</div>`;
 }
 // w and h in U: the slot width, and the height left for the scene body under the slot header.
 function ctxFor(st){ const sb = st.el.querySelector('.sb'); return {w: st.el.clientWidth / U, h: (sb ? sb.clientHeight : st.el.clientHeight) / U}; }
 function showScene(st, animate, restart){
-  const id = st.scenes[st.idx % st.scenes.length]; st.id = id; st.sub = Date.now();
+  const id = st.id; st.sub = Date.now();
   const h2 = st.el.querySelector('h2'), pg = st.el.querySelector('.pager'), sb = st.el.querySelector('.sb'), rule = st.el.querySelector('.shrule');
   const bare = ['welcome','speaker','video','recap'].includes(id);
   st.el.querySelector('.sh').style.visibility = bare && st.scenes.length === 1 ? 'hidden' : '';
@@ -917,7 +1037,7 @@ function showScene(st, animate, restart){
   const res = R[id](ctxFor(st)); st.res = res;
   animate = animate && !still();
   setTitle(h2, res.title, animate);
-  pg.innerHTML = st.scenes.length > 1 ? st.scenes.map((s, i) => `<span class="${i === st.idx % st.scenes.length ? 'on' : ''}">${TITLES[s]}</span>`).join('') : '';
+  pagerFor(st);
   // Scene change: the old scene recedes, then the new one comes forward and its parts arrive in order.
   const g = st.gen = (st.gen || 0) + 1;
   const paint = () => {
@@ -939,7 +1059,7 @@ function refreshScenes(){
   slotState.forEach(st => {
     if (!st.id || st.exit) return;
     const res = R[st.id](ctxFor(st)), h2 = st.el.querySelector('h2');
-    if (h2.dataset.t !== undefined && h2.dataset.t !== res.title) { showScene(st, true); return; }
+    if ((h2.dataset.t !== undefined && h2.dataset.t !== res.title) || (st.res && (st.res.state || '') !== (res.state || ''))) { showScene(st, true); return; }
     if (sceneKey(res) === st.key) { st.res = res; return; }
     if (Date.now() - st.sub < 1500) { showScene(st, true, true); return; }
     st.res = res; const sb = st.el.querySelector('.sb');
@@ -953,7 +1073,7 @@ function countUps(root){
     if (from === to || still()) { el.textContent = to; return; } const t1 = performance.now(), d = M.x;
     const step = t => { const f = Math.min(1, (t - t1) / d), e = 1 - Math.pow(1 - f, 3); el.textContent = Math.round(from + (to - from) * e); if (f < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); });
 }
-function dataSig(){ return [Math.floor(nowMin()), S.checkedIn, S.speaker, S.wifi.name, S.wifi.pass, SESSIONS.map(s => s.booked + s.title + s.ok + s.room + s.mode).join(), SLOTS.map(x => x.status + x.s + x.who).join(''), S.poll.map(w => w[0] + w[1]).join(), S.pollQ, S.pollOpen, S.pollTotal, S.photos.map(p => p.id).join(), S.profiles.map(p => p.id + p.at).join(), JSON.stringify(S.way), S.pin].join('|'); }
+function dataSig(){ return [Math.floor(nowMin()), JSON.stringify(S.n), JSON.stringify(S.interest), S.links.length, S.takeaways.length, S.checkedIn, S.speaker, S.wifi.name, S.wifi.pass, SESSIONS.map(s => s.booked + s.title + s.ok + s.room + s.mode).join(), SLOTS.map(x => x.status + x.s + x.who).join(''), S.poll.map(w => w[0] + w[1]).join(), S.pollQ, S.pollOpen, S.pollTotal, S.photos.map(p => p.id).join(), S.profiles.map(p => p.id + p.at).join(), JSON.stringify(S.way), S.pin].join('|'); }
 
 /* ============ Now zone, garden, moments ============ */
 function nowZone(){
@@ -1123,7 +1243,7 @@ addEventListener('keydown', e => { const k = e.key.toLowerCase();
   if (KEYMODES[k]) { S.override = KEYMODES[k]; S.speaker = null; loop(true); toast('Held on ' + ({welcome:'welcome', opening:'opening', video:'videos', choose:'coffee break', live:'sessions', lunch:'lunch', close:'thank you'}[S.override]) + ', press 0 to follow the clock'); }
   else if (k === '0') { S.override = null; S.speaker = null; loop(true); toast('Automatic, following the clock'); }
   else if (k === 'arrowright' || k === 'arrowleft') { const m = nowMin(); let i = S.speaker; if (i === null) { i = 0; SPEAKERS.forEach((s, j) => { if (m >= toMin(s.s)) i = j; }); } S.speaker = Math.max(0, Math.min(SPEAKERS.length - 1, i + (k === 'arrowright' ? 1 : -1))); slotState.forEach(st => { if (st.id === 'speaker') showScene(st, true); }); }
-  else if (k === 'n') { slotState.forEach(st => { if (st.scenes.length > 1) { st.idx++; st.since = Date.now(); showScene(st, true); } }); }
+  else if (k === 'n') { slotState.forEach(st => { if (st.role === 'pinned') return; const nx = nextFor(st); if (nx !== st.id) go(st, nx, 'key N'); else stay(st, 'key N'); }); }
   else if (k === 't') { S.theme = wantedTheme() === 'dark' ? 'light' : 'dark'; S.urlTheme = null; S.sheetTheme = ''; applyTheme(true); toast(S.theme === 'dark' ? 'Dark' : 'Light'); }
   else if (k === 'a') { const t = prompt('Announcement for the screen', S.ann); if (t !== null) { S.ann = t.trim(); S.annAt = Date.now(); S.annUntil = S.ann ? Date.now() + 20000 : 0; updateTicker(); } }
   else if (k === 'k') { setOverlay(S.overlay === 'check' ? null : 'check'); }
@@ -1146,14 +1266,28 @@ function loop(force){
   const dk = dataSig();
   if (!rebuilt && (force || dk !== S.dataKey)) refreshScenes(); else if (rebuilt) renderRail();
   S.dataKey = dk;
-  slotState.forEach(st => {
-    if (st.res && st.res.tick && Date.now() - st.sub > st.res.tick * 1000) { st.sub = Date.now(); if (st.res.onTick(st.el.querySelector('.sb'))) showScene(st, true); }
-    if (st.scenes.length > 1 && Date.now() - st.since > dwell(st.id) * 1000) { st.idx++; st.since = Date.now(); showScene(st, true); }
-    const on = st.el.querySelector('.pager span.on'); if (on) on.style.setProperty('--p', Math.min(1, (Date.now() - st.since) / (dwell(st.id) * 1000)).toFixed(3));
-  });
+  slotState.forEach(direct);
   nowZone(); garden(); moments(); updateTicker(); checkSparks();
   reloadPending();
   WD.tick = Date.now();
+}
+
+// One step of the director for one slot, every second.
+function direct(st){
+  const now = Date.now(), shown = now - st.since;
+  if (st.res && st.res.tick && now - st.sub > st.res.tick * 1000) { st.sub = now; if (st.res.onTick(st.el.querySelector('.sb'))) showScene(st, true); }
+  let want = null, why = '';
+  if (st.role !== 'pinned') {
+    const hold = st.role === 'secondary' ? null : holdNow();
+    if (st.role === 'primary' && hold) { if (st.id !== hold.id) { want = hold.id; why = 'clock'; } }
+    else if (st.role === 'primary' && !st.scenes.includes(st.id)) { want = nextFor(st); why = 'clock ended'; }
+    else if (content(st.id) === 'no') { want = nextFor(st); why = 'no content'; }
+    else if (st.bump && shown >= 8000) { want = nextFor(st); why = 'bump'; }
+    else if (shown >= dwellFor(st) * 1000) { want = nextFor(st); why = 'dwell'; }
+  }
+  if (want && want !== st.id) go(st, want, why); else if (want) stay(st, why);
+  if (st.res && st.tabsKey !== st.id + '|' + pagerTabs(st).join()) pagerFor(st);
+  const on = st.el.querySelector('.pager span.on'); if (on) on.style.setProperty('--p', Math.min(1, (Date.now() - st.since) / (dwellFor(st) * 1000)).toFixed(3));
 }
 
 /* ============ Keeping the wall alive all day ============ */
@@ -1198,7 +1332,8 @@ wake();
 if (!P.has('quiet')) setTimeout(() => toast('Press F for full screen and H for controls'), 1200);
 // For probes and tests (scripts/probe.cjs, scripts/wall-check.cjs). Reading it changes nothing.
 window.__md = {S, slotState, GOV, RELOAD, CLOCK, WD, ERR, L:() => L, venue, nowMin, beatBody, bg:() => ({nodes:nodes.length, full:bgN, pulses:pulses.length, max:particleMax()}),
-  force(id){ if (!R[id]) return -1; let i = slotState.findIndex(st => st.scenes.includes(id)); if (i < 0) i = 0; const st = slotState[i]; if (!st) return -1; if (!st.scenes.includes(id)) st.scenes.push(id); st.idx = st.scenes.indexOf(id); st.since = Date.now(); showScene(st, true); return i; }};
+  DIR, content, holdNow, dwellFor, liveNumbers, nextFor:i => nextFor(slotState[i]), bump,
+  force(id){ if (!R[id]) return -1; let i = slotState.findIndex(st => st.scenes.includes(id)); if (i < 0) i = 0; const st = slotState[i]; if (!st) return -1; go(st, id, 'force'); return i; }};
 })();
 </script>
 </body>
