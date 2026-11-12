@@ -5,358 +5,1521 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#E3E3E3">
 <title>Mentorship Day Live</title>
-<meta name="description" content="Live poll, photo wall, Networking Board and today's agenda for Mentorship Day at the Palestine Innovation Summit.">
+<meta name="description" content="My Day, live polls, reactions, the Networking Board and photos for Mentorship Day at the Palestine Innovation Summit.">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="Mentorship Day">
 <style>
 @font-face{font-family:SS3;font-weight:400;font-display:swap;src:url(/assets/ss3-400.woff2) format('woff2')}
-@font-face{font-family:SS3;font-weight:600;font-display:swap;src:url(/assets/ss3-600.woff2) format('woff2')}
 @font-face{font-family:SS3;font-weight:700;font-display:swap;src:url(/assets/ss3-700.woff2) format('woff2')}
-:root{--red:#DF6236;--teal:#2F9CC3;--ink:#1F2E33;--ink2:rgba(31,46,51,.7);--ink3:rgba(31,46,51,.45);--line:rgba(31,46,51,.13);--card:rgba(255,255,255,.78);--redsoft:rgba(223,98,54,.12);--tealsoft:rgba(47,156,195,.14)}
+:root{--red:#DF6236;--blue:#2F9CC3;--ink:#1F2E33;--ink2:rgba(31,46,51,.74);--ink3:rgba(31,46,51,.5);--line:rgba(31,46,51,.13);--card:rgba(255,255,255,.84);--redsoft:rgba(223,98,54,.12);--bluesoft:rgba(47,156,195,.14);--ease:cubic-bezier(.2,.8,.2,1);--io:cubic-bezier(.65,0,.25,1);--kb:0px;--dock-h:72px;--pad-h:0px}
 *{box-sizing:border-box;margin:0;padding:0}
-html{-webkit-text-size-adjust:100%}
-body{font-family:SS3,system-ui,sans-serif;color:var(--ink);background:linear-gradient(180deg,#E3E3E3,#F6F6F6) fixed;min-height:100vh;line-height:1.4;-webkit-font-smoothing:antialiased}
+html{-webkit-text-size-adjust:100%;background:#F6F6F6 linear-gradient(180deg,#E3E3E3,#F6F6F6 640px) no-repeat}
+body{font-family:SS3,system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);background:transparent;position:relative;min-height:100svh;line-height:1.4;-webkit-font-smoothing:antialiased;overflow-x:hidden;-webkit-tap-highlight-color:transparent}
+body.lock{overflow:hidden}
 button,input,textarea{font:inherit;color:inherit}
-button{cursor:pointer}
-:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+button{cursor:pointer;-webkit-user-select:none;user-select:none}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+[hidden]{display:none!important}
+[dir=auto]:dir(rtl){line-height:1.65}
 .wrap{max-width:560px;margin:0 auto;padding:0 16px}
-header{position:sticky;top:0;z-index:5;background:rgba(232,232,232,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);padding-top:env(safe-area-inset-top)}
-.top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding:16px 0 10px}
-.top h1{font-size:28px;line-height:1;font-weight:700;color:var(--red);letter-spacing:-.01em;white-space:nowrap}
-.top span{font-size:12px;color:var(--ink2);text-align:right;line-height:1.2}
-.rule{height:5px;background:var(--teal)}
-nav{display:flex;gap:6px;padding:10px 0 12px;overflow-x:auto;scrollbar-width:none}
-nav::-webkit-scrollbar{display:none}
-nav button{flex:1 0 auto;border:0;background:transparent;padding:9px 14px;border-radius:6px 20px 0 20px;font-weight:700;font-size:15px;color:var(--ink2);position:relative}
-nav button[aria-selected=true]{background:var(--red);color:#fff}
-nav button .dot{position:absolute;top:6px;right:8px;width:8px;height:8px;border-radius:50%;background:var(--teal)}
-main{padding:14px 0 40px}
-section[hidden]{display:none}
-h2{font-size:24px;font-weight:700;line-height:1.15;margin:6px 0 4px}
-h3{font-size:18px;font-weight:700;margin:22px 0 10px}
-.lead{color:var(--ink2);font-size:16px}
-.card{background:var(--card);border:1px solid rgba(255,255,255,.95);border-radius:10px;padding:16px;margin-top:12px;box-shadow:0 4px 18px rgba(31,46,51,.06)}
-.now{border-top:5px solid var(--red)}
-.k{font-size:13px;font-weight:700;color:var(--red);display:flex;align-items:center;gap:8px}
-.k.blue{color:var(--teal)}
-.live{width:9px;height:9px;border-radius:50%;background:var(--red);box-shadow:0 0 0 4px var(--redsoft)}
-.big{font-size:22px;font-weight:700;line-height:1.15;margin-top:6px}
+.net-bg{position:absolute;left:0;right:0;top:0;height:360px;pointer-events:none;z-index:-1;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 360' preserveAspectRatio='xMidYMin slice'%3E%3Cdefs%3E%3CradialGradient id='g'%3E%3Cstop offset='0' stop-color='%23fff'/%3E%3Cstop offset='1' stop-color='%23fff' stop-opacity='0'/%3E%3C/radialGradient%3E%3C/defs%3E%3Cg stroke='%23fff' stroke-width='1.4' fill='none' opacity='.9'%3E%3Cpath d='M-10 70L90 30L190 95L300 40L410 110M90 30L120 170L190 95L250 210L300 40M120 170L20 250M250 210L380 260M190 95L250 210'/%3E%3C/g%3E%3Cg fill='url(%23g)'%3E%3Ccircle cx='90' cy='30' r='14'/%3E%3Ccircle cx='190' cy='95' r='18'/%3E%3Ccircle cx='300' cy='40' r='12'/%3E%3Ccircle cx='120' cy='170' r='12'/%3E%3Ccircle cx='250' cy='210' r='16'/%3E%3C/g%3E%3Cg fill='%23fff'%3E%3Ccircle cx='90' cy='30' r='2.6'/%3E%3Ccircle cx='190' cy='95' r='3'/%3E%3Ccircle cx='300' cy='40' r='2.4'/%3E%3Ccircle cx='120' cy='170' r='2.4'/%3E%3Ccircle cx='250' cy='210' r='2.8'/%3E%3C/g%3E%3C/svg%3E") center top/100% auto no-repeat}
+
+/* header: the title and the blue rule */
+.hd{padding-top:calc(14px + env(safe-area-inset-top))}
+.hd .row{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.hd h1{font-size:26px;line-height:1.05;font-weight:700;color:var(--red);letter-spacing:-.01em;white-space:nowrap}
+.hd small{font-size:13px;color:var(--ink2);text-align:right;line-height:1.2}
+.hd .rule{height:4px;background:var(--blue);margin-top:10px}
+.reh{display:inline-block;vertical-align:middle;margin-left:8px;font-size:12px;font-weight:700;color:var(--ink);background:#fff;box-shadow:inset 0 0 0 1.5px var(--blue);padding:2px 8px;border-radius:3px 10px 0 10px;letter-spacing:0}
+.net{position:sticky;top:0;z-index:40;background:var(--ink);color:#fff;font-size:14px;font-weight:700;padding:calc(7px + env(safe-area-inset-top)) 16px 7px;text-align:center}
+.net span{font-weight:400;opacity:.86}
+
+main{padding:6px 0 8px}
+section{animation:fade .24s var(--ease)}
+@keyframes fade{from{opacity:.4}to{opacity:1}}
+h2{font-size:24px;font-weight:700;line-height:1.15;color:var(--red)}
+h3{font-size:20px;font-weight:700;line-height:1.2;color:var(--red);margin:26px 0 4px}
+.lead{color:var(--ink2);font-size:16px;margin-top:4px}
+.card{background:var(--card);border:1px solid #fff;border-radius:12px;padding:16px;margin-top:12px;box-shadow:0 4px 18px rgba(31,46,51,.06)}
+.rise{animation:rise .52s var(--ease) both}
+@keyframes rise{from{opacity:0;transform:translateY(8px) scale(.985)}to{opacity:1;transform:none}}
+.eyebrow{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;color:var(--ink)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--blue);flex:none}
+.dot.now{background:var(--red);box-shadow:0 0 0 4px var(--redsoft)}
 .muted{color:var(--ink2)}
 .small{font-size:14px}
-.pill{display:inline-flex;align-items:center;font-weight:700;font-size:13px;color:#fff;background:var(--red);padding:4px 10px;border-radius:4px 14px 0 14px;white-space:nowrap}
-.pill.blue{background:var(--teal)}
-.pill.ghost{background:transparent;color:var(--ink3);box-shadow:inset 0 0 0 1.5px var(--line)}
-.mode{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--ink2)}
+.pill{display:inline-flex;align-items:center;font-weight:700;font-size:16px;line-height:1.1;color:#fff;background:var(--red);padding:5px 11px;border-radius:4px 14px 0 14px;white-space:nowrap}
+.pill.blue{background:var(--blue)}
+.pill.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)}
+.tag{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:13px;color:var(--ink);background:var(--bluesoft);padding:3px 9px;border-radius:3px 12px 0 12px;white-space:nowrap}
+.tag.me{background:var(--redsoft)}
+.mode{display:inline-flex;align-items:center;gap:6px;font-size:14px;color:var(--ink2)}
 .mode:before{content:"";width:8px;height:8px;border-radius:50%;background:var(--red)}
-.mode.on:before{background:var(--teal)}
-.hour{margin-top:18px}
-.hour>b{display:block;font-size:20px;font-weight:700;padding-bottom:6px;border-bottom:2px solid var(--line)}
-.sess{display:grid;grid-template-columns:72px 1fr;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
-.sess .t{font-weight:700;font-size:16px;line-height:1.2}
-.sess .w{font-size:14px;color:var(--ink2);margin-top:4px;display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center}
-.sess.free .t{color:var(--ink3);font-weight:600}
-label{display:block;font-weight:700;font-size:15px;margin:14px 0 6px}
-label span{font-weight:400;color:var(--ink2)}
-input[type=text],input[type=url],textarea{width:100%;font-size:17px;padding:12px 14px;border:1.5px solid var(--line);border-radius:8px;background:#fff}
-input:focus,textarea:focus{border-color:var(--teal);outline:none}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;background:var(--red);color:#fff;font-weight:700;font-size:17px;padding:13px 22px;border-radius:6px 22px 0 22px;margin-top:16px;min-height:48px}
-.btn.blue{background:var(--teal)}
+.mode.on:before{background:var(--blue)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;background:var(--red);color:#fff;font-weight:700;font-size:19px;line-height:1.1;padding:12px 22px;border-radius:6px 22px 0 22px;min-height:52px;transition:transform .12s var(--ease),opacity .24s;text-decoration:none;text-align:center}
+.btn:active{transform:scale(.97)}
+.btn.blue{background:var(--blue)}
+.btn.navy{background:var(--ink)}
+.btn.line{background:#fff;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line);font-size:17px}
 .btn.wide{width:100%}
-.btn.line{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)}
-.btn:disabled{opacity:.5;cursor:default}
-.msg{margin-top:12px;font-size:15px;font-weight:600}
-.msg.ok{color:#2a7f62}.msg.err{color:#b8432a}
+.btn:disabled{opacity:.45;cursor:default}
+.lnk{border:0;background:none;color:var(--ink);font-weight:700;font-size:16px;text-decoration:underline;text-decoration-color:var(--blue);text-decoration-thickness:2px;text-underline-offset:4px;min-height:44px;padding:0 4px;display:inline-flex;align-items:center}
+.acts{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.acts .btn{flex:1 1 auto}
+.msg{margin-top:10px;font-size:15px;font-weight:700;min-height:0}
+.msg:empty{display:none}
+.msg.ok{color:#22704f}.msg.err{color:#a8381c}
+label.f{display:block;font-weight:700;font-size:15px;margin:14px 0 6px}
+label.f span{font-weight:400;color:var(--ink2)}
+input[type=text],input[type=url],input[type=search],input[type=tel],textarea{width:100%;font-size:17px;padding:12px 14px;border:1.5px solid rgba(31,46,51,.22);border-radius:8px;background:#fff;min-height:50px}
+input:focus,textarea:focus{border-color:var(--blue);outline:none;box-shadow:0 0 0 3px var(--bluesoft)}
+input[readonly]{background:rgba(255,255,255,.6);color:var(--ink2)}
+.sw{display:flex;align-items:center;gap:14px;min-height:56px;padding:6px 0;cursor:pointer}
+.sw input{position:absolute;opacity:0;width:1px;height:1px}
+.sw .tr{flex:none;width:52px;height:32px;border-radius:16px;background:rgba(31,46,51,.22);position:relative;transition:background .24s var(--ease)}
+.sw .tr:after{content:"";position:absolute;left:3px;top:3px;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .24s var(--ease)}
+.sw input:checked+.tr{background:var(--blue)}
+.sw input:checked+.tr:after{transform:translateX(20px)}
+.sw input:focus-visible+.tr{outline:3px solid var(--blue);outline-offset:2px}
+.sw b{display:block;font-size:16px;line-height:1.25}
+.sw small{display:block;font-size:14px;color:var(--ink2)}
+
+/* My Day top card, variant A: the card */
+.top-a{border-top:5px solid var(--red);padding:16px 16px 18px}
+.top-a.next{border-top-color:var(--blue)}
+.top-a .ttl{font-size:26px;font-weight:700;line-height:1.12;color:var(--red);margin-top:8px}
+.top-a .sub{font-size:19px;font-weight:700;line-height:1.25;margin-top:8px}
+.top-a .meta{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;font-size:15px;color:var(--ink2);margin-top:6px}
+.top-a .why{font-size:15px;margin-top:10px;padding-left:10px;border-left:3px solid var(--blue)}
+.top-a .cd{font-size:16px;margin-top:12px}
+.top-a .cd b{font-variant-numeric:tabular-nums;font-size:20px}
+.top-a.alert{border-top:0;padding:0;overflow:hidden}
+.top-a.alert .strip{background:var(--red);color:#fff;padding:14px 16px 12px}
+.top-a.alert .strip .ttl{color:#fff;margin:0}
+.top-a.alert .strip .eyebrow{color:#fff;font-size:19px}
+.top-a.alert .dot,.hero.alert .dot{background:#fff;box-shadow:0 0 0 4px rgba(255,255,255,.3)}
+.top-a.alert .body{padding:0 16px 18px}
+.bar{height:6px;background:rgba(31,46,51,.1);margin-top:14px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--red);transition:width 1s linear}
+/* variant B: the hero, built like the wall's now zone */
+.hero{position:relative;margin:12px -16px 0;padding:18px 16px 20px;background:linear-gradient(180deg,rgba(255,255,255,.97),rgba(255,255,255,.86));border-top:1px solid #fff;border-bottom:1px solid rgba(31,46,51,.06)}
+.hero:before{content:"";position:absolute;left:0;right:0;top:0;height:13px;background:linear-gradient(var(--blue),var(--blue)) 0 0/100% 2px no-repeat,linear-gradient(var(--blue),var(--blue)) 0 4px/100% 5px no-repeat,linear-gradient(var(--blue),var(--blue)) 0 11px/100% 2px no-repeat}
+.hero .h-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;min-height:34px}
+.hero .h-top .pill{font-size:19px;padding:6px 14px}
+.hero .h-cd{display:flex;align-items:baseline;gap:10px;margin-top:6px}
+.hero .h-cd b{font-weight:400;font-size:64px;line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.hero .h-cd span{font-size:17px;color:var(--ink2)}
+.hero h2.h-t{font-size:28px;line-height:1.12;margin-top:10px}
+.hero .h-s{font-size:20px;font-weight:700;line-height:1.25;margin-top:10px}
+.hero .meta{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;font-size:15px;color:var(--ink2);margin-top:6px}
+.hero .why{font-size:15px;margin-top:10px}
+.hero .bar{height:9px;margin-top:16px}
+.hero.alert{background:var(--red);color:#fff;border:0}
+.hero.alert:before{background:linear-gradient(#fff,#fff) 0 0/100% 2px no-repeat,linear-gradient(#fff,#fff) 0 4px/100% 5px no-repeat,linear-gradient(#fff,#fff) 0 11px/100% 2px no-repeat;opacity:.7}
+.hero.alert h2,.hero.alert .eyebrow,.hero.alert .h-cd span,.hero.alert .meta,.hero.alert .mode,.hero.alert .h-s,.hero.alert .small,.hero.alert .why{color:#fff}
+.hero.alert .eyebrow,.hero.alert .h-cd span,.hero.alert .meta,.hero.alert .mode,.hero.alert .h-s,.hero.alert .small,.hero.alert .why{font-size:19px;font-weight:700}
+.hero.alert .pill{background:#fff;color:var(--ink)}
+.hero.alert .btn.line{box-shadow:none}
+.hero.alert .bar{background:rgba(255,255,255,.3)}.hero.alert .bar i{background:#fff}
+.hero.alert .mode:before{background:#fff}
+.choices{display:grid;gap:10px;margin-top:14px}
+.choice{display:block;width:100%;text-align:left;border:1.5px solid var(--line);background:#fff;border-radius:6px 20px 0 20px;padding:12px 14px;min-height:64px;transition:transform .12s var(--ease),border-color .24s}
+.choice:active{transform:scale(.985)}
+.choice[aria-pressed=true]{border-color:var(--red);box-shadow:inset 0 0 0 1.5px var(--red)}
+.choice .r{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.choice b{display:block;font-size:17px;line-height:1.25;margin-top:6px}
+.choice small{display:block;font-size:14px;color:var(--ink2);margin-top:3px}
+.choice .n{font-size:14px;font-weight:700;color:var(--ink)}
+.hero.alert .choice{color:var(--ink)}
+.slot1{border-left:5px solid var(--blue)}
+.slot1 .ttl{font-size:20px;font-weight:700;margin-top:6px}
+.petals{display:flex;align-items:center;gap:12px;margin-top:12px}
+.petals svg{width:56px;height:56px;flex:none}
+.petals b{font-size:18px}
+
+/* sessions by block */
+.blk{margin-top:14px}
+.blk-h{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding-bottom:6px;border-bottom:2px solid var(--line)}
+.blk-h b{font-size:20px}
+.blk-h span{font-size:14px;color:var(--ink2)}
+.srow{display:grid;grid-template-columns:minmax(0,1fr) 48px;gap:8px;align-items:start;padding:12px 0;border-bottom:1px solid var(--line)}
+.srow .t{font-weight:700;font-size:17px;line-height:1.25;margin-top:6px}
+.srow .w{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;font-size:14px;color:var(--ink2);margin-top:4px}
+.srow .tg{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.srow.free{grid-template-columns:1fr;color:var(--ink2);font-size:15px;padding:10px 0}
+.star{width:48px;height:48px;border:0;background:none;display:grid;place-items:center;border-radius:50%;color:rgba(31,46,51,.58);transition:transform .12s var(--ease)}
+.star:active{transform:scale(.9)}
+.star svg{width:30px;height:30px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round}
+.star[aria-pressed=true]{color:var(--red)}
+.star[aria-pressed=true] svg{fill:currentColor}
+.star.lock{color:var(--blue)}
+.star.lock svg{fill:currentColor}
+.star:disabled{cursor:default}
+.rowlist{padding:2px 16px}
+.rowlist>div{padding:12px 0;border-bottom:1px solid var(--line)}
+.rowlist>div:last-child{border-bottom:0}
+.rowlist .t{font-weight:700;font-size:17px;line-height:1.25}
+.rowlist .w{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;font-size:14px;color:var(--ink2);margin-top:4px}
+.when{display:block;font-weight:700;font-size:14px;color:var(--ink);font-variant-numeric:tabular-nums}
+details.fold{margin-top:14px}
+details.fold summary{list-style:none;display:flex;align-items:center;justify-content:space-between;min-height:52px;font-size:20px;font-weight:700;color:var(--red);cursor:pointer;border-bottom:2px solid var(--line)}
+details.fold summary::-webkit-details-marker{display:none}
+details.fold summary:after{content:"";width:10px;height:10px;border-right:2.5px solid var(--ink);border-bottom:2.5px solid var(--ink);transform:rotate(45deg) translateY(-3px);transition:transform .24s var(--ease)}
+details.fold[open] summary:after{transform:rotate(225deg) translateY(-1px)}
+.acct{margin-top:26px;padding-top:14px;border-top:1px solid var(--line);font-size:15px;color:var(--ink2);display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px}
+.ann{display:flex;gap:10px;align-items:flex-start;background:var(--blue);color:#fff;font-weight:700;font-size:19px;line-height:1.3;padding:12px 14px;border-radius:6px 20px 0 20px;margin-top:12px}
+
+/* live */
 .opts{display:grid;gap:10px;margin-top:14px}
-.opt{text-align:left;border:1.5px solid var(--line);background:#fff;border-radius:8px;padding:14px 16px;font-weight:700;font-size:17px}
-.opt[aria-pressed=true]{border-color:var(--teal);background:var(--tealsoft)}
+.opt{position:relative;overflow:hidden;text-align:left;border:1.5px solid var(--line);background:#fff;border-radius:6px 20px 0 20px;padding:13px 16px;min-height:54px;font-weight:700;font-size:17px;transition:transform .12s var(--ease)}
+.opt:active{transform:scale(.985)}
+.opt[aria-pressed=true]{border-color:var(--blue);box-shadow:inset 0 0 0 1.5px var(--blue)}
+.opt i{position:absolute;left:0;top:0;bottom:0;background:var(--bluesoft);transition:width .52s var(--ease);z-index:0}
+.opt span,.opt em{position:relative;z-index:1}
+.opt em{float:right;font-style:normal;font-weight:400;color:var(--ink2);margin-left:8px}
 .words{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
-.words span{background:#fff;border-radius:6px;padding:5px 10px;font-weight:700;font-size:15px}
+.words span{background:#fff;border-radius:4px 14px 0 14px;padding:6px 11px;font-weight:700;font-size:16px}
 .words span i{font-style:normal;font-weight:400;color:var(--ink2);margin-left:6px}
+.words span.me{box-shadow:inset 0 0 0 1.5px var(--blue)}
+.nums{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
+.nums div{background:var(--card);border:1px solid #fff;border-radius:6px 18px 0 18px;padding:10px 12px}
+.nums b{display:block;font-size:30px;font-weight:400;line-height:1;font-variant-numeric:tabular-nums}
+.nums span{display:block;font-size:13px;color:var(--ink2);margin-top:4px;line-height:1.2}
+.form-row{display:flex;gap:10px;margin-top:10px}
+.form-row input{flex:1;min-width:0}
+.form-row .btn{flex:none;padding:12px 18px}
+
+/* reaction pad */
+.pad{position:fixed;left:0;right:0;bottom:var(--dock-h);z-index:25;display:flex;justify-content:center;pointer-events:none;padding:0 16px 8px}
+.pad .in{pointer-events:auto;position:relative;display:flex;align-items:center;gap:14px;background:rgba(255,255,255,.95);border:1px solid #fff;box-shadow:0 8px 28px rgba(31,46,51,.16);border-radius:10px 32px 0 32px;padding:10px 16px 10px 14px}
+.pad .lbl{font-size:13px;font-weight:700;line-height:1.15;color:var(--ink);width:62px}
+.pad .lbl span{display:block;font-weight:400;color:var(--ink2);font-variant-numeric:tabular-nums}
+.rxb{width:60px;height:60px;border-radius:50%;border:0;display:grid;place-items:center;background:var(--redsoft);color:var(--red);transition:transform .1s var(--ease)}
+.rxb.blue{background:var(--bluesoft);color:var(--blue)}
+.rxb:active{transform:scale(.88)}
+.rxb svg{width:34px;height:34px}
+.fly{position:absolute;width:30px;height:30px;pointer-events:none;animation:fly 1.25s var(--ease) forwards}
+@keyframes fly{0%{opacity:0;transform:translate(0,0) scale(.6)}15%{opacity:1}100%{opacity:0;transform:translate(var(--dx),-120px) scale(1.15)}}
+
+/* people */
+.code{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center}
+.code .num{font-size:64px;font-weight:400;line-height:.95;letter-spacing:.04em;font-variant-numeric:tabular-nums}
+.code .qr{width:116px;height:116px;background:#fff;padding:6px;border-radius:6px}
+.code .qr svg{display:block;width:100%;height:100%}
+.person{display:grid;grid-template-columns:44px minmax(0,1fr);gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
+.person:last-child{border-bottom:0}
+.ini{width:44px;height:44px;border-radius:50%;background:var(--blue);color:#fff;display:grid;place-items:center;font-weight:700;font-size:16px}
+.person b{display:block;font-size:17px;line-height:1.25}
+.person .why{font-size:15px;font-weight:700;margin-top:6px}
+.person .lin{display:inline-flex;align-items:center;min-height:44px;font-weight:700;font-size:15px;text-decoration:underline;text-decoration-color:var(--blue);text-decoration-thickness:2px;text-underline-offset:4px}
+.tg2{display:inline-block;font-weight:700;font-size:13px;padding:3px 9px;border-radius:3px 12px 0 12px;margin:6px 6px 0 0;color:var(--ink)}
+.tg2.lk{background:var(--redsoft)}.tg2.of{background:var(--bluesoft)}
 .tags{display:flex;flex-wrap:wrap;gap:8px}
-.tag{border:1.5px solid var(--line);background:#fff;border-radius:4px 16px 0 16px;padding:7px 12px;font-weight:700;font-size:14px}
-.tag[aria-pressed=true]{background:var(--red);border-color:var(--red);color:#fff}
-.tags.of .tag[aria-pressed=true]{background:var(--teal);border-color:var(--teal)}
-.tg{display:inline-block;font-weight:700;font-size:13px;padding:3px 9px;border-radius:4px 14px 0 14px;margin:3px 4px 0 0}
-.tg.lk{background:var(--redsoft);color:var(--red)}.tg.of{background:var(--tealsoft);color:var(--teal)}
-.person{display:grid;grid-template-columns:44px 1fr;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
-.ini{width:44px;height:44px;border-radius:50%;background:var(--teal);color:#fff;display:grid;place-items:center;font-weight:700}
-.person b{display:block;font-size:17px;line-height:1.2}
-.person a{color:var(--teal);font-weight:700;font-size:14px}
-.check{display:flex;gap:10px;align-items:flex-start;margin-top:16px;font-size:15px}
-.check input{width:22px;height:22px;flex:none;margin-top:1px;accent-color:var(--teal)}
-.drop{display:grid;place-items:center;text-align:center;border:2px dashed var(--ink3);border-radius:10px;min-height:180px;padding:16px;margin-top:14px;position:relative;overflow:hidden;background:rgba(255,255,255,.5)}
-.drop img{max-width:100%;max-height:360px;border-radius:6px;display:block}
-.drop input{position:absolute;inset:0;opacity:0;cursor:pointer}
-.status{display:flex;gap:10px;align-items:center;font-weight:700}
-.status i{width:10px;height:10px;border-radius:50%;background:var(--teal)}
+.tagb{border:1.5px solid rgba(31,46,51,.2);background:#fff;border-radius:4px 16px 0 16px;padding:8px 13px;min-height:44px;font-weight:700;font-size:15px}
+.tagb[aria-pressed=true]{background:var(--red);border-color:var(--red);color:#fff}
+.of .tagb[aria-pressed=true]{background:var(--blue);border-color:var(--blue)}
+.status{display:flex;gap:10px;align-items:center;font-weight:700;font-size:15px}
+.status i{width:10px;height:10px;border-radius:50%;background:var(--blue);flex:none}
 .status.wait i{background:#E78B3F}
-footer{padding:20px 0 calc(28px + env(safe-area-inset-bottom))}
+.check{display:flex;gap:12px;align-items:flex-start;margin-top:16px;font-size:15px;cursor:pointer;min-height:44px}
+.check input{width:24px;height:24px;flex:none;margin-top:1px;accent-color:var(--blue)}
+.empty{color:var(--ink2);font-size:15px;padding:12px 0}
+
+/* photos */
+.drop{display:grid;place-items:center;text-align:center;border:2px dashed rgba(31,46,51,.35);border-radius:10px;min-height:170px;padding:16px;position:relative;overflow:hidden;background:rgba(255,255,255,.55)}
+.drop img{max-width:100%;max-height:340px;border-radius:6px;display:block}
+.drop input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;margin-top:12px}
+.grid button{border:0;padding:0;background:rgba(31,46,51,.08);aspect-ratio:1;overflow:hidden;border-radius:3px}
+.grid img{width:100%;height:100%;object-fit:cover;display:block}
+.viewer{position:fixed;inset:0;z-index:60;background:rgba(20,30,34,.96);color:#fff;display:grid;grid-template-rows:auto minmax(0,1fr) auto;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.viewer .vt{display:flex;justify-content:flex-end;padding:8px}
+.viewer .vt button{min-width:64px;min-height:44px;border:0;background:rgba(255,255,255,.14);color:#fff;font-weight:700;font-size:16px;border-radius:6px 18px 0 18px}
+.viewer img{width:100%;height:100%;object-fit:contain;display:block}
+.viewer .vc{padding:12px 16px 18px;font-size:16px}
+.viewer .vc b{display:block}
+
+/* keepsake */
+.fls{display:flex;gap:6px;margin-top:10px}
+.flb{width:52px;height:52px;border:0;background:none;display:grid;place-items:center;border-radius:50%;color:rgba(31,46,51,.38);transition:transform .12s var(--ease)}
+.flb:active{transform:scale(.9)}
+.flb svg{width:40px;height:40px;fill:currentColor}
+.fls span{display:inline-block}
+.fls span svg{display:block;width:100%;height:100%}
+.flb[aria-pressed=true]{color:var(--red)}
+.nps{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;margin-top:10px}
+.nps button{min-height:46px;border:1.5px solid rgba(31,46,51,.2);background:#fff;border-radius:3px 12px 0 12px;font-weight:700;font-size:17px}
+.nps button[aria-pressed=true]{background:var(--blue);border-color:var(--blue);color:#fff}
+.quiet{display:block;margin:30px auto 0;border:0;background:none;color:var(--ink2);font-size:15px;text-decoration:underline;min-height:44px}
+
+/* footer */
+footer{padding:28px 0 calc(var(--dock-h) + var(--pad-h) + 16px)}
 .logos{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:14px 20px}
 .logos img{height:26px;width:auto}
 .logos img.tp{height:44px}
-.band{margin-top:22px;height:22px;background:linear-gradient(var(--teal),var(--teal)) top/100% 3px no-repeat,linear-gradient(var(--teal),var(--teal)) 0 6px/100% 9px no-repeat,linear-gradient(var(--teal),var(--teal)) 0 18px/100% 3px no-repeat}
-.foot{margin-top:12px;text-align:center;font-size:12px;color:var(--ink2)}
-.empty{color:var(--ink3);font-size:15px;padding:12px 0}
+.band{margin-top:22px;height:13px;background:linear-gradient(var(--blue),var(--blue)) 0 0/100% 2px no-repeat,linear-gradient(var(--blue),var(--blue)) 0 4px/100% 5px no-repeat,linear-gradient(var(--blue),var(--blue)) 0 11px/100% 2px no-repeat}
+.leaves{height:16px;margin-top:6px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 32'%3E%3Cpath fill='%23DF6236' d='M30,28 C40,27 52,20 60,2 C50,12 38,14 30,28 Z M30,28 C20,27 8,20 0,2 C10,12 22,14 30,28 Z'/%3E%3C/svg%3E") 0 0/30px 16px repeat-x}
+.foot{margin-top:12px;text-align:center;font-size:13px;color:var(--ink2)}
+
+/* bottom tabs */
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;background:rgba(246,246,246,.96);border-top:1px solid var(--line);padding:5px max(6px,env(safe-area-inset-right)) calc(5px + env(safe-area-inset-bottom)) max(6px,env(safe-area-inset-left));display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)}
+.tabs button{border:0;background:none;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:13px;font-weight:700;color:var(--ink2);position:relative}
+.tabs .ic{width:48px;height:30px;display:grid;place-items:center;border-radius:6px 16px 0 16px;transition:background .24s var(--ease),color .24s}
+.tabs svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.tabs [aria-selected=true]{color:var(--ink)}
+.tabs [aria-selected=true] .ic{background:var(--red);color:#fff}
+.tabs .bdg{position:absolute;top:5px;left:calc(50% + 14px);width:10px;height:10px;border-radius:50%;background:var(--blue);box-shadow:0 0 0 2px #F6F6F6}
+
+/* sign in sheet */
+.scrim{position:fixed;inset:0;z-index:48;background:rgba(31,46,51,.42);animation:fade .24s var(--ease)}
+.sheet{position:fixed;left:0;right:0;z-index:50;display:flex;flex-direction:column;background:#F6F6F6;overflow:hidden}
+.sheet .sc{overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;flex:1 1 auto;min-height:0}
+.sheet .in{max-width:560px;margin:0 auto;padding:0 16px}
+.sheet h2{font-size:28px}
+.sheet .lead{font-size:16px}
+.sheet .ft{flex:none;max-width:560px;width:100%;margin:0 auto;padding:6px 16px calc(10px + env(safe-area-inset-bottom));display:flex;justify-content:space-between;gap:8px}
+.res{display:grid;gap:8px;margin-top:12px}
+.res button{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1.5px solid var(--line);background:#fff;border-radius:6px 20px 0 20px;padding:10px 14px;min-height:58px;font-weight:700;font-size:18px;transition:transform .12s var(--ease)}
+.res button:active{transform:scale(.985)}
+.res .ini{width:38px;height:38px;font-size:14px}
+.hint{font-size:15px;color:var(--ink2);margin-top:10px;min-height:22px}
+.boxes{position:relative;display:grid;grid-template-columns:repeat(4,60px);gap:12px;margin-top:16px;justify-content:start}
+.boxes i{height:68px;border-radius:8px;background:#fff;border:1.5px solid rgba(31,46,51,.25);display:grid;place-items:center;font-style:normal;font-size:34px;font-weight:700;font-variant-numeric:tabular-nums;transition:border-color .24s}
+.boxes i.on{border-color:var(--blue);box-shadow:0 0 0 3px var(--bluesoft)}
+.boxes.bad i{border-color:#a8381c}
+.boxes.shake{animation:shake .36s var(--io)}
+@keyframes shake{20%{transform:translateX(-8px)}50%{transform:translateX(7px)}80%{transform:translateX(-4px)}}
+.boxes input{position:absolute;inset:0;width:100%;height:100%;opacity:0;font-size:17px;border:0;padding:0;min-height:0;caret-color:transparent;letter-spacing:40px;color:transparent;background:transparent}
+.who{display:flex;align-items:center;gap:10px;margin-top:14px;font-size:17px;font-weight:700}
+.who .lnk{font-size:15px}
+.steps{display:flex;gap:6px;margin-top:2px}
+.steps i{width:28px;height:6px;background:rgba(31,46,51,.15);border-radius:2px 6px 0 6px}
+.steps i.on{background:var(--red)}
+.ok-big{font-size:34px;font-weight:700;color:var(--red);line-height:1.1}
+/* A: a sheet that rises from the bottom and sits above the keyboard */
+.sheet.va{bottom:var(--kb);max-height:calc(100svh - 48px - var(--kb));border-radius:10px 30px 0 0;box-shadow:0 -10px 40px rgba(31,46,51,.2);animation:up .52s var(--ease) both}
+.sheet.va .grab{width:44px;height:5px;border-radius:3px;background:rgba(31,46,51,.2);margin:10px auto 6px}
+.sheet.va .sc{display:flex;flex-direction:column}
+.sheet.va .sc>.in{width:100%;padding-top:6px;padding-bottom:6px}
+.sheet.va .res{margin-top:10px}
+@keyframes up{from{transform:translateY(100%)}to{transform:none}}
+/* B: a full screen welcome page, the steps stacked in order */
+.sheet.vb{top:0;bottom:var(--kb);background:#F6F6F6 linear-gradient(180deg,#E3E3E3,#F6F6F6 70%);animation:fade .32s var(--ease) both}
+.sheet.vb .bhd{padding-top:calc(14px + env(safe-area-inset-top))}
+.sheet.vb .bhd .rule{height:4px;background:var(--blue);margin-top:10px}
+.sheet.vb .bhd h1{font-size:22px;color:var(--red);font-weight:700}
+.sheet.vb .stp{margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+.sheet.vb .stp:first-of-type{border-top:0;margin-top:10px}
+.sheet.vb .stp .eyebrow{color:var(--ink2);font-size:13px}
+.sheet.vb .done{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:18px;font-weight:700}
+.sheet.vb .band{margin-top:0}
+
+.toast{position:fixed;left:16px;right:16px;bottom:calc(var(--dock-h) + var(--pad-h) + 10px);z-index:70;max-width:528px;margin:0 auto;background:var(--ink);color:#fff;font-weight:700;font-size:16px;padding:12px 16px;border-radius:6px 20px 0 20px;box-shadow:0 8px 24px rgba(0,0,0,.2);opacity:0;transform:translateY(8px);transition:opacity .24s var(--ease),transform .24s var(--ease);pointer-events:none}
+.toast.on{opacity:1;transform:none}
+@media (min-width:600px){.hero{margin-left:0;margin-right:0;border-radius:12px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
 <body>
-<header>
-  <div class="wrap">
-    <div class="top"><h1>Mentorship Day</h1><span>Palestine Innovation Summit</span></div>
-    <div class="rule"></div>
-    <nav role="tablist" aria-label="Sections">
-      <button role="tab" id="t-today" aria-controls="today" aria-selected="true">Today</button>
-      <button role="tab" id="t-poll" aria-controls="poll" aria-selected="false">Poll</button>
-      <button role="tab" id="t-photo" aria-controls="photo" aria-selected="false">Photo</button>
-      <button role="tab" id="t-meet" aria-controls="meet" aria-selected="false">Meet</button>
-    </nav>
-  </div>
+<div class="net-bg" aria-hidden="true"></div>
+<div class="net" id="net" role="status" hidden></div>
+<header class="hd wrap" id="hd">
+  <div class="row"><h1 id="hdT">Mentorship Day</h1><small>Palestine Innovation Summit</small></div>
+  <div class="rule"></div>
 </header>
 
-<main class="wrap">
+<main class="wrap" id="main">
   <section id="today" role="tabpanel" aria-labelledby="t-today">
-    <div class="card now" id="nowCard"></div>
+    <div id="ann"></div>
+    <div id="top"></div>
+    <div id="second"></div>
+    <div id="blocks"></div>
+    <div id="ones"></div>
     <div id="agenda"></div>
+    <div id="acct"></div>
   </section>
 
   <section id="poll" role="tabpanel" aria-labelledby="t-poll" hidden>
-    <h2>Live poll</h2>
-    <p class="lead">Answer here and watch the big screen in the Main Hall.</p>
-    <div class="card" id="pollCard"></div>
-  </section>
-
-  <section id="photo" role="tabpanel" aria-labelledby="t-photo" hidden>
-    <h2>Photo wall</h2>
-    <p class="lead">Share a moment from today. The team approves each photo before it appears on the big screen.</p>
-    <div class="card">
-      <div class="drop" id="drop"><div id="dropTxt"><b>Tap to take or choose a photo</b><div class="muted small">JPEG or PNG, from your camera or gallery</div></div><input type="file" id="file" accept="image/*" aria-label="Choose a photo"></div>
-      <label for="cap">Caption <span>(optional)</span></label><input type="text" id="cap" maxlength="90" placeholder="What is happening?">
-      <label for="pname">Your name <span>(optional)</span></label><input type="text" id="pname" maxlength="40" autocomplete="name">
-      <button class="btn wide" id="send" disabled>Send photo</button>
-      <div class="msg" id="photoMsg" role="status"></div>
-    </div>
+    <div id="stageNow"></div>
+    <div class="card" id="pollCard"><div id="pollHead"></div><div id="pollRes"></div></div>
+    <div id="nums"></div>
   </section>
 
   <section id="meet" role="tabpanel" aria-labelledby="t-meet" hidden>
-    <h2>Networking Board</h2>
-    <p class="lead">Say what you are looking for and how you can help. Your card shows on the big screen and here, so the right people can find you.</p>
-    <div class="card" id="myCard"></div>
-    <h3 id="matchH" hidden>Good people for you to meet</h3>
-    <div id="matches"></div>
-    <h3>People on the board</h3>
-    <div class="tags" id="filter" aria-label="Filter by tag"></div>
-    <div id="people"></div>
+    <div id="mcMeet"></div>
+    <div id="mcCard"></div>
+    <div id="mcCode"></div>
+    <div id="mcSugg"></div>
+    <div id="mcConn"></div>
+    <div id="mcAll"></div>
+  </section>
+
+  <section id="photo" role="tabpanel" aria-labelledby="t-photo" hidden>
+    <h3 style="margin-top:14px">Photo Wall</h3>
+    <p class="lead" id="phLead">Share a moment from today. The team checks each photo before it shows on the big screen.</p>
+    <div class="card" id="phUp">
+      <p class="small" style="font-weight:700;margin-bottom:12px">Make sure the people in your photo are happy to be on the big screen.</p>
+      <div class="drop" id="drop"><div id="dropTxt"><b>Tap to take or choose a photo</b><div class="muted small">From your camera or gallery</div></div><input type="file" id="file" accept="image/*" aria-label="Choose a photo"></div>
+      <label class="f" for="cap">Caption <span>(optional)</span></label><input type="text" id="cap" maxlength="90" dir="auto" placeholder="What is happening?" enterkeyhint="next">
+      <label class="f" for="pname">Your name <span>(optional)</span></label><input type="text" id="pname" maxlength="40" dir="auto" autocomplete="name" enterkeyhint="done">
+      <button class="btn wide" id="send" style="margin-top:16px" disabled>Send photo</button>
+      <div class="msg" id="photoMsg" role="status"></div>
+    </div>
+    <div id="phClosed" hidden class="card"><b>Uploads are closed.</b> <span class="muted">Thank you for your photos.</span></div>
+    <div id="phGrid"></div>
+  </section>
+
+  <section id="keep" role="tabpanel" aria-labelledby="t-keep" hidden>
+    <div id="kpTop"></div>
+    <div id="kpNums"></div>
+    <div id="kpTk"></div>
+    <div id="kpFb"></div>
+    <button class="quiet" type="button" data-act="forget" id="forget">Remove my data</button>
   </section>
 </main>
 
 <footer class="wrap">
-  <div class="logos"><img src="/assets/mercycorps.png" alt="Mercy Corps"><img src="/assets/gsg.png" alt="Gaza Sky Geeks"><img src="/assets/sida.png" alt="Sweden Sverige"><img class="tp" src="/assets/technopark.png" alt="Palestine TechnoPark"><img src="/assets/pis.png" alt="Palestine Innovation Summit"></div>
+  <div class="logos"><img loading="lazy" decoding="async" src="/assets/mercycorps.png" alt="Mercy Corps"><img loading="lazy" decoding="async" src="/assets/gsg.png" alt="Gaza Sky Geeks"><img loading="lazy" decoding="async" src="/assets/sida.png" alt="Sweden Sverige"><img class="tp" loading="lazy" decoding="async" src="/assets/technopark.png" alt="Palestine TechnoPark"><img loading="lazy" decoding="async" src="/assets/pis.png" alt="Palestine Innovation Summit"></div>
   <div class="band" aria-hidden="true"></div>
+  <div class="leaves" aria-hidden="true"></div>
   <p class="foot">Gaza Sky Geeks, a program of Mercy Corps, with the support of Sweden</p>
 </footer>
 
-<script src="/assets/day.js"></script>
+<div class="pad" id="pad" hidden></div>
+<nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav>
+<div class="scrim" id="scrim" hidden></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="shT" hidden></div>
+<div class="viewer" id="viewer" role="dialog" aria-modal="true" aria-label="Photo" hidden></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
 <script>
 (function(){
 'use strict';
+/* ---------- basics ---------- */
 const $ = id => document.getElementById(id);
-const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const store = { get(k){ try { return localStorage.getItem(k); } catch(e) { return null; } }, set(k, v){ try { localStorage.setItem(k, v); } catch(e) {} } };
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const store = {
+  get(k){ try { return localStorage.getItem(k); } catch(e) { return null; } },
+  set(k, v){ try { localStorage.setItem(k, v); } catch(e) {} },
+  del(k){ try { localStorage.removeItem(k); } catch(e) {} },
+  json(k){ try { return JSON.parse(localStorage.getItem(k)); } catch(e) { return null; } },
+  put(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e) {} }
+};
+const sess = { get(k){ try { return sessionStorage.getItem(k); } catch(e) { return null; } }, set(k, v){ try { sessionStorage.setItem(k, v); } catch(e) {} } };
 let DEV = store.get('md_dev');
 if (!DEV || !/^[a-z0-9]{8,40}$/.test(DEV)) { DEV = Array.from(crypto.getRandomValues(new Uint8Array(12)), b => (b % 36).toString(36)).join(''); store.set('md_dev', DEV); }
 const P = new URLSearchParams(location.search);
+// Two looks for the sign in sheet and the My Day top card, for the owner to choose: ?v=a or ?v=b, kept for the session.
+const V = (() => { const q = (P.get('v') || '').toLowerCase(); if (q === 'a' || q === 'b') { sess.set('md_v', q); return q; } return sess.get('md_v') || 'a'; })();
+document.body.dataset.v = V;
+const PLACE = 'Palestine TechnoPark, Birzeit';
+// Vibration only after the person has touched the page, as browsers require.
+const vib = n => { try { if (navigator.vibrate && (!navigator.userActivation || navigator.userActivation.hasBeenActive)) navigator.vibrate(n); } catch(e) {} };
+const plural = (n, one, many) => n + ' ' + (n === 1 ? one : many);
+const initials = n => String(n || '?').trim().split(/\s+/).filter(Boolean).slice(0, 2).map(w => Array.from(w)[0]).join('').toUpperCase();
 
-/* ---------- schedule, built from /assets/day.js (same as the big screen) ---------- */
-// day.js sets window.MD_DAY. A copy is kept, so a page that cannot load it still has the day.
-const DAY = (() => { const d = window.MD_DAY; if (d) { try { localStorage.setItem('md_day', JSON.stringify(d)); } catch(e) {} return d; } try { return JSON.parse(localStorage.getItem('md_day')); } catch(e) { return null; } })();
-if (!DAY) { setTimeout(() => location.reload(), 10000); return; }
-const advName = k => (DAY.advisors[k] || {name:k}).name;
-const blockOf = n => DAY.blocks.find(b => b.n === n);
-const SESSIONS = DAY.sessions.map(x => ({id:x.id, s:blockOf(x.b).s, room:x.room, t:x.title, who:x.who.map(advName).join(' and '), mode:x.mode}));
-const ONES = DAY.ones.map(o => ({s:o.s, e:o.e, who:advName(o.who), t:o.focus, room:o.room, mode:o.mode}));
-const ONES_END = DAY.ones.reduce((a, o) => o.e > a ? o.e : a, '');
-const PROGRAM = [];
-DAY.program.forEach(p => {
-  const b = p.mode === 'live' && DAY.blocks.find(x => x.s === p.s);
-  if (!b) { PROGRAM.push({s:p.s, e:p.e, t:p.name || p.title, w:p.where}); return; }
-  const n = DAY.sessions.filter(x => x.b === b.n).length, last = b === DAY.blocks[DAY.blocks.length - 1];
-  PROGRAM.push({s:b.s, e:b.e, t:n === 1 ? 'Session' : 'Sessions', w:p.where, h:b.s});
-  PROGRAM.push({s:b.e, e:b.end, t:'Short break', w:last ? 'One to ones close at ' + ONES_END : 'Move to your next room'});
-});
-const toMin = s => { const [h, m] = s.split(':').map(Number); return h * 60 + m; };
-function nowMin(){ if (P.get('t')) return toMin(P.get('t')); const d = new Date(); return d.getHours() * 60 + d.getMinutes(); }
-const mode = m => `<span class="mode ${m === 'Online' ? 'on' : ''}">${m}</span>`;
+/* ---------- drawn shapes ---------- */
+function hexPath(cx, cy, r){ let d = ''; for (let i = 0; i < 6; i++) { const a = Math.PI / 3 * i; d += (i ? 'L' : 'M') + (cx + r * Math.cos(a)).toFixed(2) + ',' + (cy + r * Math.sin(a)).toFixed(2); } return d + 'Z'; }
+// The Summit honeycomb flower: seven hexagons.
+const HEX = (() => { const c = 16, R = 4.3, d = Math.sqrt(3) * R * 1.06; let p = hexPath(c, c, R * .9); for (let i = 0; i < 6; i++) { const a = Math.PI / 180 * (30 + 60 * i); p += hexPath(c + d * Math.cos(a), c + d * Math.sin(a), R * .9); } return p; })();
+const I = {
+  flower: `<svg viewBox="0 0 32 32" aria-hidden="true"><path d="${HEX}" fill="currentColor"/></svg>`,
+  heart: `<svg viewBox="0 0 32 32" aria-hidden="true"><path fill="currentColor" d="M16 28.2S4.6 21.4 4.6 13.3C4.6 9.2 7.6 6.4 11 6.4c2.3 0 4 1.2 5 3 1-1.8 2.7-3 5-3 3.4 0 6.4 2.8 6.4 6.9 0 8.1-11.4 14.9-11.4 14.9z"/></svg>`,
+  clap: `<svg viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M16 2.6v3.2M9.4 4.6l1.8 2.6M22.6 4.6l-1.8 2.6"/></g><g fill="currentColor"><rect x="7.2" y="10.4" width="9.6" height="17.6" rx="4.8" transform="rotate(-16 12 19.2)"/><rect x="15.2" y="10.4" width="9.6" height="17.6" rx="4.8" transform="rotate(16 20 19.2)" stroke="#fff" stroke-width="1.6"/></g><g stroke="#fff" stroke-width="1.3" stroke-linecap="round" opacity=".85"><path d="M18.9 12.6l-.5 3.4M21.9 13.4l-.9 3.3"/></g></svg>`,
+  star: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.9l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 16.9l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg>`,
+  day: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.8h17M8 3v4M16 3v4"/><path d="M8 14h3M8 17h6"/></svg>`,
+  live: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20v-6M10 20V8M15 20v-9M20 20v-4"/><circle cx="19.5" cy="5" r="1.6" fill="currentColor"/></svg>`,
+  people: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8.5" r="3.3"/><path d="M2.8 20c.6-3.7 3-5.7 6.2-5.7s5.6 2 6.2 5.7"/><circle cx="17.2" cy="9.4" r="2.6"/><path d="M16.4 14.5c2.8 0 4.6 1.8 5 4.9"/></svg>`,
+  photo: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8.2h3.1L8.9 5.6h6.2l1.8 2.6H20a1 1 0 0 1 1 1V19a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.2a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.7" r="3.6"/></svg>`,
+  keep: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="9.5" width="16" height="10.5" rx="1.5"/><path d="M3 9.5h18M12 9.5V20M12 9.5c-1.4-3.6-5.6-4.2-5.6-1.6S10 9.5 12 9.5zm0 0c1.4-3.6 5.6-4.2 5.6-1.6S14 9.5 12 9.5z"/></svg>`
+};
+// Three petals for "Meet 3 people": a petal fills for each connection.
+function petals(n){ const leaf = 'M24 24C30 19.5 30.5 10 24 3.5C17.5 10 18 19.5 24 24Z'; return `<svg viewBox="0 0 48 48" aria-hidden="true">${[0, 120, 240].map((r, i) => `<path d="${leaf}" transform="rotate(${r} 24 24)" fill="${i < n ? '#DF6236' : 'none'}" stroke="${i < n ? '#DF6236' : 'rgba(31,46,51,.4)'}" stroke-width="1.6"/>`).join('')}<circle cx="24" cy="24" r="3.2" fill="#2F9CC3"/></svg>`; }
 
-function renderToday(){
-  const m = nowMin(), cur = PROGRAM.find(p => m >= toMin(p.s) && m < toMin(p.e)), next = PROGRAM.find(p => toMin(p.s) > m && !/break/i.test(p.t));
-  let h;
-  if (!cur && m < toMin('09:30')) h = `<div class="k">Today</div><div class="big">Doors open at 09:30</div><p class="muted small" style="margin-top:6px">Opening at 10:00 in the Main Hall.</p>`;
-  else if (!cur) h = `<div class="k">Thank you</div><div class="big">Mentorship Day is over</div><p class="muted small" style="margin-top:6px">Thank you for joining us.</p>`;
-  else {
-    h = `<div class="k"><span class="live"></span>On now, until ${cur.e}</div><div class="big">${esc(cur.t)}</div><p class="muted small" style="margin-top:4px">${esc(cur.w)}</p>`;
-    if (cur.h) h += SESSIONS.filter(x => x.s === cur.h).map(x => `<div class="sess" style="border-bottom:0;padding-bottom:0"><div><span class="pill">${x.room}</span></div><div><div class="t">${esc(x.t)}</div><div class="w"><span>${esc(x.who)}</span>${mode(x.mode)}</div></div></div>`).join('');
-    if (next) h += `<p class="small" style="margin-top:14px;padding-top:10px;border-top:1px solid var(--line)"><b>Next at ${next.s}:</b> ${esc(next.t)}, ${esc(next.w)}</p>`;
+/* ---------- the day, from /assets/day.js ---------- */
+// day.js is loaded after this script so the page paints at once on a slow network. A copy is kept for the next visit.
+let DAY = window.MD_DAY || store.json('md_day');
+let DM = null;
+function dayModel(){
+  if (!DAY) return null;
+  if (DM && DM.src === DAY) return DM;
+  const adv = k => DAY.advisors[k] || {name:k};
+  const sessions = DAY.sessions.map(x => Object.assign({}, x, {names:x.who.map(k => adv(k).name).join(' and ')}));
+  const byId = Object.fromEntries(sessions.map(x => [x.id, x]));
+  const blocks = DAY.blocks.slice().sort((a, b) => a.n - b.n);
+  return DM = {src:DAY, sessions, byId, blocks, last:blocks[blocks.length - 1].n, adv,
+    of:n => sessions.filter(x => x.b === n).sort((a, b) => DAY.rooms.indexOf(a.room) - DAY.rooms.indexOf(b.room)),
+    block:n => blocks.find(b => b.n === n), prog:m => DAY.program.find(p => p.mode === m)};
+}
+function loadDay(){
+  const s = document.createElement('script'); s.src = '/assets/day.js'; s.async = true;
+  s.onload = () => { if (window.MD_DAY) { const fresh = JSON.stringify(window.MD_DAY); if (fresh !== JSON.stringify(DAY)) { DAY = window.MD_DAY; renderAll(); } store.set('md_day', fresh); } };
+  document.head.appendChild(s);
+}
+
+/* ---------- clock ---------- */
+// The phone keeps its own clock. When the server time differs by more than 15 seconds (a wrong phone clock, or a
+// rehearsal) it follows the server. ?t=HH:MM[:SS] wins over everything and runs on from that time on the event day.
+const toMin = s => { const a = String(s).split(':').map(Number); return a[0] * 60 + (a[1] || 0) + (a[2] || 0) / 60; };
+const hm = m => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(Math.floor(m % 60)).padStart(2, '0');
+const FAKE = /^\d{1,2}:\d{2}(:\d{2})?$/.test(P.get('t') || '') ? toMin(P.get('t')) : null;
+const T0 = Date.now();
+let skew = 0;
+const FMT = new Intl.DateTimeFormat('en-US', {timeZone:'Asia/Hebron', hourCycle:'h23', year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit'});
+function venue(){
+  if (FAKE !== null && DAY) return {date:DAY.date, min:FAKE + (Date.now() - T0) / 60000};
+  const o = {}; for (const p of FMT.formatToParts(new Date(Date.now() + skew))) o[p.type] = p.value;
+  return {date:`${o.year}-${o.month}-${o.day}`, min:(+o.hour % 24) * 60 + +o.minute + +o.second / 60};
+}
+function phaseNow(v){
+  v = v || venue();
+  if (!DAY) return (ST && ST.phase) || 'before';
+  if (v.date < DAY.date) return 'before';
+  if (v.date > DAY.date) return 'after';
+  if (v.min < toMin(DAY.dayFrom || '09:00')) return 'before';
+  return v.min >= toMin(DAY.close) ? 'after' : 'day';
+}
+function fmtLeft(sec){ sec = Math.max(0, Math.round(sec)); const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60; return (h ? h + ':' + String(m).padStart(2, '0') : String(m)) + ':' + String(s).padStart(2, '0'); }
+function dayDate(){ if (!DAY) return ''; const d = new Date(DAY.date + 'T12:00:00Z'); const o = {}; for (const p of new Intl.DateTimeFormat('en-US', {timeZone:'UTC', weekday:'long', day:'numeric', month:'long'}).formatToParts(d)) o[p.type] = p.value; return `${o.weekday} ${o.day} ${o.month}`; }
+function dayWeekday(){ if (!DAY) return ''; return new Intl.DateTimeFormat('en-US', {timeZone:'UTC', weekday:'long'}).format(new Date(DAY.date + 'T12:00:00Z')); }
+
+/* ---------- live data, kept for the next visit ---------- */
+let ST = store.json('md_state');                 // last /api/state
+let SNAP = store.json('md_snap');                // {v, d} last /api/snap
+let ME = store.json('md_me');                    // last /api/me
+const myPub = () => (ME && ME.me && ME.me.pub) || '';
+const status = () => (ME && ME.status) || 'none';
+const flag = k => !(ST && ST.cfg && ST.cfg.flags && ST.cfg.flags[k] === false);
+let online = navigator.onLine !== false, lastOk = 0;
+
+const FALLBACK = {400:'That did not work. Check and try again.', 401:'That did not work. Try again.', 404:'We could not find that.', 409:'That is not open right now.', 413:'That is too large.', 415:'That file type does not work. Try a photo.', 422:'Please change the wording.', 423:'Ask the team at the registration desk.', 429:'Too many tries at once. Wait a moment and try again.'};
+async function api(path, opt){
+  opt = opt || {};
+  const headers = Object.assign({'x-dev':DEV}, opt.headers || {});
+  let body = opt.body;
+  if (body !== undefined && !(body instanceof Blob)) { headers['content-type'] = 'application/json'; body = JSON.stringify(body); }
+  let r;
+  try { r = await fetch(path, {method:opt.method || (body !== undefined ? 'POST' : 'GET'), headers, body, cache:'no-store'}); }
+  catch(e) { setOnline(false); const err = new Error('You are offline.'); err.offline = true; throw err; }
+  setOnline(true);
+  let d = null; if (r.status !== 204) { try { d = await r.json(); } catch(e) {} }
+  if (!r.ok) {
+    const err = new Error((d && d.error) || FALLBACK[r.status] || 'The server did not answer. We will try again.');
+    err.status = r.status; err.data = d || {}; if (r.status >= 500) err.offline = true; throw err;
   }
-  $('nowCard').innerHTML = h;
-  let a = `<h3>Today's agenda</h3>`;
-  a += `<div class="card" style="padding:4px 16px">${PROGRAM.filter(p => !/break/i.test(p.t)).map(p => `<div class="sess"><div class="t" style="color:${m >= toMin(p.s) && m < toMin(p.e) ? 'var(--red)' : 'inherit'}">${p.s}</div><div><div class="t">${esc(p.t)}</div><div class="w">${esc(p.w)}</div></div></div>`).join('').replace(/border-bottom[^"]*"([^]*)$/, '"$1')}</div>`;
-  a += `<h3>Sessions by hour</h3><p class="muted small">Pick one room each hour. Each session is 45 minutes, with about 25 seats.</p>`;
-  DAY.blocks.map(b => b.s).forEach(hh => {
-    a += `<div class="hour"><b>${hh}</b>`;
-    DAY.rooms.forEach(r => { const x = SESSIONS.find(y => y.s === hh && y.room === r);
-      a += x ? `<div class="sess"><div><span class="pill">${r}</span></div><div><div class="t">${esc(x.t)}</div><div class="w"><span>${esc(x.who)}</span>${mode(x.mode)}</div></div></div>`
-             : `<div class="sess free"><div><span class="pill ghost">${r}</span></div><div><div class="t">No session this hour</div></div></div>`; });
-    a += `</div>`; });
-  a += `<h3>One to Ones</h3><p class="muted small">15 minute conversations. Book yours at the registration desk.</p><div class="card" style="padding:4px 16px">${ONES.map(o => `<div class="sess"><div><span class="pill blue">${o.s}</span></div><div><div class="t">${esc(o.who)}</div><div class="w"><span>${esc(o.t)}</span><span>${esc(o.room)}</span>${mode(o.mode)}</div></div></div>`).join('')}</div>`;
-  $('agenda').innerHTML = a;
+  return d || {};
+}
+function setOnline(v){ if (v) lastOk = Date.now(); if (v === online) return; online = v; renderNet(); if (v) flush(); }
+window.addEventListener('online', () => { setOnline(true); pull(); });
+window.addEventListener('offline', () => setOnline(false));
+function renderNet(){
+  const el = $('net');
+  if (online) { el.hidden = true; return; }
+  el.hidden = false;
+  el.innerHTML = `You are offline. <span>${Q.length ? 'What you send waits here and goes when you are back.' : 'Showing what we saw last.'}</span>`;
 }
 
-/* ---------- live state ---------- */
-let STATE = null, myAnswer = store.get('md_ans') || '', myAnswerPoll = store.get('md_ansp') || '';
-// Lists live in the snapshot, fetched only when state.snapV changes and kept for the next visit.
-let SNAP = null; try { SNAP = JSON.parse(store.get('md_snap')); } catch(e) {}
-async function pullSnap(v){
-  try { const r = await fetch('/api/snap?v=' + encodeURIComponent(v)); if (!r.ok) throw 0; SNAP = {v, d:await r.json()}; store.set('md_snap', JSON.stringify(SNAP)); } catch(e) {}
+/* ---------- the queue: answers, stars and takeaways wait here when the phone is offline ---------- */
+let Q = store.json('md_q') || [];
+const PATH = {answer:'/api/answer', star:'/api/star', takeaway:'/api/takeaway'};
+let flushing = false;
+function enqueue(kind, key, body){ Q = Q.filter(x => x.k !== key); Q.push({k:key, kind, body, at:Date.now()}); store.put('md_q', Q); flush(); }
+async function flush(){
+  if (flushing || !Q.length) return; flushing = true;
+  while (Q.length) {
+    const it = Q[0];
+    try { const d = await api(PATH[it.kind], {body:it.body}); Q.shift(); store.put('md_q', Q); sent(it, d, null); }
+    catch(e) { if (e.offline) break; Q.shift(); store.put('md_q', Q); sent(it, null, e); }
+  }
+  flushing = false; renderNet(); renderAll();
 }
+function sent(it, d, err){
+  if (it.kind === 'star') {
+    if (d && ME) { ME.stars = d.stars; store.put('md_me', ME); vib(10); }
+    if (err) toast(err.message);
+  } else if (it.kind === 'answer') {
+    const ans = store.json('md_ans') || {};
+    if (d) { ans[it.body.pid] = d.word; store.put('md_ans', ans); vib(10); pollMsg = ''; }
+    if (err) { delete ans[it.body.pid]; store.put('md_ans', ans); pollMsg = err.message; pollErr = true; }
+    renderLive(true);
+  } else if (it.kind === 'takeaway') {
+    const b = sessOf(it.body.sid).b;
+    if (d) { TKS[b] = {state:'sent', status:d.status}; vib(10); refreshMe(); }
+    if (err) { TKS[b] = Object.assign(TKS[b] || {}, {state:'form', err:err.message}); }
+  }
+}
+const queued = kind => Q.filter(x => x.kind === kind);
+
+/* ---------- state, snap and me ---------- */
+let pulling = false, lastPull = 0, lastTouch = Date.now(), pollTimer = null, lastSnapV = SNAP && SNAP.v;
+const IDLE = 10 * 60 * 1000;
+const interval = () => (TAB === 'poll' || TAB === 'meet') ? 6000 : 15000;
+const idle = () => Date.now() - lastTouch > IDLE;
+function schedule(){
+  clearTimeout(pollTimer); pollTimer = null;
+  if (document.hidden || idle()) return;
+  pollTimer = setTimeout(tick, Math.max(0, lastPull + interval() - Date.now()));
+}
+async function tick(){ if (document.hidden || idle()) return; await pull(); schedule(); }
 async function pull(){
-  if (document.hidden) return;
-  try { const r = await fetch('/api/state', {cache:'no-store'}); if (!r.ok) throw 0; STATE = await r.json(); if (STATE.snapV && (!SNAP || SNAP.v !== STATE.snapV)) await pullSnap(STATE.snapV); renderPoll(); renderPeople(); } catch(e) {}
+  if (pulling || document.hidden) return; pulling = true; lastPull = Date.now();
+  try {
+    const r = await fetch('/api/state', {cache:'no-store'});
+    if (!r.ok) throw 0;
+    const d = await r.json();
+    const now = Date.now(); skew = Math.abs(d.t - now) > 15000 ? d.t - now : 0;
+    ST = d; store.put('md_state', d); setOnline(true);
+    if (d.snapV && (!SNAP || SNAP.v !== d.snapV)) pullSnap(d.snapV);
+    if (Q.length) flush();
+    checkReload(d);
+    renderAll();
+  } catch(e) { setOnline(navigator.onLine === false ? false : (Date.now() - lastOk < 45000)); }
+  pulling = false;
 }
-async function post(url, body, headers){
-  const r = await fetch(url, {method:'POST', headers:Object.assign({'content-type':'application/json'}, headers || {}), body:JSON.stringify(body)});
-  let d = {}; try { d = await r.json(); } catch(e) {}
-  if (!r.ok) throw new Error(d.error || 'Something went wrong. Please try again.');
-  return d;
+let snapping = null;
+async function pullSnap(v){
+  if (snapping === v) return; snapping = v;
+  try { const r = await fetch('/api/snap?v=' + encodeURIComponent(v)); if (!r.ok) throw 0; const d = await r.json(); SNAP = {v:d.v || v, d}; store.put('md_snap', SNAP); onSnap(); } catch(e) {}
+  snapping = null;
+}
+function onSnap(){
+  // A card that waited for the team is now on the board: ask for the meet code once.
+  if (ME && ME.profile && ME.profile.status !== 'approved' && snapHas(myPub())) refreshMe();
+  renderPeople(); renderPhotos(); renderKeep(); renderToday();
+}
+const snapD = () => (SNAP && SNAP.d) || {photos:[], profiles:[], links:[], takeaways:[]};
+const snapHas = pub => !!pub && (snapD().profiles || []).some(p => p.id === pub);
+let meBusy = null;
+function refreshMe(){
+  if (meBusy) return meBusy;
+  meBusy = api('/api/me').then(setMe).catch(() => {}).finally(() => { meBusy = null; });
+  return meBusy;
+}
+function setMe(d){
+  if (!d || !d.me) return;
+  ME = {status:d.status, me:d.me, stars:d.stars || {}, profile:d.profile || null, code:d.code || null, links:d.links || [], takeaways:d.takeaways || [], feedback:d.feedback || null};
+  store.put('md_me', ME);
+  if (!(FORM && FORM.touched)) FORM = null;
+  renderAll(); meetPending(); maybeSheet();
+}
+let reloadSeen = null;
+function checkReload(d){ const v = d.cfg && d.cfg.reloadAt; if (reloadSeen === null) { reloadSeen = v; return; } if (v !== reloadSeen && !sheetOpen && !document.activeElement.matches('input,textarea')) location.reload(); }
+
+// Touches keep the polling alive; after 10 minutes without one it pauses until the next touch.
+['pointerdown', 'keydown', 'touchstart'].forEach(ev => document.addEventListener(ev, () => { const was = idle(); lastTouch = Date.now(); if (was) schedule(); }, {passive:true, capture:true}));
+document.addEventListener('visibilitychange', () => { if (document.hidden) { clearTimeout(pollTimer); pollTimer = null; } else { renderAll(); schedule(); } });
+
+/* ---------- rendering helpers ---------- */
+// Writes HTML only when it changed, and never under a field that is being typed in (it waits for the blur).
+function put(el, html){
+  if (!el || el._h === html) return;
+  const a = document.activeElement;
+  if (a && el.contains(a) && a.matches('input,textarea')) { el._wait = html; return; }
+  el.innerHTML = html; el._h = html; el._wait = null;
+}
+document.addEventListener('focusout', () => setTimeout(() => document.querySelectorAll('main div, #pad').forEach(el => { if (el._wait != null) put(el, el._wait); }), 0));
+let toastT = null;
+function toast(t){ const el = $('toast'); el.textContent = t; el.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('on'), 3800); }
+const sessOf = id => (dayModel() && dayModel().byId[id]) || {b:0, room:'', title:'', names:'', mode:''};
+const modeTag = m => m ? `<span class="mode ${m === 'Online' ? 'on' : ''}">${esc(m)}</span>` : '';
+
+/* ---------- tabs ---------- */
+let TAB = null;
+// The address keeps the tab as #day, #live, #people, #photos or #keepsake. These are not element ids, so the browser never jumps.
+const HASH = {today:'day', poll:'live', meet:'people', photo:'photos', keep:'keepsake'};
+const UNHASH = Object.fromEntries(Object.entries(HASH).map(([k, v]) => [v, k]));
+function tabList(){ return phaseNow() === 'after' ? [['keep', 'Keepsake', 'keep'], ['meet', 'People', 'people'], ['photo', 'Photos', 'photo']] : [['today', 'My Day', 'day'], ['poll', 'Live', 'live'], ['meet', 'People', 'people'], ['photo', 'Photos', 'photo']]; }
+function renderTabs(){
+  const list = tabList();
+  if (!list.some(t => t[0] === TAB)) { show(list[0][0], true); return; }
+  const badge = {poll:liveBadge(), meet:!!store.get('md_m')};
+  put($('tabs'), list.map(([id, label, ic]) => `<button role="tab" id="t-${id}" aria-controls="${id}" aria-selected="${TAB === id}" data-act="tab" data-tab="${id}"><span class="ic">${I[ic]}</span>${label}${badge[id] && TAB !== id ? '<span class="bdg" aria-label="new"></span>' : ''}</button>`).join(''));
+}
+function liveBadge(){ const p = ST && ST.poll; if (!p || !p.open) return false; return !(store.json('md_ans') || {})[p.id] && !queued('answer').some(x => x.body.pid === p.id); }
+function show(id, quiet){
+  const ids = ['today', 'poll', 'meet', 'photo', 'keep'];
+  if (!tabList().some(t => t[0] === id)) id = tabList()[0][0];
+  TAB = id;
+  ids.forEach(t => { $(t).hidden = t !== id; });
+  store.set('md_tab', id);
+  if (history.replaceState) history.replaceState(history.state, '', location.pathname + location.search + '#' + HASH[id]);
+  if (!quiet) window.scrollTo(0, 0);
+  renderTabs(); renderPad(); schedule();
+  if (id === 'meet') renderPeople();
+  if (Date.now() - lastPull > interval()) pull();
 }
 
-/* ---------- poll ---------- */
-let pollBusy = false;
-function renderPoll(){
-  const p = STATE && STATE.poll, el = $('pollCard');
-  if (pollBusy) return;
-  if (!p) { el.innerHTML = '<p class="empty">The next poll opens soon. Check back in a few minutes.</p>'; return; }
-  const mine = myAnswerPoll === p.id ? myAnswer : '';
-  let h = `<div class="k blue">${p.open ? 'Open now' : 'Closed'}</div><div class="big">${esc(p.q)}</div>`;
-  if (p.open && p.type === 'choice') h += `<div class="opts">${p.options.map(o => `<button class="opt" data-o="${esc(o)}" aria-pressed="${mine === o}">${esc(o)}</button>`).join('')}</div>`;
-  else if (p.open) h += `<label for="word">Your answer <span>(one or two words)</span></label><input type="text" id="word" maxlength="28" autocomplete="off" enterkeyhint="send" value="${esc(mine)}"><button class="btn wide" id="sendWord">${mine ? 'Change my answer' : 'Send'}</button>`;
-  h += `<div class="msg ok" id="pollMsg" role="status">${mine ? `Your answer: ${esc(mine)}. It is on the big screen.` : ''}</div>`;
-  if (p.words && p.words.length) {
-    const tot = p.total || 0;
-    h += `<h3 style="margin-top:20px">${tot} ${tot === 1 ? 'answer' : 'answers'} so far</h3><div class="words">${p.words.slice(0, p.type === 'choice' ? 8 : 16).map(([w, n]) => `<span>${esc(w)}<i>${n}</i></span>`).join('')}</div>`;
+/* ---------- sign in ---------- */
+let sheetOpen = false, sheetPushed = false;
+const SI = {step:'find', q:'', list:null, busy:false, err:'', hint:'', pick:null, digits:'', hello:true, left:null, name:'', ok:''};
+function maybeSheet(){
+  if (sheetOpen) { if (status() !== 'none' && SI.step !== 'ok') closeSheet(); return; }
+  if (status() !== 'none' || phaseNow() === 'after') return;
+  if (store.get('md_skip') && !store.get('md_m')) return;
+  if (store.get('md_m') && sess.get('md_skipm')) return;
+  openSheet(false);
+}
+function openSheet(byHand){
+  if (sheetOpen) return;
+  Object.assign(SI, {step:'find', q:'', list:null, busy:false, err:'', hint:'', pick:null, digits:'', left:null, ok:''});
+  sheetOpen = true;
+  ['main', 'tabs', 'hd', 'pad'].forEach(id => $(id).inert = true);
+  document.querySelector('footer').inert = true;
+  document.body.classList.add('lock');
+  $('scrim').hidden = V !== 'a'; $('sheet').hidden = false; $('sheet').className = 'sheet v' + V;
+  if (byHand) { history.pushState({sheet:1}, ''); sheetPushed = true; }
+  renderSheet();
+  if (byHand) setTimeout(() => { const i = $('siQ'); if (i) i.focus(); }, 60);
+}
+function closeSheet(){
+  if (!sheetOpen) return;
+  if (sheetPushed && history.state && history.state.sheet) { sheetPushed = false; history.back(); return; }
+  hideSheet();
+}
+function hideSheet(){
+  sheetOpen = false; sheetPushed = false;
+  ['main', 'tabs', 'hd', 'pad'].forEach(id => $(id).inert = false);
+  document.querySelector('footer').inert = false;
+  document.body.classList.remove('lock');
+  $('scrim').hidden = true; $('sheet').hidden = true; $('sheet').innerHTML = ''; $('sheet')._h = null;
+  if (store.get('md_m')) { show('meet'); meetPending(); }
+  renderAll();
+}
+function skipSheet(){ store.set('md_skip', '1'); if (store.get('md_m')) sess.set('md_skipm', '1'); closeSheet(); }
+const helloOn = () => flag('hello');
+function swHtml(id, on, title, sub){ return `<label class="sw" for="${id}"><input type="checkbox" id="${id}" ${on ? 'checked' : ''}><span class="tr" aria-hidden="true"></span><span><b>${title}</b>${sub ? `<small>${sub}</small>` : ''}</span></label>`; }
+function boxesHtml(){
+  const d = SI.digits;
+  return `<div class="boxes ${SI.err && SI.left !== null ? 'bad' : ''}" id="siBoxes">${[0, 1, 2, 3].map(i => `<i class="${i === Math.min(d.length, 3) ? 'on' : ''}">${esc(d[i] || '')}</i>`).join('')}<input id="siD" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" aria-label="Last 4 digits of your mobile number" value="${esc(d)}" enterkeyhint="done"></div>`;
+}
+function resultsHtml(){
+  if (SI.list === null) return '';
+  if (!SI.list.length) return `<p class="hint">No name found. Check the spelling, or continue as a guest.</p>`;
+  return `<div class="res" role="list">${SI.list.map(p => `<button type="button" role="listitem" data-act="si-pick" data-id="${esc(p.id)}" data-name="${esc(p.name)}"><span class="ini" aria-hidden="true">${esc(initials(p.name))}</span><span dir="auto">${esc(p.name)}</span></button>`).join('')}</div>`;
+}
+const errHtml = () => `<div class="msg err" id="siErr" role="alert">${esc(SI.err)}${SI.left ? ` <span style="font-weight:400">${plural(SI.left, 'try', 'tries')} left.</span>` : ''}</div>`;
+const meetLine = () => store.get('md_m') ? `<p class="small" style="margin-top:6px;font-weight:700">Sign in to connect with the person whose code is ${esc(store.get('md_m'))}.</p>` : '';
+function renderSheet(){
+  if (!sheetOpen) return;
+  const el = $('sheet');
+  const hello = helloOn();
+  let h;
+  if (V === 'a') {
+    // A: a sheet from the bottom, three steps. The field sits low, above the keyboard; results grow upward from it.
+    const stepN = {find:1, code:2, hello:3, guest:1, locked:2, ok:3}[SI.step];
+    const steps = `<div class="steps" aria-label="Step ${stepN} of 3">${[1, 2, 3].map(i => `<i class="${i <= stepN ? 'on' : ''}"></i>`).join('')}</div>`;
+    let body = '', foot = '';
+    if (SI.step === 'find') {
+      body = `${steps}<h2 id="shT" style="margin-top:10px">Find your name</h2>${meetLine()}<div id="siRes">${resultsHtml()}</div>
+        <label class="f" for="siQ" style="margin-top:14px">Your name, as you registered</label><input type="search" id="siQ" dir="auto" autocomplete="off" autocapitalize="words" spellcheck="false" enterkeyhint="search" placeholder="First or last name" value="${esc(SI.q)}">
+        <p class="hint" id="siHint">${esc(SI.hint || 'Type at least 3 letters.')}</p>${errHtml()}`;
+      foot = `<button class="lnk" type="button" data-act="si-guest">I am not on the list</button><button class="lnk" type="button" data-act="si-skip">Not now</button>`;
+    } else if (SI.step === 'code') {
+      body = `${steps}<h2 id="shT" style="margin-top:10px">Last 4 digits of your mobile number</h2><p class="lead">The number you registered with.</p>
+        <div class="who"><span dir="auto">${esc(SI.pick.name)}</span><button class="lnk" type="button" data-act="si-back">Not you?</button></div>${boxesHtml()}${errHtml()}`;
+      foot = `<button class="lnk" type="button" data-act="si-back">Back</button><button class="lnk" type="button" data-act="si-skip">Not now</button>`;
+    } else if (SI.step === 'hello') {
+      body = `${steps}<h2 id="shT" style="margin-top:10px">One last thing</h2>${swHtml('siH', SI.hello, 'Say hello to me on the big screen', `First name only: ${esc(firstOf(SI.pick.name))}`)}${errHtml()}
+        <button class="btn wide" type="button" data-act="si-claim" style="margin-top:14px" ${SI.busy ? 'disabled' : ''}>${SI.busy ? 'Signing in' : 'Done'}</button>`;
+      foot = `<button class="lnk" type="button" data-act="si-tocode">Back</button><span></span>`;
+    } else if (SI.step === 'guest') {
+      body = `<h2 id="shT">Continue as a guest</h2><p class="lead">Your card and takeaways show after the team checks them.</p>${meetLine()}
+        <label class="f" for="siN">Your name</label><input type="text" id="siN" dir="auto" maxlength="40" autocomplete="name" autocapitalize="words" enterkeyhint="done" value="${esc(SI.name)}">
+        ${hello ? swHtml('siH', SI.hello, 'Say hello to me on the big screen', 'First name only') : ''}${errHtml()}
+        <button class="btn wide" type="button" data-act="si-guestgo" style="margin-top:12px" ${SI.busy ? 'disabled' : ''}>Continue</button>`;
+      foot = `<button class="lnk" type="button" data-act="si-back">Back to search</button><button class="lnk" type="button" data-act="si-skip">Not now</button>`;
+    } else if (SI.step === 'locked') {
+      body = `<h2 id="shT">Ask the team</h2><p class="lead" style="font-size:18px;color:var(--ink);margin-top:10px" role="alert">${esc(SI.err)}</p><p class="lead">They can unlock your name in a moment. You can use the page without signing in until then.</p>`;
+      foot = `<button class="lnk" type="button" data-act="si-back">Back to search</button><button class="lnk" type="button" data-act="si-skip">Not now</button>`;
+    } else {
+      body = `<p class="ok-big" id="shT">Hello, ${esc(SI.ok)}</p><p class="lead">You are signed in.</p>`;
+    }
+    h = `<div class="grab" aria-hidden="true"></div><div class="sc"><div class="in" style="margin-top:auto">${body}</div></div><div class="ft">${foot}</div>`;
+  } else {
+    // B: a full screen welcome page. Each finished step folds into one line, the next opens below it.
+    const head = `<div class="bhd in"><h1>Mentorship Day</h1><div class="rule"></div></div>`;
+    let body = `<div class="in"><h2 id="shT" style="margin-top:18px">Welcome</h2><p class="lead">Sign in to see your sessions, the live poll and the people to meet.</p>${meetLine()}`;
+    if (SI.step === 'find') {
+      body += `<div class="stp"><div class="eyebrow">Step 1 of 2</div><label class="f" for="siQ" style="font-size:20px;margin-top:6px">Find your name</label>
+        <input type="search" id="siQ" dir="auto" autocomplete="off" autocapitalize="words" spellcheck="false" enterkeyhint="search" placeholder="First or last name" value="${esc(SI.q)}">
+        <p class="hint" id="siHint">${esc(SI.hint || 'Type at least 3 letters.')}</p><div id="siRes">${resultsHtml()}</div>${errHtml()}</div>`;
+    } else if (SI.step === 'guest') {
+      body += `<div class="stp"><div class="eyebrow">Not on the list</div><label class="f" for="siN" style="font-size:20px;margin-top:6px">Your name</label>
+        <input type="text" id="siN" dir="auto" maxlength="40" autocomplete="name" autocapitalize="words" enterkeyhint="done" value="${esc(SI.name)}">
+        <p class="hint">Your card and takeaways show after the team checks them.</p>
+        ${hello ? swHtml('siH', SI.hello, 'Say hello to me on the big screen', 'First name only') : ''}${errHtml()}
+        <button class="btn wide" type="button" data-act="si-guestgo" style="margin-top:12px" ${SI.busy ? 'disabled' : ''}>Continue as a guest</button></div>`;
+    } else if (SI.step === 'ok') {
+      body += `<div class="stp"><p class="ok-big">Hello, ${esc(SI.ok)}</p><p class="lead">You are signed in.</p></div>`;
+    } else {
+      body += `<div class="stp"><div class="eyebrow">Step 1 of 2</div><div class="done"><span dir="auto">${esc(SI.pick.name)}</span><button class="lnk" type="button" data-act="si-back">Change</button></div></div>`;
+      if (SI.step === 'locked') body += `<div class="stp"><div class="eyebrow">Step 2 of 2</div><p style="font-size:19px;font-weight:700;margin-top:6px" role="alert">${esc(SI.err)}</p><p class="lead">They can unlock your name in a moment. You can use the page without signing in until then.</p></div>`;
+      else body += `<div class="stp"><div class="eyebrow">Step 2 of 2</div><label class="f" for="siD" style="font-size:20px;margin-top:6px">Last 4 digits of your mobile number</label><p class="hint" style="margin-top:0">The number you registered with.</p>${boxesHtml()}${errHtml()}
+        ${hello ? `<div style="margin-top:10px">${swHtml('siH', SI.hello, 'Say hello to me on the big screen', `First name only: ${esc(firstOf(SI.pick.name))}`)}</div>` : ''}
+        <button class="btn wide" type="button" data-act="si-claim" style="margin-top:10px" ${SI.digits.length === 4 && !SI.busy ? '' : 'disabled'}>${SI.busy ? 'Signing in' : 'Sign in'}</button></div>`;
+    }
+    body += `</div>`;
+    const foot = SI.step === 'ok' ? '' : `<button class="lnk" type="button" data-act="${SI.step === 'find' ? 'si-guest' : 'si-back'}">${SI.step === 'find' ? 'I am not on the list' : 'Back to search'}</button><button class="lnk" type="button" data-act="si-skip">Not now</button>`;
+    h = `<div class="sc">${head}${body}</div><div class="ft">${foot}</div><div class="band" aria-hidden="true"></div><div class="leaves" aria-hidden="true" style="margin:4px 0 calc(4px + env(safe-area-inset-bottom))"></div>`;
   }
-  el.innerHTML = h;
-  el.querySelectorAll('.opt').forEach(b => b.onclick = () => answer(b.dataset.o));
-  const sw = $('sendWord'); if (sw) { sw.onclick = () => answer($('word').value); $('word').addEventListener('keydown', e => { if (e.key === 'Enter') answer($('word').value); }); }
+  el.innerHTML = h; el._h = h;
 }
-async function answer(text){
-  const p = STATE && STATE.poll; if (!p) return;
-  if (!String(text || '').trim()) { $('pollMsg').className = 'msg err'; $('pollMsg').textContent = 'Type a word first.'; return; }
-  pollBusy = true; $('pollMsg').className = 'msg'; $('pollMsg').textContent = 'Sending...';
-  try { const d = await post('/api/answer', {pid:p.id, dev:DEV, text}); myAnswer = d.word; myAnswerPoll = p.id; store.set('md_ans', myAnswer); store.set('md_ansp', p.id); pollBusy = false; await pull(); }
-  catch(e) { pollBusy = false; $('pollMsg').className = 'msg err'; $('pollMsg').textContent = e.message; }
+const firstOf = n => String(n || '').trim().split(/\s+/)[0] || '';
+function siPart(id, html){ const el = $(id); if (el) el.innerHTML = html; }
+let siT = null, siSeq = 0;
+function siSearch(q){
+  SI.q = q; SI.err = '';
+  clearTimeout(siT);
+  const letters = q.replace(/[^\p{L}\p{N}]/gu, '');
+  if (letters.length < 3) { SI.list = null; SI.hint = ''; siPart('siRes', ''); siPart('siHint', 'Type at least 3 letters.'); siPart('siErr', ''); return; }
+  siT = setTimeout(async () => {
+    const seq = ++siSeq;
+    siPart('siHint', 'Searching');
+    try { const d = await api('/api/who?q=' + encodeURIComponent(q)); if (seq !== siSeq) return; SI.list = d.list || []; SI.hint = SI.list.length ? 'Tap your name.' : ''; }
+    catch(e) { if (seq !== siSeq) return; SI.list = null; SI.hint = ''; SI.err = e.offline ? 'You are offline. Search works again when you are back.' : e.message; }
+    siPart('siRes', resultsHtml()); siPart('siHint', esc(SI.hint)); siPart('siErr', esc(SI.err));
+  }, 280);
+}
+function siDigits(v){
+  v = v.replace(/\D/g, '').slice(0, 4);
+  SI.digits = v;
+  if (SI.left === null) SI.err = '';
+  const bx = $('siBoxes');
+  if (bx) { bx.querySelectorAll('i').forEach((i, k) => { i.textContent = v[k] || ''; i.classList.toggle('on', k === Math.min(v.length, 3)); }); bx.classList.remove('bad'); }
+  const btn = document.querySelector('[data-act=si-claim]'); if (btn) btn.disabled = v.length !== 4 || SI.busy;
+  if (v.length === 4 && V === 'a') { SI.err = ''; if (helloOn()) { SI.step = 'hello'; renderSheet(); } else siClaim(); }
+}
+async function siClaim(){
+  if (SI.busy || SI.digits.length !== 4) return;
+  SI.busy = true; SI.err = ''; renderSheet();
+  try {
+    const d = await api('/api/claim', {body:{id:SI.pick.id, last4:SI.digits, hello:helloOn() && SI.hello}});
+    SI.busy = false; signedIn(d);
+  } catch(e) {
+    SI.busy = false; SI.digits = '';
+    if (e.status === 423 || (e.status === 401 && e.data.left === 0)) { SI.step = 'locked'; SI.err = e.message; SI.left = null; }
+    else { SI.step = 'code'; SI.err = e.offline ? 'You are offline. Try again when you are back.' : e.message; SI.left = e.status === 401 ? e.data.left : null; }
+    renderSheet();
+    const bx = $('siBoxes'); if (bx && SI.left !== null) { bx.classList.add('shake'); vib([30, 40, 30]); }
+    const i = $('siD'); if (i) i.focus();
+  }
+}
+async function siGuest(){
+  const n = ($('siN') || {}).value || '';
+  SI.name = n;
+  if (n.replace(/[^\p{L}]/gu, '').length < 2) { SI.err = 'Type your name.'; renderSheet(); return; }
+  SI.busy = true; SI.err = ''; renderSheet();
+  try { const d = await api('/api/guest', {body:{name:n.trim(), hello:helloOn() && SI.hello}}); SI.busy = false; signedIn(d); }
+  catch(e) { SI.busy = false; SI.err = e.offline ? 'You are offline. Try again when you are back.' : e.message; renderSheet(); }
+}
+function signedIn(d){
+  vib(10);
+  SI.step = 'ok'; SI.ok = (d.me && d.me.first) || ''; renderSheet();
+  store.del('md_skip');
+  setTimeout(() => { setMe(d); closeSheet(); }, 900);
+}
+async function signOut(){
+  try { await api('/api/signout', {body:{}}); } catch(e) { toast(e.message); return; }
+  store.del('md_ans'); await refreshMe(); toast('You are signed out.');
 }
 
-/* ---------- photo ---------- */
+/* ---------- My Day ---------- */
+// Stars as the phone sees them now: the last answer from the server, with stars still waiting to send on top.
+function starsNow(){
+  const s = Object.assign({}, (ME && ME.stars) || {});
+  for (const it of queued('star')) { if (it.body.sid) s[it.body.b] = {sid:it.body.sid, by:'own', why:null}; else delete s[it.body.b]; }
+  return s;
+}
+const interest = sid => (ST && ST.interest && ST.interest[sid]) || 0;
+function whyLine(st){
+  if (!st || st.by !== 'auto') return '';
+  if (st.why) return `Because you chose ${st.why}`;
+  return sessOf(st.sid).mode === 'Online' ? 'Because you asked for advisors joining remotely' : 'Because you asked for local advisors';
+}
+function tkWin(n){ const d = dayModel(), b = d.block(n); return {from:toMin(b.e) - 5, to:n === d.last ? toMin(DAY.close) : toMin(b.end) + 20}; }
+function tkAnswered(n){
+  const d = dayModel(); if (!d) return true;
+  const sids = d.of(n).map(x => x.id);
+  if (store.get('md_tkno_' + n)) return true;
+  if (TKS[n] && TKS[n].state === 'sent') return true;
+  if (queued('takeaway').some(x => sids.includes(x.body.sid))) return true;
+  return ((ME && ME.takeaways) || []).some(t => sids.includes(t.sid));
+}
+// The block whose takeaway window is open and not answered yet. near: only until the end of that block.
+function tkOpen(m){ const d = dayModel(); if (!d || !flag('takeaways')) return []; return d.blocks.filter(b => { const w = tkWin(b.n); return m >= w.from && m < w.to; }).map(b => b.n); }
+function tkBlock(m, near){
+  const d = dayModel();
+  for (const n of tkOpen(m).reverse()) if ((!near || m < toMin(d.block(n).end)) && !tkAnswered(n)) return n;
+  return null;
+}
+// Blocks answered on this phone in this visit, while their window is open: the card says thank you.
+const tkDone = m => tkOpen(m).filter(n => TKS[n] && TKS[n].state === 'sent');
+const CHG = {};
+function topModel(){
+  const d = dayModel(); if (!d) return null;
+  const v = venue(), m = v.min, ph = phaseNow(v), stars = starsNow();
+  const name = (ME && ME.me && ME.me.first) || '';
+  if (ph === 'before') {
+    const same = v.date === DAY.date;
+    return {kind:'before', key:'before', tone:'next', eyebrow:'Mentorship Day', title:same ? 'See you soon' : `See you on ${dayWeekday()}`, lines:[dayDate(), PLACE, `Doors open at ${DAY.open}`],
+      note:'Star your sessions below.', acts:[{l:'Star your sessions', a:'scroll', d:'blocks', p:1}].concat(onBoard() ? [] : [{l:'Join the Networking Board', a:'tab', d:'meet'}])};
+  }
+  const nb = d.blocks.find(b => m < toMin(b.s));
+  const cb = d.blocks.find(b => m >= toMin(b.s) && m < toMin(b.e));
+  if (nb && m >= toMin(nb.s) - 5 && m >= (d.blocks.find(b => b.n === nb.n - 1) ? toMin(d.block(nb.n - 1).e) : 0)) return breakModel(nb, stars, true);
+  const tb = tkBlock(m, true);
+  if (tb && (!cb || cb.n === tb)) return {kind:'takeaway', key:'tk' + tb, b:tb};
+  if (cb) return blockModel(cb, stars);
+  const prog = DAY.program.find(p => m >= toMin(p.s) && m < toMin(p.e));
+  const mode = prog ? prog.mode : (m < toMin(DAY.open) ? 'welcome' : null);
+  if (mode === 'welcome') {
+    const op = d.prog('opening'), acts = [];
+    if (ST && ST.poll && ST.poll.open && liveBadge()) acts.push({l:'Answer the first poll', a:'tab', d:'poll', p:1});
+    if (!onBoard()) acts.push({l:'Join the Networking Board', a:'tab', d:'meet', p:!acts.length});
+    return {kind:'morning', key:'morning', tone:'next', eyebrow:'Today', title:name ? `Good morning, ${name}` : 'Good morning', lines:op ? [`Opening at ${op.s} in the ${op.where}`] : [], cd:op ? {to:toMin(op.s), label:'to the opening'} : null, acts};
+  }
+  if (mode === 'opening' || mode === 'video') return stageModel(mode, prog);
+  if (mode === 'lunch') return lunchModel(prog);
+  if (nb) return breakModel(nb, stars, false);
+  const lunch = d.prog('lunch');
+  if (lunch && m < toMin(lunch.s)) return {kind:'next', key:'nextlunch', tone:'next', eyebrow:'Next', title:`${lunch.name || lunch.title} at ${lunch.s}`, lines:[lunch.where], cd:{to:toMin(lunch.s), label:'to go'}, acts:[{l:'Meet people', a:'tab', d:'meet', p:1}]};
+  return {kind:'morning', key:'idle', tone:'next', eyebrow:'Today', title:name ? `Hello, ${name}` : 'Mentorship Day', lines:[], acts:[]};
+}
+function onBoard(){ return !!(ME && ME.profile && ME.profile.status === 'approved') || snapHas(myPub()); }
+function stageModel(mode, prog){
+  const rx = !!(ST && ST.rx && ST.rx.on);
+  const acts = rx ? [{l:'React on Live', a:'tab', d:'poll', p:1}] : (ST && ST.poll && ST.poll.open ? [{l:'Answer the poll', a:'tab', d:'poll', p:1}] : []);
+  if (mode === 'video') {
+    const c = ST && ST.cfg && ST.cfg.video, vids = (ST && ST.videos) || DAY.videos || [];
+    const playing = c && c.id && ST && Math.abs(ST.t - c.at) < 10 * 60000 ? vids.find(x => x.id === c.id) : null;
+    return {kind:'stage', key:'video' + (playing ? playing.id : ''), tone:'now', live:1, eyebrow:'On stage now', title:prog.title, lines:[playing ? playing.title : vids.map(x => x.title).join(' and ')], until:prog.e, prog:{s:prog.s, e:prog.e}, acts};
+  }
+  const sp = DAY.speakers || [], m = venue().min;
+  let i = ST && ST.cfg && ST.cfg.speaker != null ? ST.cfg.speaker : null;
+  if (i === null) { i = 0; sp.forEach((s, j) => { if (m >= toMin(s.s)) i = j; }); }
+  const s = sp[Math.max(0, Math.min(sp.length - 1, i))];
+  return {kind:'stage', key:'speaker' + i, tone:'now', live:1, eyebrow:'On stage now', title:s ? s.name : prog.title, lines:s ? [s.org, s.what].filter(Boolean) : [prog.where], until:prog.e, prog:{s:prog.s, e:prog.e}, acts};
+}
+function breakModel(nb, stars, alert){
+  const st = stars[nb.n], x = st ? sessOf(st.sid) : null, at = nb.s;
+  const base = {b:nb.n, tone:alert ? 'alert' : 'next', alert, cd:{to:toMin(at), label:'to go'}};
+  if (!st || CHG[nb.n] && st.by !== 'team') {
+    const ch = dayModel().of(nb.n);
+    return Object.assign(base, {kind:'pick', key:'pick' + nb.n + (alert ? 'a' : '') + (st ? st.sid : ''), eyebrow:alert ? 'Starting soon' : (CHG[nb.n] ? 'Change your session' : 'Coffee break'),
+      title:alert ? `Sessions start at ${at}` : `Pick your ${at} session`, choices:ch, mine:st && st.sid,
+      note:ch.length === 1 ? 'Or book a one to one at the registration desk.' : '', acts:CHG[nb.n] ? [{l:'Keep what I had', a:'unchange', d:nb.n}] : []});
+  }
+  const t5 = alert ? `Head to ${x.room} now` : `${x.room} at ${at}`;
+  const common = {sid:x.id, room:x.room, at, sub:x.title, meta:[x.names, x.mode]};
+  if (st.by === 'team') return Object.assign(base, common, {kind:'seat', key:'seat' + x.id + (alert ? 'a' : ''), eyebrow:'Your seat', title:t5, note:'Set by the team. Ask at the registration desk to change it.'});
+  if (st.by === 'auto') return Object.assign(base, common, {kind:'auto', key:'auto' + x.id + (alert ? 'a' : ''), eyebrow:'Picked for you', title:t5, why:whyLine(st), acts:[{l:'Keep', a:'keep', d:nb.n, p:1}, {l:'Change', a:'change', d:nb.n}]});
+  return Object.assign(base, common, {kind:'next', key:'next' + x.id + (alert ? 'a' : ''), eyebrow:alert ? 'Starting soon' : 'Next', title:t5, links:[{l:'Change', a:'change', d:nb.n}]});
+}
+function blockModel(cb, stars){
+  const st = stars[cb.n];
+  if (st) { const x = sessOf(st.sid); return {kind:'in', key:'in' + x.id, tone:'now', live:1, b:cb.n, sid:x.id, room:x.room, eyebrow:'On now', title:`You are in ${x.room} until ${cb.e}`, sub:x.title, meta:[x.names, x.mode], left:{to:toMin(cb.e), label:'left'}, prog:{s:cb.s, e:cb.e}}; }
+  return {kind:'innone', key:'innone' + cb.n, tone:'now', live:1, b:cb.n, eyebrow:'On now', title:`Sessions until ${cb.e}`, onnow:dayModel().of(cb.n), prog:{s:cb.s, e:cb.e}, acts:[{l:'In the Main Hall? Meet people', a:'tab', d:'meet', p:1}]};
+}
+function myLinksCount(){ const me = myPub(); return ((snapD().links) || []).filter(l => l[0] === me || l[1] === me).length; }
+function lunchModel(prog){
+  const n = Math.min(3, myLinksCount());
+  return {kind:'lunch', key:'lunch' + n, tone:'now', live:1, eyebrow:'Now', title:prog.name || prog.title, lines:[`In the ${prog.where}, until ${prog.e}`], mission:n, acts:[{l:n >= 3 ? 'Meet more people' : 'Meet people', a:'tab', d:'meet', p:1}]};
+}
+function actsHtml(acts, light){
+  if (!acts || !acts.length) return '';
+  return `<div class="acts">${acts.map(a => `<button type="button" class="btn ${a.p ? (light ? 'navy' : '') : 'line'}" data-act="${a.a}" data-d="${esc(a.d)}"${a.a === 'tab' ? ` data-tab="${esc(a.d)}"` : ''}>${esc(a.l)}</button>`).join('')}</div>`;
+}
+function choicesHtml(md){
+  return `<div class="choices">${md.choices.map(x => { const n = interest(x.id); return `<button type="button" class="choice" data-act="pick" data-b="${x.b}" data-s="${x.id}" aria-pressed="${md.mine === x.id}"><span class="r"><span class="pill ${md.mine === x.id ? '' : 'ghost'}">${esc(x.room)}</span>${n ? `<span class="n">${n} planning to join</span>` : ''}</span><b>${esc(x.title)}</b><small>${esc(x.names)}, ${esc(x.mode)}</small></button>`; }).join('')}</div>`;
+}
+function onNowHtml(list){ return `<div class="rowlist" style="padding:0;margin-top:8px">${list.map(x => `<div><span class="pill">${esc(x.room)}</span><div class="t" style="margin-top:6px">${esc(x.title)}</div><div class="w"><span>${esc(x.names)}</span>${modeTag(x.mode)}</div></div>`).join('')}</div>`; }
+const metaHtml = meta => meta ? `<div class="meta">${meta[0] ? `<span>${esc(meta[0])}</span>` : ''}${modeTag(meta[1])}</div>` : '';
+const pct = (s, e) => { const m = venue().min; return Math.max(0, Math.min(100, (m - toMin(s)) / (toMin(e) - toMin(s)) * 100)); };
+const barHtml = pg => pg ? `<div class="bar"><i data-prog="${pg.s},${pg.e}" style="width:${pct(pg.s, pg.e).toFixed(1)}%"></i></div>` : '';
+const cdLeft = to => (to - venue().min) * 60;
+function missionHtml(n){ return `<div class="petals">${petals(n)}<div><b>${n >= 3 ? 'You met your 3 people' : `Meet 3 people: ${n} of 3`}</b><div class="small muted">Swap codes on the People tab when you meet someone.</div></div></div>`; }
+// Variant A: a card. Words first, the countdown as one line.
+function topA(md, second){
+  if (md.kind === 'takeaway') return tkHtml(md.b, second);
+  const alert = md.tone === 'alert';
+  const eb = `<div class="eyebrow"><i class="dot ${md.live || alert ? 'now' : ''}"></i>${esc(md.eyebrow)}</div>`;
+  let body = '';
+  if (md.sub) body += `<p class="sub">${esc(md.sub)}</p>${metaHtml(md.meta)}`;
+  if (md.lines) body += md.lines.filter(Boolean).map((l, i) => `<p class="${i ? 'small muted' : 'sub'}" style="${i ? 'margin-top:4px' : ''}">${esc(l)}</p>`).join('');
+  if (md.why) body += `<p class="why">${esc(md.why)}</p>`;
+  if (md.choices) body += choicesHtml(md);
+  if (md.onnow) body += onNowHtml(md.onnow);
+  if (md.mission != null) body += missionHtml(md.mission);
+  if (md.cd) body += `<p class="cd">Starts in <b data-cd="${md.cd.to}">${fmtLeft(cdLeft(md.cd.to))}</b></p>`;
+  if (md.prog) body += barHtml(md.prog);
+  if (md.note) body += `<p class="small muted" style="margin-top:10px">${esc(md.note)}</p>`;
+  body += actsHtml(md.acts);
+  if (md.links) body += `<div style="margin-top:8px">${md.links.map(a => `<button type="button" class="lnk" data-act="${a.a}" data-d="${esc(a.d)}">${esc(a.l)}</button>`).join('')}</div>`;
+  if (alert) return `<article class="card top-a alert" data-k="${md.key}"><div class="strip">${eb}<h2 class="ttl" style="margin-top:6px">${esc(md.title)}</h2></div><div class="body">${body}</div></article>`;
+  return `<article class="card top-a ${md.tone === 'next' ? 'next' : ''}" data-k="${md.key}">${eb}<h2 class="ttl">${esc(md.title)}</h2>${body}</article>`;
+}
+// Variant B: a hero panel like the wall's now zone. The time is the biggest thing on it.
+function topB(md){
+  if (md.kind === 'takeaway') return tkHtml(md.b);
+  const alert = md.tone === 'alert';
+  let h = `<div class="h-top"><div class="eyebrow"><i class="dot ${md.live || alert ? 'now' : ''}"></i>${esc(md.eyebrow)}</div>${md.room ? `<span class="pill">${esc(md.room)}</span>` : ''}</div>`;
+  const cd = md.cd || md.left;
+  if (cd) h += `<div class="h-cd"><b data-cd="${cd.to}">${fmtLeft(cdLeft(cd.to))}</b><span>${esc(cd.label)}</span></div>`;
+  else if (md.until) h += `<div class="h-cd"><span>Until</span><b>${esc(md.until)}</b></div>`;
+  if (md.sub) h += `<h2 class="h-t">${esc(md.sub)}</h2>${metaHtml(md.meta)}<p class="h-s" style="font-size:17px;margin-top:8px">${esc(md.title)}</p>`;
+  else h += `<h2 class="h-t">${esc(md.title)}</h2>`;
+  if (md.lines) h += md.lines.filter(Boolean).map((l, i) => `<p class="${i ? 'small' : 'h-s'}" style="${i ? 'margin-top:4px' : ''}">${esc(l)}</p>`).join('');
+  if (md.why) h += `<p class="why"><b>${esc(md.why)}</b></p>`;
+  if (md.choices) h += choicesHtml(md);
+  if (md.onnow) h += onNowHtml(md.onnow);
+  if (md.mission != null) h += missionHtml(md.mission);
+  if (md.prog) h += barHtml(md.prog);
+  if (md.note) h += `<p class="small" style="margin-top:10px">${esc(md.note)}</p>`;
+  h += actsHtml(md.acts, alert);
+  if (md.links) h += `<div style="margin-top:8px">${md.links.map(a => `<button type="button" class="lnk" data-act="${a.a}" data-d="${esc(a.d)}" style="${alert ? 'color:#fff;text-decoration-color:#fff' : ''}">${esc(a.l)}</button>`).join('')}</div>`;
+  return `<article class="hero ${alert ? 'alert' : ''}" data-k="${md.key}">${h}</article>`;
+}
+let lastTopKey = null, alertDone = sess.get('md_alerted') || '';
+function renderToday(){
+  const d = dayModel();
+  if (!d) return;
+  const md = topModel();
+  // The top card
+  const html = md ? (V === 'b' ? topB(md) : topA(md)) : '';
+  const el = $('top');
+  if (md && md.key !== lastTopKey) { put(el, html); const a = el.firstElementChild; if (a && lastTopKey !== null) a.classList.add('rise'); lastTopKey = md.key; }
+  else put(el, html);
+  if (md && md.alert) {
+    document.title = md.title;
+    if (!alertDone.includes('|' + md.b)) { alertDone += '|' + md.b; sess.set('md_alerted', alertDone); vib(200); }
+  } else if (document.title !== 'Mentorship Day Live') document.title = 'Mentorship Day Live';
+  // Announcement from the team, while it runs
+  const a = ST && ST.cfg && ST.cfg.ann;
+  put($('ann'), a && a.text && ST.t < a.at + (a.secs || 60) * 1000 + 30000 ? `<div class="ann" role="status"><span dir="auto">${esc(a.text)}</span></div>` : '');
+  // Second cards: the one to one first, then a takeaway, then the session to pick when a takeaway took the top
+  const sec = [], v = venue(), m = v.min, ph = phaseNow(v);
+  const slot = ME && ME.me && ME.me.slot;
+  if (slot && (slot.text || ph === 'before' || m < toMin(slot.e))) {
+    sec.push(slot.text ? `<article class="card slot1"><div class="eyebrow"><i class="dot"></i>Your one to one</div><p class="ttl" dir="auto">${esc(slot.text)}</p><p class="small muted" style="margin-top:6px">Be in the Main Hall 3 minutes before.</p></article>`
+      : `<article class="card slot1"><div class="eyebrow"><i class="dot"></i>Your one to one</div><p class="ttl">${esc(d.adv(slot.who).name)} at ${esc(slot.s)}</p><p class="small muted" style="margin-top:4px">${esc(slot.room)}, until ${esc(slot.e)}</p><p class="small" style="margin-top:8px;font-weight:700">Be in the Main Hall 3 minutes before.</p></article>`);
+  }
+  if (ph === 'day') {
+    const tb = tkBlock(m, false);
+    if (tb && !(md && md.kind === 'takeaway' && md.b === tb)) sec.push(tkHtml(tb, true));
+    if (md && md.kind === 'takeaway') { const nb = d.blocks.find(b => m < toMin(b.s)); if (nb) sec.push(topA(breakModel(nb, starsNow(), false))); }
+    tkDone(m).forEach(n => sec.push(tkHtml(n, true)));
+  }
+  if (status() === 'none' && ph !== 'after') sec.push(`<article class="card"><div class="eyebrow"><i class="dot"></i>Sign in</div><p class="sub" style="margin-top:6px;font-size:18px;font-weight:700">Find your name to see the sessions picked for you.</p>${actsHtml([{l:'Sign in', a:'signin', d:'', p:1}])}</article>`);
+  put($('second'), sec.join(''));
+  renderBlocks(); renderOnes(); renderAgenda(); renderAcct();
+}
+function renderBlocks(){
+  const d = dayModel(), stars = starsNow(), m = venue().min, day = phaseNow() === 'day';
+  let h = `<h3 id="blocksH">Your Sessions</h3><p class="lead small">Star one session in each hour. Stars show the team where people plan to go. They are not bookings.</p>`;
+  d.blocks.forEach(b => {
+    const live = day && m >= toMin(b.s) && m < toMin(b.e), past = day && m >= toMin(b.e);
+    h += `<div class="blk"><div class="blk-h"><b>${b.s}</b><span>${live ? 'On now, ' : ''}until ${b.e}</span></div>`;
+    DAY.rooms.forEach(r => {
+      const x = d.of(b.n).find(s => s.room === r);
+      if (!x) { h += `<div class="srow free">${esc(r)}: no session this hour</div>`; return; }
+      const st = stars[b.n], mine = st && st.sid === x.id, n = interest(x.id), team = st && st.by === 'team';
+      const tags = [];
+      if (mine && st.by === 'auto') tags.push('<span class="tag">Picked for you</span>');
+      if (mine && team) tags.push('<span class="tag me">Your seat</span>');
+      if (live) tags.push('<span class="tag me">On now</span>');
+      h += `<div class="srow"><div><span class="pill ${mine ? '' : 'ghost'}">${esc(x.room)}</span><div class="t">${esc(x.title)}</div><div class="w"><span>${esc(x.names)}</span>${modeTag(x.mode)}${n ? `<span>${n} planning to join</span>` : ''}</div>${tags.length ? `<div class="tg">${tags.join('')}</div>` : ''}</div>
+        ${team ? (mine ? `<button type="button" class="star lock" disabled aria-label="Your seat, set by the team">${I.star}</button>` : '<span></span>')
+          : `<button type="button" class="star" data-act="star" data-b="${b.n}" data-s="${x.id}" aria-pressed="${!!mine}" aria-label="${mine ? 'Remove the star from' : 'Star'} ${esc(x.title)}" ${past ? 'disabled' : ''}>${I.star}</button>`}</div>`;
+    });
+    h += `</div>`;
+  });
+  const ids = Object.values(stars).map(s => s.sid);
+  h += `<a class="btn line wide" style="margin-top:16px" href="/api/ics${ids.length ? '?s=' + ids.join(',') : ''}" download="mentorship-day.ics">${ids.length ? 'Add my sessions to my calendar' : 'Add the day to my calendar'}</a>`;
+  put($('blocks'), h);
+}
+function renderOnes(){
+  const d = dayModel();
+  put($('ones'), `<h3>One to Ones</h3><p class="lead small">15 minute conversations. Book yours at the registration desk.</p><div class="card rowlist">${DAY.ones.map(o => `<div><span class="when">${o.s} to ${o.e}</span><div class="t">${esc(d.adv(o.who).name)}</div><div class="w"><span>${esc(o.focus)}</span><span>${esc(o.room)}</span>${modeTag(o.mode)}</div></div>`).join('')}</div>`);
+}
+let agendaOpen = false;
+function renderAgenda(){
+  const m = venue().min, day = phaseNow() === 'day';
+  const rows = DAY.program.map(p => { const on = day && m >= toMin(p.s) && m < toMin(p.e); return `<div><span class="when" style="${on ? 'color:var(--red)' : ''}">${p.s} to ${p.e}${on ? ', on now' : ''}</span><div class="t">${esc(p.name || p.title)}</div><div class="w"><span>${esc(p.where)}</span></div></div>`; }).join('');
+  const el = $('agenda');
+  put(el, `<details class="fold" id="agendaD" ${agendaOpen ? 'open' : ''}><summary>Full Agenda</summary><div class="card rowlist">${rows}</div></details>`);
+  const dd = $('agendaD'); if (dd && !dd._b) { dd._b = 1; dd.addEventListener('toggle', () => { agendaOpen = dd.open; el._h = null; }); }
+}
+function renderAcct(){
+  const st = status(), n = ME && ME.me && ME.me.name;
+  put($('acct'), st === 'none' ? '' : `<div class="acct"><span>${st === 'guest' ? 'Guest' : 'Signed in as'} <b dir="auto">${esc(n)}</b></span><button type="button" class="lnk" data-act="signout">Sign out</button></div>`);
+}
+
+/* ---------- takeaways ---------- */
+const TKS = {};   // per block: {state:'form'|'sending'|'sent', sid, rating, text, show, err, status}
+function tkHtml(b, second){
+  const d = dayModel(), list = d.of(b), blk = d.block(b), st = starsNow()[b];
+  const t = TKS[b] = TKS[b] || {state:'form', sid:'', rating:0, text:'', show:false};
+  // Until the person picks one, the session is the one starred in that hour (or the only one).
+  if (!t.chosen) t.sid = st ? st.sid : (list.length === 1 ? list[0].id : '');
+  if (t.state === 'sent') {
+    const line = {approved:'Your line is on the big screen.', pending:'Your line is waiting for the team.', none:'Thank you for the rating.'}[t.status] || 'Sent.';
+    return `<article class="card" id="tkCard" data-b="${b}"><div class="eyebrow"><i class="dot"></i>${blk.s} session</div><h2 style="margin-top:6px">Thank you</h2><p class="lead" style="color:var(--ink)">${line}</p></article>`;
+  }
+  const x = t.sid ? sessOf(t.sid) : null;
+  const first = ME && ME.me && ME.me.first;
+  let h = `<div class="eyebrow"><i class="dot now"></i>${esc(blk.s)} session</div><h2 style="margin-top:6px">How was it?</h2>`;
+  if (x) h += `<p class="sub" style="font-size:17px;font-weight:700;margin-top:6px">${esc(x.room)}: ${esc(x.title)}</p>${list.length > 1 ? `<button type="button" class="lnk" data-act="tk-sid" data-b="${b}" data-s="">Another session</button>` : ''}`;
+  else h += `<p class="small muted" style="margin-top:4px">Which session were you in?</p><div class="choices">${list.map(s => `<button type="button" class="choice" data-act="tk-sid" data-b="${b}" data-s="${s.id}" style="min-height:52px"><span class="r"><span class="pill ghost">${esc(s.room)}</span></span><b>${esc(s.title)}</b></button>`).join('')}</div>
+    <button type="button" class="lnk" data-act="tk-no" data-b="${b}" style="margin-top:6px">I was not in a session</button>`;
+  if (x) {
+    h += `<div class="fls" role="radiogroup" aria-label="Your rating">${[1, 2, 3, 4, 5].map(i => `<button type="button" class="flb" role="radio" data-act="tk-rate" data-b="${b}" data-r="${i}" aria-checked="${t.rating === i}" aria-pressed="${t.rating >= i}" aria-label="${i} of 5">${I.flower}</button>`).join('')}</div>
+      <label class="f" for="tkT${b}">One thing you are taking away <span>(optional)</span></label><input type="text" id="tkT${b}" data-tk="${b}" dir="auto" maxlength="120" value="${esc(t.text)}" enterkeyhint="send" placeholder="One line">
+      ${first ? swHtml('tkS' + b, t.show, 'Show my first name', `${esc(first)}, next to your line on the big screen`) : ''}
+      <button type="button" class="btn wide" data-act="tk-send" data-b="${b}" style="margin-top:12px" ${t.rating && t.state !== 'sending' ? '' : 'disabled'}>${t.state === 'sending' ? 'Sending' : 'Send'}</button>
+      <div class="msg err" role="alert">${esc(t.err || '')}</div>`;
+  }
+  return `<article class="card" id="tkCard" data-b="${b}">${h}</article>`;
+}
+function tkSend(b){
+  const t = TKS[b]; if (!t || !t.rating || !t.sid) return;
+  const inp = $('tkT' + b); if (inp) t.text = inp.value;
+  const sw = $('tkS' + b); if (sw) t.show = sw.checked;
+  t.err = '';
+  t.state = 'sent'; t.status = !t.text.trim() ? 'none' : (status() === 'person' && flag('trustTakeaways') ? 'approved' : 'pending');
+  enqueue('takeaway', 'tk' + t.sid, {sid:t.sid, rating:t.rating, text:t.text.trim(), showName:!!t.show});
+  renderToday(); renderKeep();
+}
+
+/* ---------- Live ---------- */
+let pollMsg = '', pollErr = false, lastPollId = null;
+function renderLive(force){
+  const p = ST && ST.poll, ph = phaseNow();
+  // The speaker or video now, during the opening
+  const v = venue(), prog = DAY && ph === 'day' ? DAY.program.find(x => v.min >= toMin(x.s) && v.min < toMin(x.e)) : null;
+  const sm = prog && (prog.mode === 'opening' || prog.mode === 'video') ? stageModel(prog.mode, prog) : null;
+  put($('stageNow'), sm ? `<div class="card top-a" style="border-top-color:var(--red)"><div class="eyebrow"><i class="dot now"></i>On stage now</div><h2 class="ttl" style="font-size:24px">${esc(sm.title)}</h2>${sm.lines.filter(Boolean).map(l => `<p class="small muted" style="margin-top:4px">${esc(l)}</p>`).join('')}</div>` : '');
+  const ans = store.json('md_ans') || {};
+  const q = p ? queued('answer').find(x => x.body.pid === p.id) : null;
+  const mine = p ? (q ? q.body.text : ans[p.id] || '') : '';
+  let head;
+  if (!p) head = `<div class="eyebrow"><i class="dot"></i>Live Poll</div><p class="sub" style="font-size:19px;font-weight:700;margin-top:8px">The next poll opens soon.</p><p class="small muted">Check back in a few minutes.</p>`;
+  else {
+    head = `<div class="eyebrow"><i class="dot ${p.open ? 'now' : ''}"></i>${p.open ? 'Live Poll, open now' : 'Live Poll, closed'}</div><h2 style="margin-top:8px" dir="auto">${esc(p.q)}</h2>`;
+    if (p.open && p.type === 'choice') head += `<div class="opts" id="pollOpts">${p.options.map(o => `<button type="button" class="opt" data-act="answer" data-o="${esc(o)}" aria-pressed="${mine === o}"><span dir="auto">${esc(o)}</span></button>`).join('')}</div>`;
+    else if (p.open) head += `<label class="f" for="word">Your answer <span>(one or two words)</span></label><div class="form-row"><input type="text" id="word" dir="auto" maxlength="28" autocomplete="off" enterkeyhint="send" value="${esc(mine)}"><button type="button" class="btn" data-act="answer-word">${mine ? 'Change' : 'Send'}</button></div>`;
+    if (lastPollId !== p.id) { if (lastPollId !== null) { pollMsg = ''; pollErr = false; } lastPollId = p.id; }
+    const msg = pollMsg || (mine ? (q ? (online ? `Your answer: ${mine}. Sending.` : `Your answer: ${mine}. It sends when you are back online.`) : `Your answer: ${mine}. It is on the big screen.`) : '');
+    head += `<div class="msg ${pollErr ? 'err' : 'ok'}" id="pollMsg" role="status"><span dir="auto">${esc(msg)}</span></div>`;
+  }
+  const hp = $('pollHead');
+  if (force) hp._h = null;
+  put(hp, head);
+  let res = '';
+  if (p && p.words && p.words.length) {
+    const tot = p.total || 0;
+    if (p.type === 'choice') {
+      const max = Math.max(1, ...p.words.map(w => w[1]));
+      res = `<p class="small" style="margin-top:18px;font-weight:700">${plural(tot, 'answer', 'answers')} so far</p><div class="opts">${p.words.slice(0, 8).map(([w, n]) => `<div class="opt" style="cursor:default"><i style="width:${(n / max * 100).toFixed(0)}%"></i><span dir="auto">${esc(w)}</span><em>${n}</em></div>`).join('')}</div>`;
+    } else res = `<p class="small" style="margin-top:18px;font-weight:700">${plural(tot, 'answer', 'answers')} so far</p><div class="words">${p.words.slice(0, 18).map(([w, n]) => `<span class="${w === mine ? 'me' : ''}" dir="auto">${esc(w)}<i>${n}</i></span>`).join('')}</div>`;
+  }
+  put($('pollRes'), res);
+  // Numbers of the day
+  const n = (ST && ST.n) || null;
+  if (n) {
+    const items = [[ph === 'before' ? null : n.here, 'People here'], [n.answers, 'Poll answers'], [n.board, 'On the board'], [n.links, 'Connections'], [n.photos, 'Photos'], [n.takeaways, 'Takeaways']].filter(x => x[0] != null);
+    put($('nums'), `<h3>Numbers of the Day</h3><div class="nums">${items.map(([v, l]) => `<div><b>${v}</b><span>${l}</span></div>`).join('')}</div>`);
+  }
+}
+function answer(text){
+  const p = ST && ST.poll; if (!p || !p.open) return;
+  text = String(text || '').trim();
+  if (!text) { pollMsg = 'Type a word first.'; pollErr = true; renderLive(true); return; }
+  pollMsg = ''; pollErr = false;
+  enqueue('answer', 'ans' + p.id, {pid:p.id, dev:DEV, text});
+  renderLive(true); renderTabs();
+}
+
+/* ---------- reactions ---------- */
+// Taps animate at once on the phone. They are counted and sent as one batch every 3 seconds at most,
+// only when there is something to send, and at most 150 batches in the day from this phone.
+const RX = {pend:{clap:0, heart:0, bloom:0}, last:0, timer:null, busy:false, mine:0};
+const rxDay = () => { const o = store.json('md_rx') || {}; const d = venue().date; return o.d === d ? o : {d, n:0}; };
+function renderPad(){
+  const on = !!(ST && ST.rx && ST.rx.on) && phaseNow() !== 'after' && (TAB === 'today' || TAB === 'poll');
+  const pad = $('pad');
+  if (!on) { if (!pad.hidden) { pad.hidden = true; document.documentElement.style.setProperty('--pad-h', '0px'); } return; }
+  if (pad.hidden || !pad.firstChild) {
+    pad.innerHTML = `<div class="in"><div class="lbl">React<span id="rxTot"></span></div><button type="button" class="rxb" data-act="rx" data-k="clap" aria-label="Applause">${I.clap}</button><button type="button" class="rxb" data-act="rx" data-k="heart" aria-label="Heart">${I.heart}</button><button type="button" class="rxb blue" data-act="rx" data-k="bloom" aria-label="Flower">${I.flower}</button></div>`;
+    pad.hidden = false;
+    requestAnimationFrame(() => document.documentElement.style.setProperty('--pad-h', pad.offsetHeight + 'px'));
+  }
+  const t = $('rxTot'); if (t) t.textContent = (ST.rx.total || 0) + RX.mine ? ((ST.rx.total || 0) + RX.mine) + ' so far' : 'Tap away';
+}
+function rxTap(btn){
+  const k = btn.dataset.k;
+  const f = document.createElement('div'); f.className = 'fly'; f.innerHTML = I[k === 'bloom' ? 'flower' : k];
+  f.style.color = k === 'bloom' ? 'var(--blue)' : 'var(--red)';
+  f.style.left = (btn.offsetLeft + 15) + 'px'; f.style.top = (btn.offsetTop - 6) + 'px'; f.style.setProperty('--dx', (Math.random() * 40 - 20).toFixed(0) + 'px');
+  btn.parentNode.appendChild(f); f.addEventListener('animationend', () => f.remove());
+  vib(6);
+  if (rxDay().n >= 150) return;
+  RX.pend[k] = Math.min(30, RX.pend[k] + 1); RX.mine++;
+  const t = $('rxTot'); if (t) t.textContent = ((ST.rx.total || 0) + RX.mine) + ' so far';
+  rxSchedule();
+}
+function rxSchedule(){ if (RX.timer || RX.busy) return; RX.timer = setTimeout(rxSend, Math.max(0, RX.last + 3000 - Date.now())); }
+async function rxSend(){
+  RX.timer = null;
+  const c = RX.pend; if (!(c.clap + c.heart + c.bloom)) return;
+  const day = rxDay(); if (day.n >= 150) { RX.pend = {clap:0, heart:0, bloom:0}; return; }
+  RX.pend = {clap:0, heart:0, bloom:0}; RX.last = Date.now(); RX.busy = true;
+  day.n++; store.put('md_rx', day);
+  try { await api('/api/react', {body:{c}}); }
+  catch(e) {
+    if (e.status === 409) { if (ST && ST.rx) ST.rx.on = false; renderPad(); }
+    else if (e.status === 429 && /all the reactions/i.test(e.message)) { day.n = 150; store.put('md_rx', day); toast(e.message); }
+  }
+  RX.busy = false;
+  if (RX.pend.clap + RX.pend.heart + RX.pend.bloom) rxSchedule();
+}
+
+/* ---------- People ---------- */
+let FORM = null, filterTag = '', meetOpen = false, meetBusy = false, meetRes = null;
+const TAGS_FALLBACK = ['Funding', 'Clients', 'Partnerships', 'Hiring', 'A New Job', 'Mentoring', 'Marketing', 'Product', 'AI and Tech', 'Freelancing'];
+const tags = () => (ST && ST.tags) || TAGS_FALLBACK;
+function personHtml(p, why){
+  return `<div class="person"><div class="ini" aria-hidden="true">${esc(initials(p.name))}</div><div><b dir="auto">${esc(p.name)}</b><div class="muted small" dir="auto">${esc([p.role, p.company].filter(Boolean).join(', '))}</div>
+    ${why ? `<div class="why">${esc(why)}</div>` : ''}<div>${(p.looking || []).map(t => `<span class="tg2 lk" title="Looking for">${esc(t)}</span>`).join('')}${(p.offer || []).map(t => `<span class="tg2 of" title="Can help with">${esc(t)}</span>`).join('')}</div>
+    ${p.linkedin ? `<a class="lin" href="${esc(/^https?:/.test(p.linkedin) ? p.linkedin : 'https://' + p.linkedin)}" target="_blank" rel="noopener">Connect on LinkedIn</a>` : ''}</div></div>`;
+}
+function myConns(){
+  const me = myPub(), prof = new Map((snapD().profiles || []).map(p => [p.id, p]));
+  const fromSnap = (snapD().links || []).filter(l => l[0] === me || l[1] === me).map(l => prof.get(l[0] === me ? l[1] : l[0])).filter(Boolean);
+  const ids = new Set(fromSnap.map(p => p.id));
+  ((ME && ME.links) || []).forEach(l => { if (!ids.has(l.id)) { fromSnap.push(prof.get(l.id) || l); ids.add(l.id); } });
+  return fromSnap;
+}
+function fnv(s){ let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+// Your 3 people to meet: 2 points for each tag they offer that I look for, 2 for each tag they look for that I offer,
+// 1 for each "looking for" tag we share. Ties go to people with fewer connections, then to a stable hash of the two ids.
+function suggestions(){
+  const me = ME && ME.profile; if (!me) return [];
+  const mine = myPub(), linked = new Set(myConns().map(p => p.id)), links = snapD().links || [];
+  const cnt = id => links.filter(l => l[0] === id || l[1] === id).length;
+  const ml = me.looking || [], mo = me.offer || [];
+  return (snapD().profiles || []).filter(p => p.id !== mine && !linked.has(p.id)).map(p => {
+    const a = (p.offer || []).filter(t => ml.includes(t)), b = (p.looking || []).filter(t => mo.includes(t)), c = (p.looking || []).filter(t => ml.includes(t));
+    const why = a.length ? `Can help you with ${a.join(' and ')}` : b.length ? `Looking for ${b.join(' and ')}, which you can help with` : c.length ? `Also looking for ${c.join(' and ')}` : '';
+    return {p, s:2 * a.length + 2 * b.length + c.length, n:cnt(p.id), h:fnv([mine, p.id].sort().join('|')), why};
+  }).filter(x => x.s > 0).sort((x, y) => y.s - x.s || x.n - y.n || x.h - y.h).slice(0, 3);
+}
+function formFrom(){
+  const p = (ME && ME.profile) || {}, me = (ME && ME.me) || {};
+  return {name:p.name || me.name || store.get('md_name') || '', company:p.company || me.company || '', role:p.role || me.title || '', linkedin:p.linkedin || me.linkedin || '',
+    looking:p.looking || (me.suggest || []).slice(0, 3), offer:p.offer || [], consent:!!p.name, editing:!p.status || false};
+}
+function renderPeople(){
+  const st = status(), prof = ME && ME.profile, on = prof && prof.status === 'approved', ph = phaseNow();
+  // A pending meet code or the answer of the last one
+  const pm = store.get('md_m');
+  let mh = '';
+  if (meetRes) mh = meetRes.ok ? `<article class="card rise" style="border-left:5px solid var(--red)"><div class="eyebrow"><i class="dot now"></i>${meetRes.again ? 'Already connected' : 'Connected'}</div><h2 style="margin-top:6px" dir="auto">You and ${esc(meetRes.person.name)}</h2>${personHtml(meetRes.person)}</article>`
+    : `<article class="card"><div class="msg err" style="margin:0" role="alert">${esc(meetRes.error)}</div></article>`;
+  else if (pm) mh = `<article class="card" style="border-left:5px solid var(--blue)"><div class="eyebrow"><i class="dot"></i>Code ${esc(pm)}</div><p class="sub" style="font-size:18px;font-weight:700;margin-top:6px">${st === 'none' && !prof ? 'Sign in, then join the board to connect.' : (on ? 'Connecting' : (prof ? 'You connect as soon as your card is on the board.' : 'Join the board below to connect.'))}</p>${st === 'none' && !prof ? actsHtml([{l:'Sign in', a:'signin', d:'', p:1}]) : ''}</article>`;
+  put($('mcMeet'), mh);
+  // My card
+  if (!FORM) FORM = formFrom();
+  let ch;
+  if (prof && !FORM.editing) {
+    const label = {approved:'You are on the board', pending:'Waiting for the team to check your card', declined:'Your card was not approved. You can edit it and send it again.'}[prof.status] || '';
+    ch = `<article class="card"><div class="status ${on ? '' : 'wait'}"><i></i>${label}</div>${personHtml(prof)}<button type="button" class="btn line" data-act="card-edit" style="margin-top:4px;min-height:44px;font-size:16px;padding:8px 16px">Edit my card</button></article>`;
+  } else if (ph === 'after' && !prof) ch = '';
+  else {
+    const person = st === 'person';
+    ch = `<h3 style="margin-top:14px">${prof ? 'Edit My Card' : 'Join the Networking Board'}</h3><p class="lead small">Say what you are looking for and how you can help, so the right people find you.</p>
+    <article class="card" id="cardForm">
+      ${st === 'none' ? `<p class="small" style="margin-bottom:6px"><button type="button" class="lnk" data-act="signin" style="padding:0">Sign in first</button> and your card goes up at once.</p>` : ''}
+      <label class="f" for="mName">Name${person ? ' <span>(from your registration)</span>' : ''}</label><input type="text" id="mName" dir="auto" maxlength="40" autocomplete="name" value="${esc(FORM.name)}" ${person ? 'readonly' : ''}>
+      <label class="f" for="mCo">Company <span>${person ? '(from your registration)' : '(optional)'}</span></label><input type="text" id="mCo" dir="auto" maxlength="50" autocomplete="organization" value="${esc(FORM.company)}" ${person ? 'readonly' : ''}>
+      <label class="f" for="mRole">Role <span>(optional)</span></label><input type="text" id="mRole" dir="auto" maxlength="50" autocomplete="organization-title" value="${esc(FORM.role)}">
+      <label class="f">I am looking for <span>(up to 3)</span></label><div class="tags lk" id="mLook" role="group" aria-label="I am looking for">${tags().map(t => `<button type="button" class="tagb" data-act="tag" data-g="looking" data-t="${esc(t)}" aria-pressed="${FORM.looking.includes(t)}">${esc(t)}</button>`).join('')}</div>
+      ${!prof && ME && ME.me && (ME.me.suggest || []).length ? `<p class="small muted" style="margin-top:6px">Suggested from your registration. Change them as you like.</p>` : ''}
+      <label class="f">I can help with <span>(up to 3)</span></label><div class="tags of" id="mOffer" role="group" aria-label="I can help with">${tags().map(t => `<button type="button" class="tagb" data-act="tag" data-g="offer" data-t="${esc(t)}" aria-pressed="${FORM.offer.includes(t)}">${esc(t)}</button>`).join('')}</div>
+      <label class="f" for="mLi">LinkedIn <span>(optional)</span></label><input type="url" id="mLi" maxlength="120" inputmode="url" autocapitalize="off" placeholder="linkedin.com/in/yourname" value="${esc(FORM.linkedin)}">
+      <label class="check"><input type="checkbox" id="mOk" ${FORM.consent ? 'checked' : ''}><span>Show my card and my connections on the big screen and to other attendees today.</span></label>
+      <button type="button" class="btn wide" data-act="card-send" id="mSend" style="margin-top:16px">${prof ? 'Send changes' : 'Join the board'}</button>${prof ? '<button type="button" class="btn line wide" data-act="card-cancel" style="margin-top:10px">Cancel</button>' : ''}
+      <div class="msg" id="mMsg" role="status"></div>
+    </article>`;
+  }
+  put($('mcCard'), ch);
+  // My code, the QR and We Met
+  let code = '';
+  if (on && ME.code && flag('meet')) {
+    const n = Math.min(3, myConns().length), url = location.origin + '/?m=' + ME.code;
+    code = `<article class="card"><div class="eyebrow"><i class="dot now"></i>My code</div><div class="code" style="margin-top:4px"><div><div class="num" aria-label="Your code ${ME.code}">${ME.code}</div><p class="small muted" style="margin-top:8px">Show it to someone you meet. They scan it or type it.</p></div><div class="qr" id="qr" data-url="${esc(url)}">${QR[url] || ''}</div></div>
+      ${ph !== 'after' ? missionHtml(n) : ''}
+      ${meetOpen ? `<label class="f" for="mCode">Their code</label><div class="form-row"><input type="text" id="mCode" inputmode="numeric" pattern="[0-9]*" maxlength="3" autocomplete="off" enterkeyhint="go" placeholder="3 digits"><button type="button" class="btn" data-act="meet-go" ${meetBusy ? 'disabled' : ''}>Connect</button></div>`
+        : `<button type="button" class="btn wide" data-act="meet-open" style="margin-top:14px">We met</button>`}
+    </article>`;
+  }
+  put($('mcCode'), code);
+  if (code) qrNow();
+  // Three people to meet
+  const sg = on && ph !== 'after' ? suggestions() : [];
+  put($('mcSugg'), sg.length ? `<h3>Your 3 People to Meet</h3><div class="card" style="padding:0 16px">${sg.map(x => personHtml(x.p, x.why)).join('')}</div>` : '');
+  // My connections
+  const cs = myConns();
+  put($('mcConn'), cs.length ? `<h3>My Connections</h3><div class="card" style="padding:0 16px">${cs.map(p => personHtml(p)).join('')}</div>` : (ph === 'after' ? `<h3>My Connections</h3><p class="empty">No connections saved.</p>` : ''));
+  // Everyone on the board, with the tag filter
+  const list = (snapD().profiles || []).filter(p => p.id !== myPub());
+  const used = tags().filter(t => list.some(p => (p.looking || []).includes(t) || (p.offer || []).includes(t)));
+  const shown = filterTag ? list.filter(p => (p.looking || []).includes(filterTag) || (p.offer || []).includes(filterTag)) : list;
+  put($('mcAll'), `<h3>Everyone on the Board</h3>${list.length ? `<div class="tags" style="margin-top:8px" role="group" aria-label="Filter by tag">${[''].concat(used).map(t => `<button type="button" class="tagb" data-act="filter" data-t="${esc(t)}" aria-pressed="${filterTag === t}">${t ? esc(t) : 'Everyone'}</button>`).join('')}</div>` : ''}
+    ${shown.length ? `<div class="card" style="padding:0 16px">${shown.map(p => personHtml(p)).join('')}</div>` : `<p class="empty">${list.length ? 'Nobody with that tag yet.' : 'Be the first to join the board.'}</p>`}`);
+  // After the event, People opens on My Connections
+  const mc = $('mcConn'); if (mc) mc.style.order = ''; $('meet').style.display = ph === 'after' ? 'flex' : ''; $('meet').style.flexDirection = 'column';
+  if (ph === 'after') { $('mcConn').style.order = -1; }
+}
+const QR = {};
+let qrLoading = null;
+function qrSvg(text){ try { const q = qrcode(0, 'M'); q.addData(text); q.make(); const n = q.getModuleCount(); let p = ''; for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) p += `M${c},${r}h1v1h-1z`; return `<svg viewBox="-2 -2 ${n + 4} ${n + 4}" shape-rendering="crispEdges" role="img" aria-label="QR code of your meeting link"><path d="${p}" fill="#1F2E33"/></svg>`; } catch(e) { return ''; } }
+function qrNow(){
+  const el = $('qr'); if (!el) return;
+  const url = el.dataset.url;
+  if (QR[url]) { if (!el.innerHTML) el.innerHTML = QR[url]; return; }
+  if (window.qrcode) { QR[url] = qrSvg(url); el.innerHTML = QR[url]; $('mcCode')._h = null; return; }
+  if (!qrLoading) { qrLoading = new Promise(ok => { const s = document.createElement('script'); s.src = '/assets/qrcode.js'; s.onload = ok; s.onerror = ok; document.head.appendChild(s); }); }
+  qrLoading.then(() => { if (window.qrcode) { QR[url] = qrSvg(url); const e2 = $('qr'); if (e2 && e2.dataset.url === url) e2.innerHTML = QR[url]; $('mcCode')._h = null; } });
+}
+async function cardSend(){
+  const pick = g => FORM[g];
+  FORM.name = $('mName').value; FORM.company = $('mCo').value; FORM.role = $('mRole').value; FORM.linkedin = $('mLi').value; FORM.consent = $('mOk').checked;
+  const body = {name:FORM.name, company:FORM.company, role:FORM.role, looking:pick('looking'), offer:pick('offer'), linkedin:FORM.linkedin, consent:FORM.consent};
+  const msg = $('mMsg'), btn = $('mSend');
+  msg.className = 'msg'; msg.textContent = 'Sending'; btn.disabled = true;
+  try {
+    await api('/api/profile', {body});
+    if (FORM.name.trim()) store.set('md_name', FORM.name.trim());
+    vib(10); FORM = null; await refreshMe(); FORM = formFrom(); FORM.editing = false;
+    $('mcCard')._h = null; renderPeople(); meetPending();
+    window.scrollTo({top:0, behavior:'smooth'});
+  } catch(e) { btn.disabled = false; msg.className = 'msg err'; msg.textContent = e.offline ? 'You are offline. Send it again when you are back.' : e.message; }
+}
+async function doMeet(code, auto){
+  if (meetBusy) return; meetBusy = true;
+  try {
+    const d = await api('/api/meet', {body:{code}});
+    meetRes = {ok:true, person:d.person, again:d.again}; meetOpen = false; store.del('md_m'); vib(10);
+    refreshMe();
+  } catch(e) {
+    if (e.offline) { meetRes = {ok:false, error:'You are offline. We will connect you when you are back.'}; store.set('md_m', code); }
+    else if (e.status === 409 && auto) { meetRes = null; }
+    else { meetRes = {ok:false, error:e.message}; if (auto) store.del('md_m'); }
+  }
+  meetBusy = false; renderPeople(); renderTabs();
+}
+// Opening the page with ?m=<code> connects without typing, once the phone is signed in and on the board.
+function meetPending(){
+  const code = store.get('md_m'); if (!code || !ME || meetBusy) return;
+  const on = ME.profile && ME.profile.status === 'approved' && ME.code;
+  if (on) doMeet(code, true);
+}
+
+/* ---------- Photos ---------- */
 let photoBlob = null;
-$('pname').value = store.get('md_name') || '';
+function renderPhotos(){
+  const after = phaseNow() === 'after';
+  $('phUp').hidden = after; $('phClosed').hidden = !after;
+  $('phLead').hidden = after;
+  if (!$('pname').value && ME && ME.me && ME.me.name) $('pname').value = ME.me.name;
+  const ps = (snapD().photos || []).slice().sort((a, b) => b.at - a.at);
+  put($('phGrid'), ps.length ? `<h3>On the Big Screen</h3><p class="lead small">${plural(ps.length, 'photo', 'photos')} so far. Tap one to open it.</p><div class="grid">${ps.map(p => `<button type="button" data-act="photo-open" data-id="${esc(p.id)}" aria-label="${esc(p.caption || 'Photo')}"><img loading="lazy" decoding="async" src="/api/photo/${encodeURIComponent(p.id)}" alt=""></button>`).join('')}</div>` : `<p class="empty" style="margin-top:14px">No photos on the big screen yet.</p>`);
+}
 $('file').addEventListener('change', async e => {
   const f = e.target.files && e.target.files[0]; if (!f) return;
-  $('photoMsg').className = 'msg'; $('photoMsg').textContent = 'Preparing your photo...';
-  try { photoBlob = await shrink(f); $('dropTxt').innerHTML = `<img src="${URL.createObjectURL(photoBlob)}" alt="Your photo">`; $('send').disabled = false; $('photoMsg').textContent = ''; }
-  catch(err) { photoBlob = null; $('send').disabled = true; $('photoMsg').className = 'msg err'; $('photoMsg').textContent = 'That file could not be read. Try another photo.'; }
+  const msg = $('photoMsg'); msg.className = 'msg'; msg.textContent = 'Preparing your photo';
+  try { photoBlob = await shrink(f); $('dropTxt').innerHTML = `<img src="${URL.createObjectURL(photoBlob)}" alt="Your photo">`; $('send').disabled = false; msg.textContent = ''; }
+  catch(err) { photoBlob = null; $('send').disabled = true; msg.className = 'msg err'; msg.textContent = 'That file could not be read. Try another photo.'; }
 });
 async function shrink(file){
   const bmp = await createImageBitmap(file, {imageOrientation:'from-image'}).catch(() => null);
-  let src = bmp, w, h;
-  if (!src) { src = await new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = URL.createObjectURL(file); }); }
-  w = src.width; h = src.height; const k = Math.min(1, 1600 / Math.max(w, h));
+  let src = bmp;
+  if (!src) src = await new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = URL.createObjectURL(file); });
+  const w = src.width, h = src.height, k = Math.min(1, 1600 / Math.max(w, h));
   const c = document.createElement('canvas'); c.width = Math.round(w * k); c.height = Math.round(h * k);
   c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
   return await new Promise(ok => c.toBlob(ok, 'image/jpeg', .85));
 }
 $('send').addEventListener('click', async () => {
-  if (!photoBlob) return; const btn = $('send'); btn.disabled = true;
-  $('photoMsg').className = 'msg'; $('photoMsg').textContent = 'Sending...';
+  if (!photoBlob) return; const btn = $('send'), msg = $('photoMsg'); btn.disabled = true;
+  msg.className = 'msg'; msg.textContent = 'Sending';
   const name = $('pname').value.trim(); if (name) store.set('md_name', name);
   try {
-    const r = await fetch('/api/photo', {method:'POST', headers:{'content-type':'image/jpeg', 'x-dev':DEV, 'x-name':encodeURIComponent(name), 'x-caption':encodeURIComponent($('cap').value.trim())}, body:photoBlob});
-    let d = {}; try { d = await r.json(); } catch(e) {}
-    if (!r.ok) throw new Error(d.error || 'The photo did not send. Please try again.');
-    $('photoMsg').className = 'msg ok'; $('photoMsg').textContent = 'Sent. It will appear on the big screen once the team approves it.';
+    const d = await api('/api/photo', {method:'POST', body:photoBlob, headers:{'content-type':'image/jpeg', 'x-name':encodeURIComponent(name), 'x-caption':encodeURIComponent($('cap').value.trim())}});
+    vib(10); msg.className = 'msg ok'; msg.textContent = d.status === 'approved' ? 'Sent. It is on the big screen.' : 'Sent. It shows on the big screen once the team checks it.';
     photoBlob = null; $('cap').value = ''; $('file').value = ''; $('dropTxt').innerHTML = '<b>Tap to share another photo</b>';
-  } catch(e) { btn.disabled = false; $('photoMsg').className = 'msg err'; $('photoMsg').textContent = e.message; }
+  } catch(e) { btn.disabled = false; msg.className = 'msg err'; msg.textContent = e.offline ? 'You are offline. Send it again when you are back.' : e.message; }
+});
+let viewerOpen = false;
+function openPhoto(id){
+  const p = (snapD().photos || []).find(x => x.id === id); if (!p) return;
+  const el = $('viewer');
+  el.innerHTML = `<div class="vt"><button type="button" data-act="photo-close">Close</button></div><img src="/api/photo/${encodeURIComponent(p.id)}" alt="${esc(p.caption || 'Photo')}"><div class="vc">${p.caption ? `<b dir="auto">${esc(p.caption)}</b>` : ''}${p.name ? `<span dir="auto" style="opacity:.8">${esc(p.name)}</span>` : ''}</div>`;
+  el.hidden = false; viewerOpen = true; document.body.classList.add('lock');
+  history.pushState({viewer:id}, '');
+}
+function hideViewer(){ viewerOpen = false; $('viewer').hidden = true; $('viewer').innerHTML = ''; if (!sheetOpen) document.body.classList.remove('lock'); }
+window.addEventListener('popstate', e => {
+  const s = e.state || {};
+  if (viewerOpen && !s.viewer) hideViewer();
+  if (sheetOpen && !s.sheet) { if (SI.step !== 'ok' && status() === 'none') store.set('md_skip', '1'); hideSheet(); }
 });
 
-/* ---------- Networking Board ---------- */
-// MYPUB is this phone's public id, as the server reports it. Lists use public ids, never device ids.
-let MY = null, editing = false, filter = '', MYPUB = store.get('md_pub') || '';
-function setPub(id){ if (id && id !== MYPUB) { MYPUB = id; store.set('md_pub', id); } }
-const TAGS_FALLBACK = ['Funding','Clients','Partnerships','Hiring','A New Job','Mentoring','Marketing','Product','AI and Tech','Freelancing'];
-const tags = () => (STATE && STATE.tags) || TAGS_FALLBACK;
-const initials = n => String(n).split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
-async function loadMine(){ try { const r = await fetch('/api/profile', {cache:'no-store', headers:{'x-dev':DEV}}); MY = await r.json(); setPub(MY.id); } catch(e) { MY = MY || {status:'none'}; } renderMine(); renderPeople(); }
-function tagPicker(id, chosen, cls){ return `<div class="tags ${cls}" id="${id}" role="group">${tags().map(t => `<button type="button" class="tag" aria-pressed="${chosen.includes(t)}">${esc(t)}</button>`).join('')}</div>`; }
-function renderMine(){
-  const el = $('myCard'), st = MY ? MY.status : 'none', p = (MY && MY.profile) || {};
-  if (st !== 'none' && !editing) {
-    const label = {approved:'You are on the board', pending:'Waiting for the team to approve your card', declined:'Your card was not approved. You can edit it and send again.'}[st] || '';
-    el.innerHTML = `<div class="status ${st === 'approved' ? '' : 'wait'}"><i></i>${label}</div>
-      <div class="person" style="border:0"><div class="ini">${esc(initials(p.name || '?'))}</div><div><b>${esc(p.name)}</b><div class="muted small">${esc([p.role, p.company].filter(Boolean).join(', '))}</div>
-      <div>${(p.looking || []).map(t => `<span class="tg lk">${esc(t)}</span>`).join('')}${(p.offer || []).map(t => `<span class="tg of">${esc(t)}</span>`).join('')}</div></div></div>
-      <button class="btn line" id="edit">Edit my card</button>`;
-    $('edit').onclick = () => { editing = true; renderMine(); };
-    return;
-  }
-  el.innerHTML = `<label for="mName">Name</label><input type="text" id="mName" maxlength="40" autocomplete="name" value="${esc(p.name || store.get('md_name') || '')}">
-    <label for="mCo">Company <span>(optional)</span></label><input type="text" id="mCo" maxlength="50" autocomplete="organization" value="${esc(p.company || '')}">
-    <label for="mRole">Role <span>(optional)</span></label><input type="text" id="mRole" maxlength="50" autocomplete="organization-title" value="${esc(p.role || '')}">
-    <label>I am looking for <span>(up to 3)</span></label>${tagPicker('mLook', p.looking || [], 'lk')}
-    <label>I can help with <span>(up to 3)</span></label>${tagPicker('mOffer', p.offer || [], 'of')}
-    <label for="mLi">LinkedIn <span>(optional)</span></label><input type="url" id="mLi" maxlength="120" inputmode="url" placeholder="linkedin.com/in/yourname" value="${esc(p.linkedin || '')}">
-    <div class="check"><input type="checkbox" id="mOk" ${p.name ? 'checked' : ''}><label for="mOk" style="margin:0;font-weight:400">Show my name, company, tags and LinkedIn on the big screen and to other attendees today.</label></div>
-    <button class="btn wide" id="mSend">${st === 'none' ? 'Join the board' : 'Send changes'}</button>${st !== 'none' ? '<button class="btn line wide" id="mCancel" style="margin-top:10px">Cancel</button>' : ''}
-    <div class="msg" id="mMsg" role="status"></div>`;
-  ['mLook', 'mOffer'].forEach(id => $(id).querySelectorAll('.tag').forEach(b => b.onclick = () => {
-    const on = b.getAttribute('aria-pressed') === 'true', n = $(id).querySelectorAll('[aria-pressed=true]').length;
-    if (!on && n >= 3) return; b.setAttribute('aria-pressed', String(!on)); }));
-  if ($('mCancel')) $('mCancel').onclick = () => { editing = false; renderMine(); };
-  $('mSend').onclick = async () => {
-    const pick = id => [...$(id).querySelectorAll('[aria-pressed=true]')].map(b => b.textContent);
-    const body = {name:$('mName').value, company:$('mCo').value, role:$('mRole').value, looking:pick('mLook'), offer:pick('mOffer'), linkedin:$('mLi').value, consent:$('mOk').checked};
-    $('mMsg').className = 'msg'; $('mMsg').textContent = 'Sending...'; $('mSend').disabled = true;
-    try { const d = await post('/api/profile', body, {'x-dev':DEV}); setPub(d.id); store.set('md_name', body.name.trim()); editing = false; await loadMine(); }
-    catch(e) { $('mSend').disabled = false; $('mMsg').className = 'msg err'; $('mMsg').textContent = e.message; }
-  };
+/* ---------- After the Event ---------- */
+const FB = {overall:0, recommend:null, text:'', busy:false, err:'', edit:false};
+function renderKeep(){
+  if (phaseNow() !== 'after' || !DAY) return;
+  const name = ME && ME.me && ME.me.first, n = (ST && ST.n) || {};
+  put($('kpTop'), `<div class="hero" style="margin-top:12px"><div class="h-top"><div class="eyebrow"><i class="dot now"></i>${esc(dayDate())}</div></div><h2 class="h-t">${name ? `Thank you, ${esc(name)}` : 'Thank you'}</h2><p class="h-s" style="font-size:17px">Thank you for joining Mentorship Day. Your connections and photos stay here.</p></div>`);
+  const items = [[n.here, 'People here'], [n.links, 'Connections'], [n.photos, 'Photos'], [n.answers, 'Poll answers'], [n.takeaways, 'Takeaways'], [n.board, 'On the board']].filter(x => x[0] != null);
+  put($('kpNums'), items.length ? `<h3>The Day in Numbers</h3><div class="nums">${items.map(([v, l]) => `<div><b>${v}</b><span>${l}</span></div>`).join('')}</div>` : '');
+  const tks = ((ME && ME.takeaways) || []).slice().sort((a, b) => sessOf(a.sid).b - sessOf(b.sid).b);
+  put($('kpTk'), tks.length ? `<h3>My Takeaways</h3><div class="card rowlist">${tks.map(t => { const x = sessOf(t.sid); return `<div><span class="when">${esc(x.room)}</span><div class="t">${esc(x.title)}</div><div class="fls" aria-label="${t.rating} of 5" style="margin-top:4px">${[1, 2, 3, 4, 5].map(i => `<span style="width:26px;height:26px;color:${i <= t.rating ? 'var(--red)' : 'rgba(31,46,51,.25)'}">${I.flower}</span>`).join('')}</div>${t.text ? `<p dir="auto" style="margin-top:6px">${esc(t.text)}</p>` : ''}</div>`; }).join('')}</div>` : '');
+  const survey = ST && ST.cfg && ST.cfg.links && ST.cfg.links.survey;
+  const done = ME && ME.feedback && !FB.edit;
+  let fb;
+  if (survey) fb = `<h3>Your Feedback</h3><p class="lead small">Three minutes help us make the next one better.</p><a class="btn wide" style="margin-top:12px" href="${esc(survey)}" target="_blank" rel="noopener">Share your feedback</a>`;
+  else if (done) fb = `<h3>Your Feedback</h3><div class="card"><b>Thank you for your feedback.</b><div><button type="button" class="lnk" data-act="fb-edit" style="padding:0">Change it</button></div></div>`;
+  else fb = `<h3>Your Feedback</h3><article class="card" id="fbCard"><label class="f" style="margin-top:0">How was the day overall?</label><div class="fls" role="radiogroup" aria-label="Overall">${[1, 2, 3, 4, 5].map(i => `<button type="button" class="flb" role="radio" data-act="fb-o" data-r="${i}" aria-checked="${FB.overall === i}" aria-pressed="${FB.overall >= i}" aria-label="${i} of 5">${I.flower}</button>`).join('')}</div>
+    <label class="f">How likely are you to recommend it to a friend? <span>(0 to 10)</span></label><div class="nps" role="radiogroup" aria-label="Recommend">${Array.from({length:11}, (_, i) => `<button type="button" role="radio" data-act="fb-r" data-r="${i}" aria-checked="${FB.recommend === i}" aria-pressed="${FB.recommend === i}">${i}</button>`).join('')}</div>
+    <label class="f" for="fbT">Anything else? <span>(optional)</span></label><input type="text" id="fbT" dir="auto" maxlength="300" value="${esc(FB.text)}" enterkeyhint="send">
+    <button type="button" class="btn wide" data-act="fb-send" style="margin-top:14px" ${FB.overall && !FB.busy ? '' : 'disabled'}>${FB.busy ? 'Sending' : 'Send'}</button><div class="msg err" role="alert">${esc(FB.err)}</div></article>`;
+  put($('kpFb'), fb);
 }
-function personHtml(p){
-  return `<div class="person"><div class="ini">${esc(initials(p.name))}</div><div><b>${esc(p.name)}</b><div class="muted small">${esc([p.role, p.company].filter(Boolean).join(', '))}</div>
-    <div>${(p.looking || []).map(t => `<span class="tg lk" title="Looking for">${esc(t)}</span>`).join('')}${(p.offer || []).map(t => `<span class="tg of" title="Can help with">${esc(t)}</span>`).join('')}</div>
-    ${p.linkedin ? `<a href="${esc(p.linkedin)}" target="_blank" rel="noopener">Connect on LinkedIn</a>` : ''}</div></div>`;
+async function fbSend(){
+  const t = $('fbT'); if (t) FB.text = t.value;
+  FB.busy = true; FB.err = ''; renderKeep();
+  try { await api('/api/feedback', {body:{overall:FB.overall, recommend:FB.recommend, text:FB.text.trim()}}); FB.edit = false; vib(10); await refreshMe(); }
+  catch(e) { FB.err = e.offline ? 'You are offline. Send it again when you are back.' : e.message; }
+  FB.busy = false; renderKeep();
 }
-function renderPeople(){
-  const list = ((SNAP && SNAP.d && SNAP.d.profiles) || []).filter(p => p.id !== MYPUB);
-  const me = MY && MY.profile;
-  if (me && list.length) {
-    const ms = list.map(q => ({q, n:(q.offer || []).filter(t => (me.looking || []).includes(t)).length + (q.looking || []).filter(t => (me.offer || []).includes(t)).length})).filter(x => x.n).sort((a, b) => b.n - a.n).slice(0, 4);
-    $('matchH').hidden = !ms.length; $('matches').innerHTML = ms.length ? `<div class="card" style="padding:0 16px">${ms.map(x => personHtml(x.q)).join('')}</div>` : '';
-  } else { $('matchH').hidden = true; $('matches').innerHTML = ''; }
-  const used = tags().filter(t => list.some(p => (p.looking || []).includes(t) || (p.offer || []).includes(t)));
-  $('filter').innerHTML = list.length ? [''].concat(used).map(t => `<button type="button" class="tag" data-t="${esc(t)}" aria-pressed="${filter === t}">${t ? esc(t) : 'Everyone'}</button>`).join('') : '';
-  $('filter').querySelectorAll('.tag').forEach(b => b.onclick = () => { filter = b.dataset.t; renderPeople(); });
-  const shown = filter ? list.filter(p => (p.looking || []).includes(filter) || (p.offer || []).includes(filter)) : list;
-  $('people').innerHTML = shown.length ? `<div class="card" style="padding:0 16px">${shown.map(personHtml).join('')}</div>` : `<p class="empty">${list.length ? 'Nobody with that tag yet.' : 'Be the first to join the board.'}</p>`;
+async function forget(){
+  if (!confirm('Remove your card, your connections, your stars and your takeaway lines? Ratings stay without your name. This cannot be undone.')) return;
+  try { await api('/api/forget', {body:{}}); } catch(e) { toast(e.message); return; }
+  ['md_me', 'md_ans', 'md_q', 'md_m', 'md_tab', 'md_name'].forEach(k => store.del(k)); Q = []; ME = null;
+  await refreshMe(); toast('Your data was removed.');
 }
 
-/* ---------- tabs ---------- */
-const TABS = ['today', 'poll', 'photo', 'meet'];
-function show(id){ TABS.forEach(t => { $(t).hidden = t !== id; $('t-' + t).setAttribute('aria-selected', String(t === id)); }); store.set('md_tab', id); if (history.replaceState) history.replaceState(null, '', '#' + id); window.scrollTo(0, 0); }
-TABS.forEach(t => $('t-' + t).onclick = () => show(t));
-const start = (location.hash || '').slice(1);
-show(TABS.includes(start) ? start : 'today');
+/* ---------- one tap handler for the whole page ---------- */
+const ACT = {
+  tab:b => show(b.dataset.tab),
+  scroll:b => { const el = $(b.dataset.d === 'blocks' ? 'blocksH' : b.dataset.d); if (el) el.scrollIntoView({behavior:'smooth', block:'start'}); },
+  signin:() => openSheet(true),
+  signout:() => signOut(),
+  'si-skip':() => skipSheet(),
+  'si-guest':() => { SI.step = 'guest'; SI.err = ''; renderSheet(); setTimeout(() => $('siN') && $('siN').focus(), 30); },
+  'si-back':() => { Object.assign(SI, {step:'find', err:'', left:null, digits:'', pick:null}); renderSheet(); setTimeout(() => $('siQ') && $('siQ').focus(), 30); },
+  'si-tocode':() => { SI.step = 'code'; SI.digits = ''; renderSheet(); setTimeout(() => $('siD') && $('siD').focus(), 30); },
+  'si-pick':b => { SI.pick = {id:b.dataset.id, name:b.dataset.name}; SI.step = 'code'; SI.digits = ''; SI.err = ''; SI.left = null; renderSheet(); const i = $('siD'); if (i) i.focus(); },
+  'si-claim':() => { const h = $('siH'); if (h) SI.hello = h.checked; siClaim(); },
+  'si-guestgo':() => { const h = $('siH'); if (h) SI.hello = h.checked; siGuest(); },
+  star:b => {
+    const n = +b.dataset.b, sid = b.dataset.s, cur = starsNow()[n];
+    enqueue('star', 'star' + n, {b:n, sid:cur && cur.sid === sid ? null : sid});
+    CHG[n] = false; renderToday();
+  },
+  pick:b => { const n = +b.dataset.b; enqueue('star', 'star' + n, {b:n, sid:b.dataset.s}); CHG[n] = false; renderToday(); },
+  keep:b => { const n = +b.dataset.d, cur = starsNow()[n]; if (cur) enqueue('star', 'star' + n, {b:n, sid:cur.sid}); renderToday(); },
+  change:b => { CHG[+b.dataset.d] = true; renderToday(); },
+  unchange:b => { CHG[+b.dataset.d] = false; renderToday(); },
+  'tk-sid':b => { const n = +b.dataset.b; TKS[n].sid = b.dataset.s; TKS[n].chosen = true; renderToday(); },
+  'tk-no':b => { store.set('md_tkno_' + b.dataset.b, '1'); renderToday(); },
+  'tk-rate':b => { const n = +b.dataset.b, t = TKS[n], inp = $('tkT' + n), sw = $('tkS' + n); if (inp) t.text = inp.value; if (sw) t.show = sw.checked; t.rating = +b.dataset.r; renderToday(); },
+  'tk-send':b => tkSend(+b.dataset.b),
+  answer:b => answer(b.dataset.o),
+  'answer-word':() => answer($('word').value),
+  rx:b => rxTap(b),
+  'meet-open':() => { meetOpen = true; meetRes = null; renderPeople(); setTimeout(() => $('mCode') && $('mCode').focus(), 30); },
+  'meet-go':() => { const v = ($('mCode').value || '').trim(); if (!/^[1-9]\d\d$/.test(v)) { meetRes = {ok:false, error:'Type the 3 digit code.'}; renderPeople(); return; } doMeet(v, false); },
+  'card-edit':() => { FORM = formFrom(); FORM.editing = true; renderPeople(); },
+  'card-cancel':() => { FORM = formFrom(); FORM.editing = false; renderPeople(); },
+  'card-send':() => cardSend(),
+  tag:b => {
+    const g = b.dataset.g, t = b.dataset.t, on = FORM[g].includes(t);
+    ['mName', 'mCo', 'mRole', 'mLi'].forEach(id => { const el = $(id); if (el) FORM[{mName:'name', mCo:'company', mRole:'role', mLi:'linkedin'}[id]] = el.value; });
+    const ok = $('mOk'); if (ok) FORM.consent = ok.checked;
+    FORM.touched = true;
+    if (on) FORM[g] = FORM[g].filter(x => x !== t); else if (FORM[g].length < 3) FORM[g] = FORM[g].concat(t); else { toast('Pick up to 3. Tap one to remove it first.'); return; }
+    renderPeople();
+  },
+  filter:b => { filterTag = b.dataset.t; renderPeople(); },
+  'photo-open':b => openPhoto(b.dataset.id),
+  'photo-close':() => history.back(),
+  'fb-o':b => { FB.overall = +b.dataset.r; const t = $('fbT'); if (t) FB.text = t.value; renderKeep(); },
+  'fb-r':b => { FB.recommend = +b.dataset.r; const t = $('fbT'); if (t) FB.text = t.value; renderKeep(); },
+  'fb-send':() => fbSend(),
+  'fb-edit':() => { FB.edit = true; FB.overall = ME.feedback.overall; FB.recommend = ME.feedback.recommend; FB.text = ME.feedback.text || ''; renderKeep(); },
+  forget:() => forget()
+};
+document.addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (!b || b.disabled) return; const f = ACT[b.dataset.act]; if (f) { e.preventDefault(); f(b, e); } });
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.id === 'siQ') siSearch(t.value);
+  else if (t.id === 'siD') siDigits(t.value);
+  else if (t.dataset.tk) { const x = TKS[+t.dataset.tk]; if (x) x.text = t.value; }
+  else if (FORM && t.closest && t.closest('#cardForm')) FORM.touched = true;
+  else if (t.id === 'mCode' && /^[1-9]\d\d$/.test(t.value)) { /* waits for Connect */ }
+});
+document.addEventListener('change', e => { const t = e.target; if (t.id && t.id.startsWith('tkS')) { const x = TKS[+t.id.slice(3)]; if (x) x.show = t.checked; } if (t.id === 'siH') SI.hello = t.checked; });
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  const t = e.target;
+  if (t.id === 'word') { e.preventDefault(); answer(t.value); }
+  else if (t.id === 'siD' && V === 'b' && SI.digits.length === 4) { e.preventDefault(); const h = $('siH'); if (h) SI.hello = h.checked; siClaim(); }
+  else if (t.id === 'siN') { e.preventDefault(); const h = $('siH'); if (h) SI.hello = h.checked; siGuest(); }
+  else if (t.id === 'mCode') { e.preventDefault(); ACT['meet-go'](); }
+  else if (t.dataset.tk) { e.preventDefault(); tkSend(+t.dataset.tk); }
+});
 
-renderToday(); renderPoll(); renderMine(); renderPeople();
-pull(); loadMine();
-setInterval(pull, 12000); setInterval(renderToday, 30000);
-document.addEventListener('visibilitychange', () => { if (!document.hidden) { pull(); renderToday(); } });
+/* ---------- keyboard and the tab bar height ---------- */
+const root = document.documentElement;
+if (window.visualViewport) {
+  const vv = window.visualViewport;
+  const onVV = () => { const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop); root.style.setProperty('--kb', (kb > 60 ? kb : 0) + 'px'); };
+  vv.addEventListener('resize', onVV); vv.addEventListener('scroll', onVV);
+}
+if (window.ResizeObserver) new ResizeObserver(([e]) => root.style.setProperty('--dock-h', Math.round(e.target.getBoundingClientRect().height) + 'px')).observe($('tabs'));
+
+/* ---------- the clock ticks ---------- */
+let lastCheck = 0;
+setInterval(() => {
+  if (document.hidden) return;
+  let due = false;
+  document.querySelectorAll('[data-cd]').forEach(el => { const left = cdLeft(+el.dataset.cd); el.textContent = fmtLeft(left); if (left <= 0) due = true; });
+  document.querySelectorAll('[data-prog]').forEach(el => { const [s, e] = el.dataset.prog.split(','); el.style.width = pct(s, e).toFixed(1) + '%'; });
+  if (due || Date.now() - lastCheck > 15000) { lastCheck = Date.now(); renderAll(); }
+}, 1000);
+
+function renderAll(){
+  if (!DAY) { renderTabs(); return; }
+  renderTabs(); renderToday(); renderLive(); renderPad(); renderPeople(); renderPhotos(); renderKeep(); renderNet();
+}
+
+/* ---------- start ---------- */
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+const mq = P.get('m');
+if (/^[1-9]\d\d$/.test(mq || '')) { store.set('md_m', mq); P.delete('m'); history.replaceState(null, '', location.pathname + (P.toString() ? '?' + P : '') + location.hash); }
+const startTab = store.get('md_m') ? 'meet' : (UNHASH[(location.hash || '').slice(1)] || 'today');
+TAB = startTab;
+show(startTab, true);
+renderAll();
+if (!ME || ME.status === 'none') maybeSheet();
+loadDay();
+pull(); refreshMe(); flush();
+try { performance.mark('md-ready'); } catch(e) {}
 })();
 </script>
 </body>
