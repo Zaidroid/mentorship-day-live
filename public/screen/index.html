@@ -498,15 +498,19 @@ function mmss(sec){ sec = Math.max(0, Math.round(sec)); const h = Math.floor(sec
 // load) and then over the last 120 frames. When the average stays over 22 ms for 3 seconds, the wall goes
 // lite for the rest of the session: no backdrop blur (glass becomes a solid fill), no blur in reveals,
 // half the background nodes, at most 30 effect particles. The background keeps moving.
-// ?lite=1 and ?lite=0 force it. A gap over 250 ms is a pause (hidden page), not a slow frame.
+// ?lite=1 and ?lite=0 force it. Frames are not counted while the page is hidden, and a single gap over 2
+// seconds is a stall (a reload, a debugger), not a frame. A slow frame of 300 ms still counts: a wall that
+// slow needs lite the most.
 const GOV = {force:/^[01]$/.test(P.get('lite') || '') ? P.get('lite') : null, lite:false, why:'', fps:null, avg:0, buf:[], sum:0, t0:0, last:0, slow:0, at:0,
   WARM:1500, FIRST:6000, ROLL:120, LIMIT:22, HOLD:3000};
 function goLite(why){ if (GOV.lite) return; GOV.lite = true; GOV.why = why; GOV.at = Date.now(); document.documentElement.dataset.lite = ''; }
 function govFrame(t){
   requestAnimationFrame(govFrame);
+  if (document.hidden) { GOV.last = 0; return; }
   if (!GOV.t0) { GOV.t0 = GOV.last = t; return; }
+  if (!GOV.last) { GOV.last = t; return; } // the first frame after the page was hidden
   const dt = t - GOV.last; GOV.last = t;
-  if (t - GOV.t0 < GOV.WARM || dt > 250) return;
+  if (t - GOV.t0 < GOV.WARM || dt > 2000) return;
   GOV.buf.push(dt); GOV.sum += dt;
   if (t - GOV.t0 > GOV.WARM + GOV.FIRST) while (GOV.buf.length > GOV.ROLL) GOV.sum -= GOV.buf.shift();
   GOV.avg = GOV.sum / GOV.buf.length; GOV.fps = Math.round(1000 / GOV.avg);

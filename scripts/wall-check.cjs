@@ -202,6 +202,18 @@ check('governor-goes-lite', async () => {
   return [ok, `before: lite ${before.lite}, ${before.fps} fps; frames blocked 32 ms: lite after ${took} ms (${after.why}); 4 s after the frames are fast again: lite ${after.lite}, ${after.fps} fps; nodes ${after.bg.nodes} of ${after.bg.full}, particle cap ${after.bg.max}, glass backdrop ${after.backdrop}, fill ${after.fill}`];
 });
 
+check('governor-very-slow-wall', async () => {
+  // Frames of 320 ms (about 3 fps): a wall this slow must go lite too, not be taken for a paused page.
+  const w = await wall('/screen/?t=11:20&quiet', '1280x720');
+  await sleep(1000);
+  await w.p.evaluate(HOG(320));
+  const t1 = Date.now(); let took = -1;
+  while (Date.now() - t1 < 20000) { await sleep(400); if (await md(w.p, () => document.documentElement.hasAttribute('data-lite')).catch(() => false)) { took = Date.now() - t1; break; } }
+  const f = await md(w.p, liteFacts).catch(() => ({}));
+  await w.close();
+  return [took > 0 && took < 16000, `frames blocked 320 ms: lite after ${took} ms (${f.why}), ${f.fps} fps`];
+});
+
 // Headless Chromium on a busy build machine composites in software and is slow at full HD, so the
 // governor rightly goes lite there. This check uses a small page, where frames are fast on any machine.
 check('governor-stays-full', async () => {
