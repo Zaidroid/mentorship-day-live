@@ -32,6 +32,7 @@ a{color:inherit}
 .hd .row{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
 .hd h1{font-size:26px;line-height:1.05;font-weight:700;color:var(--red);letter-spacing:-.01em;white-space:nowrap}
 .hd small{font-size:13px;color:var(--ink2);text-align:right;line-height:1.2}
+@media (max-width:359px){.hd small{display:none}}
 .hd .rule{height:4px;background:var(--blue);margin-top:10px}
 .reh{display:inline-block;vertical-align:middle;margin-left:8px;font-size:12px;font-weight:700;color:var(--ink);background:#fff;box-shadow:inset 0 0 0 1.5px var(--blue);padding:2px 8px;border-radius:3px 10px 0 10px;letter-spacing:0}
 .net{position:sticky;top:0;z-index:40;background:var(--ink);color:#fff;font-size:14px;font-weight:700;padding:calc(7px + env(safe-area-inset-top)) 16px 7px;text-align:center}
@@ -722,7 +723,7 @@ function renderSheet(){
         <div class="who"><span dir="auto">${esc(SI.pick.name)}</span><button class="lnk" type="button" data-act="si-back">Not you?</button></div>${boxesHtml()}${errHtml()}`;
       foot = `<button class="lnk" type="button" data-act="si-back">Back</button><button class="lnk" type="button" data-act="si-skip">Not now</button>`;
     } else if (SI.step === 'hello') {
-      body = `${steps}<h2 id="shT" style="margin-top:10px">One last thing</h2>${swHtml('siH', SI.hello, 'Say hello to me on the big screen', `First name only: ${esc(firstOf(SI.pick.name))}`)}${errHtml()}
+      body = `${steps}<h2 id="shT" style="margin-top:10px">One last thing</h2>${swHtml('siH', SI.hello, 'Say hello to me on the big screen', `First name only: <bdi>${esc(firstOf(SI.pick.name))}</bdi>`)}${errHtml()}
         <button class="btn wide" type="button" data-act="si-claim" style="margin-top:14px" ${SI.busy ? 'disabled' : ''}>${SI.busy ? 'Signing in' : 'Done'}</button>`;
       foot = `<button class="lnk" type="button" data-act="si-tocode">Back</button><span></span>`;
     } else if (SI.step === 'guest') {
@@ -735,7 +736,7 @@ function renderSheet(){
       body = `<h2 id="shT">Ask the team</h2><p class="lead" style="font-size:18px;color:var(--ink);margin-top:10px" role="alert">${esc(SI.err)}</p><p class="lead">They can unlock your name in a moment. You can use the page without signing in until then.</p>`;
       foot = `<button class="lnk" type="button" data-act="si-back">Back to search</button><button class="lnk" type="button" data-act="si-skip">Not now</button>`;
     } else {
-      body = `<p class="ok-big" id="shT">Hello, ${esc(SI.ok)}</p><p class="lead">You are signed in.</p>`;
+      body = `<p class="ok-big" id="shT">Hello, <bdi>${esc(SI.ok)}</bdi></p><p class="lead">You are signed in.</p>`;
     }
     h = `<div class="grab" aria-hidden="true"></div><div class="sc"><div class="in" style="margin-top:auto">${body}</div></div><div class="ft">${foot}</div>`;
   } else {
@@ -753,12 +754,12 @@ function renderSheet(){
         ${hello ? swHtml('siH', SI.hello, 'Say hello to me on the big screen', 'First name only') : ''}${errHtml()}
         <button class="btn wide" type="button" data-act="si-guestgo" style="margin-top:12px" ${SI.busy ? 'disabled' : ''}>Continue as a guest</button></div>`;
     } else if (SI.step === 'ok') {
-      body += `<div class="stp"><p class="ok-big">Hello, ${esc(SI.ok)}</p><p class="lead">You are signed in.</p></div>`;
+      body += `<div class="stp"><p class="ok-big">Hello, <bdi>${esc(SI.ok)}</bdi></p><p class="lead">You are signed in.</p></div>`;
     } else {
       body += `<div class="stp"><div class="eyebrow">Step 1 of 2</div><div class="done"><span dir="auto">${esc(SI.pick.name)}</span><button class="lnk" type="button" data-act="si-back">Change</button></div></div>`;
       if (SI.step === 'locked') body += `<div class="stp"><div class="eyebrow">Step 2 of 2</div><p style="font-size:19px;font-weight:700;margin-top:6px" role="alert">${esc(SI.err)}</p><p class="lead">They can unlock your name in a moment. You can use the page without signing in until then.</p></div>`;
       else body += `<div class="stp"><div class="eyebrow">Step 2 of 2</div><label class="f" for="siD" style="font-size:20px;margin-top:6px">Last 4 digits of your mobile number</label><p class="hint" style="margin-top:0">The number you registered with.</p>${boxesHtml()}${errHtml()}
-        ${hello ? `<div style="margin-top:10px">${swHtml('siH', SI.hello, 'Say hello to me on the big screen', `First name only: ${esc(firstOf(SI.pick.name))}`)}</div>` : ''}
+        ${hello ? `<div style="margin-top:10px">${swHtml('siH', SI.hello, 'Say hello to me on the big screen', `First name only: <bdi>${esc(firstOf(SI.pick.name))}</bdi>`)}</div>` : ''}
         <button class="btn wide" type="button" data-act="si-claim" style="margin-top:10px" ${SI.digits.length === 4 && !SI.busy ? '' : 'disabled'}>${SI.busy ? 'Signing in' : 'Sign in'}</button></div>`;
     }
     body += `</div>`;
@@ -879,14 +880,14 @@ function topModel(){
     const op = d.prog('opening'), acts = [];
     if (ST && ST.poll && ST.poll.open && liveBadge()) acts.push({l:'Answer the first poll', a:'tab', d:'poll', p:1});
     if (!onBoard()) acts.push({l:'Join the Networking Board', a:'tab', d:'meet', p:!acts.length});
-    return {kind:'morning', key:'morning', tone:'next', eyebrow:'Today', title:name ? `Good morning, ${name}` : 'Good morning', lines:op ? [`Opening at ${op.s} in the ${op.where}`] : [], cd:op ? {to:toMin(op.s), label:'to the opening'} : null, acts};
+    return {kind:'morning', key:'morning', tone:'next', eyebrow:'Today', title:name ? `Good morning, ${name}` : 'Good morning', named:name, lines:op ? [`Opening at ${op.s} in the ${op.where}`] : [], cd:op ? {to:toMin(op.s), label:'to the opening'} : null, acts};
   }
   if (mode === 'opening' || mode === 'video') return stageModel(mode, prog);
   if (mode === 'lunch') return lunchModel(prog);
   if (nb) return breakModel(nb, stars, false);
   const lunch = d.prog('lunch');
   if (lunch && m < toMin(lunch.s)) return {kind:'next', key:'nextlunch', tone:'next', eyebrow:'Next', title:`${lunch.name || lunch.title} at ${lunch.s}`, lines:[lunch.where], cd:{to:toMin(lunch.s), label:'to go'}, acts:[{l:'Meet people', a:'tab', d:'meet', p:1}]};
-  return {kind:'morning', key:'idle', tone:'next', eyebrow:'Today', title:name ? `Hello, ${name}` : 'Mentorship Day', lines:[], acts:[]};
+  return {kind:'morning', key:'idle', tone:'next', eyebrow:'Today', title:name ? `Hello, ${name}` : 'Mentorship Day', named:name, lines:[], acts:[]};
 }
 function onBoard(){ return !!(ME && ME.profile && ME.profile.status === 'approved') || snapHas(myPub()); }
 function stageModel(mode, prog){
@@ -903,12 +904,14 @@ function stageModel(mode, prog){
   const s = sp[Math.max(0, Math.min(sp.length - 1, i))];
   return {kind:'stage', key:'speaker' + i, tone:'now', live:1, eyebrow:'On stage now', title:s ? s.name : prog.title, lines:s ? [s.org, s.what].filter(Boolean) : [prog.where], until:prog.e, prog:{s:prog.s, e:prog.e}, acts};
 }
+// What the break before a block is called: the program's name for it (Coffee Break), or simply Break.
+function breakName(){ const m = venue().min, p = DAY.program.find(x => m >= toMin(x.s) && m < toMin(x.e)); return p && p.mode === 'choose' ? p.title : 'Break'; }
 function breakModel(nb, stars, alert){
   const st = stars[nb.n], x = st ? sessOf(st.sid) : null, at = nb.s;
   const base = {b:nb.n, tone:alert ? 'alert' : 'next', alert, cd:{to:toMin(at), label:'to go'}};
   if (!st || CHG[nb.n] && st.by !== 'team') {
     const ch = dayModel().of(nb.n);
-    return Object.assign(base, {kind:'pick', key:'pick' + nb.n + (alert ? 'a' : '') + (st ? st.sid : ''), eyebrow:alert ? 'Starting soon' : (CHG[nb.n] ? 'Change your session' : 'Coffee break'),
+    return Object.assign(base, {kind:'pick', key:'pick' + nb.n + (alert ? 'a' : '') + (st ? st.sid : ''), eyebrow:alert ? 'Starting soon' : (CHG[nb.n] ? 'Change your session' : breakName()),
       title:alert ? `Sessions start at ${at}` : `Pick your ${at} session`, choices:ch, mine:st && st.sid,
       note:ch.length === 1 ? 'Or book a one to one at the registration desk.' : '', acts:CHG[nb.n] ? [{l:'Keep what I had', a:'unchange', d:nb.n}] : []});
   }
@@ -921,7 +924,7 @@ function breakModel(nb, stars, alert){
 function blockModel(cb, stars){
   const st = stars[cb.n];
   if (st) { const x = sessOf(st.sid); return {kind:'in', key:'in' + x.id, tone:'now', live:1, b:cb.n, sid:x.id, room:x.room, eyebrow:'On now', title:`You are in ${x.room} until ${cb.e}`, sub:x.title, meta:[x.names, x.mode], left:{to:toMin(cb.e), label:'left'}, prog:{s:cb.s, e:cb.e}}; }
-  return {kind:'innone', key:'innone' + cb.n, tone:'now', live:1, b:cb.n, eyebrow:'On now', title:`Sessions until ${cb.e}`, onnow:dayModel().of(cb.n), prog:{s:cb.s, e:cb.e}, acts:[{l:'In the Main Hall? Meet people', a:'tab', d:'meet', p:1}]};
+  return {kind:'innone', key:'innone' + cb.n, tone:'now', live:1, b:cb.n, eyebrow:'On now', title:`Sessions until ${cb.e}`, onnow:dayModel().of(cb.n), left:{to:toMin(cb.e), label:'left'}, prog:{s:cb.s, e:cb.e}, acts:[{l:'In the Main Hall? Meet people', a:'tab', d:'meet', p:1}]};
 }
 function myLinksCount(){ const me = myPub(); return ((snapD().links) || []).filter(l => l[0] === me || l[1] === me).length; }
 function lunchModel(prog){
@@ -936,6 +939,8 @@ function choicesHtml(md){
   return `<div class="choices">${md.choices.map(x => { const n = interest(x.id); return `<button type="button" class="choice" data-act="pick" data-b="${x.b}" data-s="${x.id}" aria-pressed="${md.mine === x.id}"><span class="r"><span class="pill ${md.mine === x.id ? '' : 'ghost'}">${esc(x.room)}</span>${n ? `<span class="n">${n} planning to join</span>` : ''}</span><b>${esc(x.title)}</b><small>${esc(x.names)}, ${esc(x.mode)}</small></button>`; }).join('')}</div>`;
 }
 function onNowHtml(list){ return `<div class="rowlist" style="padding:0;margin-top:8px">${list.map(x => `<div><span class="pill">${esc(x.room)}</span><div class="t" style="margin-top:6px">${esc(x.title)}</div><div class="w"><span>${esc(x.names)}</span>${modeTag(x.mode)}</div></div>`).join('')}</div>`; }
+// A title with a person's name in it: the name keeps its own direction (Arabic names read right to left).
+const titleHtml = md => md.named ? esc(md.title.slice(0, md.title.length - md.named.length)) + `<bdi>${esc(md.named)}</bdi>` : esc(md.title);
 const metaHtml = meta => meta ? `<div class="meta">${meta[0] ? `<span>${esc(meta[0])}</span>` : ''}${modeTag(meta[1])}</div>` : '';
 const pct = (s, e) => { const m = venue().min; return Math.max(0, Math.min(100, (m - toMin(s)) / (toMin(e) - toMin(s)) * 100)); };
 const barHtml = pg => pg ? `<div class="bar"><i data-prog="${pg.s},${pg.e}" style="width:${pct(pg.s, pg.e).toFixed(1)}%"></i></div>` : '';
@@ -959,7 +964,7 @@ function topA(md, second){
   body += actsHtml(md.acts);
   if (md.links) body += `<div style="margin-top:8px">${md.links.map(a => `<button type="button" class="lnk" data-act="${a.a}" data-d="${esc(a.d)}">${esc(a.l)}</button>`).join('')}</div>`;
   if (alert) return `<article class="card top-a alert" data-k="${md.key}"><div class="strip">${eb}<h2 class="ttl" style="margin-top:6px">${esc(md.title)}</h2></div><div class="body">${body}</div></article>`;
-  return `<article class="card top-a ${md.tone === 'next' ? 'next' : ''}" data-k="${md.key}">${eb}<h2 class="ttl">${esc(md.title)}</h2>${body}</article>`;
+  return `<article class="card top-a ${md.tone === 'next' ? 'next' : ''}" data-k="${md.key}">${eb}<h2 class="ttl">${titleHtml(md)}</h2>${body}</article>`;
 }
 // Variant B: a hero panel like the wall's now zone. The time is the biggest thing on it.
 function topB(md){
@@ -970,7 +975,7 @@ function topB(md){
   if (cd) h += `<div class="h-cd"><b data-cd="${cd.to}">${fmtLeft(cdLeft(cd.to))}</b><span>${esc(cd.label)}</span></div>`;
   else if (md.until) h += `<div class="h-cd"><span>Until</span><b>${esc(md.until)}</b></div>`;
   if (md.sub) h += `<h2 class="h-t">${esc(md.sub)}</h2>${metaHtml(md.meta)}<p class="h-s" style="font-size:17px;margin-top:8px">${esc(md.title)}</p>`;
-  else h += `<h2 class="h-t">${esc(md.title)}</h2>`;
+  else h += `<h2 class="h-t">${titleHtml(md)}</h2>`;
   if (md.lines) h += md.lines.filter(Boolean).map((l, i) => `<p class="${i ? 'small' : 'h-s'}" style="${i ? 'margin-top:4px' : ''}">${esc(l)}</p>`).join('');
   if (md.why) h += `<p class="why"><b>${esc(md.why)}</b></p>`;
   if (md.choices) h += choicesHtml(md);
@@ -1077,7 +1082,7 @@ function tkHtml(b, second){
   if (x) {
     h += `<div class="fls" role="radiogroup" aria-label="Your rating">${[1, 2, 3, 4, 5].map(i => `<button type="button" class="flb" role="radio" data-act="tk-rate" data-b="${b}" data-r="${i}" aria-checked="${t.rating === i}" aria-pressed="${t.rating >= i}" aria-label="${i} of 5">${I.flower}</button>`).join('')}</div>
       <label class="f" for="tkT${b}">One thing you are taking away <span>(optional)</span></label><input type="text" id="tkT${b}" data-tk="${b}" dir="auto" maxlength="120" value="${esc(t.text)}" enterkeyhint="send" placeholder="One line">
-      ${first ? swHtml('tkS' + b, t.show, 'Show my first name', `${esc(first)}, next to your line on the big screen`) : ''}
+      ${first ? swHtml('tkS' + b, t.show, 'Show my first name', `<bdi>${esc(first)}</bdi>, next to your line on the big screen`) : ''}
       <button type="button" class="btn wide" data-act="tk-send" data-b="${b}" style="margin-top:12px" ${t.rating && t.state !== 'sending' ? '' : 'disabled'}>${t.state === 'sending' ? 'Sending' : 'Send'}</button>
       <div class="msg err" role="alert">${esc(t.err || '')}</div>`;
   }
@@ -1226,7 +1231,7 @@ function renderPeople(){
   // A pending meet code or the answer of the last one
   const pm = store.get('md_m');
   let mh = '';
-  if (meetRes) mh = meetRes.ok ? `<article class="card rise" style="border-left:5px solid var(--red)"><div class="eyebrow"><i class="dot now"></i>${meetRes.again ? 'Already connected' : 'Connected'}</div><h2 style="margin-top:6px" dir="auto">You and ${esc(meetRes.person.name)}</h2>${personHtml(meetRes.person)}</article>`
+  if (meetRes) mh = meetRes.ok ? `<article class="card rise" style="border-left:5px solid var(--red)"><div class="eyebrow"><i class="dot now"></i>${meetRes.again ? 'Already connected' : 'Connected'}</div><h2 style="margin-top:6px">You and <bdi>${esc(meetRes.person.name)}</bdi></h2>${personHtml(meetRes.person)}</article>`
     : `<article class="card"><div class="msg err" style="margin:0" role="alert">${esc(meetRes.error)}</div></article>`;
   else if (pm) mh = `<article class="card" style="border-left:5px solid var(--blue)"><div class="eyebrow"><i class="dot"></i>Code ${esc(pm)}</div><p class="sub" style="font-size:18px;font-weight:700;margin-top:6px">${st === 'none' && !prof ? 'Sign in, then join the board to connect.' : (on ? 'Connecting' : (prof ? 'You connect as soon as your card is on the board.' : 'Join the board below to connect.'))}</p>${st === 'none' && !prof ? actsHtml([{l:'Sign in', a:'signin', d:'', p:1}]) : ''}</article>`;
   put($('mcMeet'), mh);
@@ -1383,7 +1388,7 @@ const FB = {overall:0, recommend:null, text:'', busy:false, err:'', edit:false};
 function renderKeep(){
   if (phaseNow() !== 'after' || !DAY) return;
   const name = ME && ME.me && ME.me.first, n = (ST && ST.n) || {};
-  put($('kpTop'), `<div class="hero" style="margin-top:12px"><div class="h-top"><div class="eyebrow"><i class="dot now"></i>${esc(dayDate())}</div></div><h2 class="h-t">${name ? `Thank you, ${esc(name)}` : 'Thank you'}</h2><p class="h-s" style="font-size:17px">Thank you for joining Mentorship Day. Your connections and photos stay here.</p></div>`);
+  put($('kpTop'), `<div class="hero" style="margin-top:12px"><div class="h-top"><div class="eyebrow"><i class="dot now"></i>${esc(dayDate())}</div></div><h2 class="h-t">${name ? `Thank you, <bdi>${esc(name)}</bdi>` : 'Thank you'}</h2><p class="h-s" style="font-size:17px">Thank you for joining Mentorship Day. Your connections and photos stay here.</p></div>`);
   const items = [[n.here, 'People here'], [n.links, 'Connections'], [n.photos, 'Photos'], [n.answers, 'Poll answers'], [n.takeaways, 'Takeaways'], [n.board, 'On the board']].filter(x => x[0] != null);
   put($('kpNums'), items.length ? `<h3>The Day in Numbers</h3><div class="nums">${items.map(([v, l]) => `<div><b>${v}</b><span>${l}</span></div>`).join('')}</div>` : '');
   const tks = ((ME && ME.takeaways) || []).slice().sort((a, b) => sessOf(a.sid).b - sessOf(b.sid).b);

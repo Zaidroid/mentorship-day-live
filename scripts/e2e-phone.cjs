@@ -603,7 +603,7 @@ async function signInUI(p, person, v) {
           });
           return { sw, iw, small };
         });
-        check(`${w} px ${tab}: no horizontal scroll`, r.sw <= r.iw, `${r.sw} > ${r.iw}`);
+        check(`${w} px ${tab}: no horizontal scroll`, r.sw <= r.iw, `page ${r.sw} px wide in ${r.iw} px`);
         check(`${w} px ${tab}: every target at least 44 px`, !r.small.length, r.small.slice(0, 6).join('; '));
         if (w === 320) await shot(p, `w320_${tab}`);
       }
@@ -623,6 +623,14 @@ async function signInUI(p, person, v) {
   if (want('arabic')) {
     part('Arabic: names and lines typed in Arabic read right to left');
     await rehearse('11:50');
+    const n = await phone({ dev: devs.arabic, label: 'arabic name' });
+    await go(n, '/?v=a&t=09:40');
+    check('the greeting carries the Arabic first name', await until(async () => (await text(n, '#top')).includes(T.arabic.name.split(' ')[0])));
+    await n.evaluate(() => document.getElementById('acct').scrollIntoView({ block: 'center' }));
+    await shot(n, 'arabic_name_on_my_day');
+    await n.evaluate(() => window.scrollTo(0, 0));
+    await shot(n, 'arabic_greeting');
+    await n.ctx.close();
     const p = await phone({ dev: devs.arabic, label: 'arabic' });
     let body = null; p.on('request', r => { if (r.url().endsWith('/api/takeaway')) body = r.postDataJSON(); });
     await go(p, '/?v=a');
@@ -633,9 +641,7 @@ async function signInUI(p, person, v) {
     await p.locator('#tkCard .flb[data-r="5"]').click();
     await p.fill('#tkCard input[type=text]', 'أهم شيء أن نبدأ بمشكلة العميل');
     check('the takeaway field types right to left', await p.evaluate(() => getComputedStyle(document.querySelector('#tkCard input[type=text]')).direction === 'rtl'));
-    await p.evaluate(() => document.getElementById('acct').scrollIntoView({ block: 'end' }));
-    await p.evaluate(() => document.getElementById('tkCard').scrollIntoView({ block: 'start' }));
-    await shot(p, 'arabic_name_and_takeaway');
+    await shot(p, 'arabic_takeaway');
     await p.click('#tkCard [data-act=tk-send]');
     check('the Arabic takeaway is sent as typed', await until(() => body && body.text === 'أهم شيء أن نبدأ بمشكلة العميل'));
     await p.ctx.close();
