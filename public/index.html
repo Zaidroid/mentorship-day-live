@@ -212,9 +212,14 @@ function renderToday(){
 
 /* ---------- live state ---------- */
 let STATE = null, myAnswer = store.get('md_ans') || '', myAnswerPoll = store.get('md_ansp') || '';
+// Lists live in the snapshot, fetched only when state.snapV changes and kept for the next visit.
+let SNAP = null; try { SNAP = JSON.parse(store.get('md_snap')); } catch(e) {}
+async function pullSnap(v){
+  try { const r = await fetch('/api/snap?v=' + encodeURIComponent(v)); if (!r.ok) throw 0; SNAP = {v, d:await r.json()}; store.set('md_snap', JSON.stringify(SNAP)); } catch(e) {}
+}
 async function pull(){
   if (document.hidden) return;
-  try { const r = await fetch('/api/state', {cache:'no-store'}); if (!r.ok) throw 0; STATE = await r.json(); renderPoll(); renderPeople(); } catch(e) {}
+  try { const r = await fetch('/api/state', {cache:'no-store'}); if (!r.ok) throw 0; STATE = await r.json(); if (STATE.snapV && (!SNAP || SNAP.v !== STATE.snapV)) await pullSnap(STATE.snapV); renderPoll(); renderPeople(); } catch(e) {}
 }
 async function post(url, body, headers){
   const r = await fetch(url, {method:'POST', headers:Object.assign({'content-type':'application/json'}, headers || {}), body:JSON.stringify(body)});
@@ -328,7 +333,7 @@ function personHtml(p){
     ${p.linkedin ? `<a href="${esc(p.linkedin)}" target="_blank" rel="noopener">Connect on LinkedIn</a>` : ''}</div></div>`;
 }
 function renderPeople(){
-  const list = ((STATE && STATE.profiles) || []).filter(p => p.id !== MYPUB);
+  const list = ((SNAP && SNAP.d && SNAP.d.profiles) || []).filter(p => p.id !== MYPUB);
   const me = MY && MY.profile;
   if (me && list.length) {
     const ms = list.map(q => ({q, n:(q.offer || []).filter(t => (me.looking || []).includes(t)).length + (q.looking || []).filter(t => (me.offer || []).includes(t)).length})).filter(x => x.n).sort((a, b) => b.n - a.n).slice(0, 4);

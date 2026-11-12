@@ -28,19 +28,37 @@ export const DEFAULT_CFG = {
   video: null,           // { id, at } ; id null means stop
   way: null,             // { registration, rooms, oneToOnes } arrow directions
   poll: { id: "p1", open: true },
-  hidden: [],            // poll words hidden by the operator
-  at: 0
+  hidden: [],            // poll words hidden by the operator. Never public
+  reloadAt: 0,           // grows when the remote asks the wall to reload. A version, not a clock
+  photoAt: null,         // group photo countdown (WP2)
+  finale: null,          // lunch finale step (WP2)
+  flags: {},             // feature switches that differ from FLAGS
+  at: 0                  // moves forward on every write, so clients can tell the config changed
 };
+
+// Feature switches and their defaults (docs/PLAN.md section 5.9). The remote can only set names listed here.
+export const FLAGS = { trustProfiles: true, trustTakeaways: true, trustPhotos: false };
+
+// The part of the config that /api/state shows. Everything else (hidden words, the rehearsal) stays private.
+export const PUBLIC_CFG = ["mode", "pin", "speaker", "theme", "overlay", "ann", "video", "way", "reloadAt", "photoAt", "finale", "flags", "at"];
+export const publicCfg = cfg => Object.fromEntries(PUBLIC_CFG.map(k => [k, cfg[k] === undefined ? null : cfg[k]]));
 
 const NOSTORE = { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" };
 export function J(data, status = 200, extra = {}) {
   return new Response(JSON.stringify(data), { status, headers: { ...NOSTORE, ...extra } });
 }
-export function CDN(seconds) {
-  return {
-    "cache-control": "public, max-age=0, must-revalidate",
-    "netlify-cdn-cache-control": `public, durable, s-maxage=${seconds}, stale-while-revalidate=${seconds * 5}`
-  };
+// Every CDN cache header is made here, so the cache policy changes in one place (docs/PLAN.md section 5.12).
+// Only answers that are the same for every anonymous client may use it.
+//   seconds    how long the Netlify CDN keeps the answer
+//   browser    how long a browser may keep it without asking (default 0: ask every time)
+//   vary       a Netlify-Vary value, for example "query=v"
+//   immutable  the answer never changes (approved photos)
+export function CDN(seconds, { browser = 0, vary = "", immutable = false } = {}) {
+  const h = immutable
+    ? { "cache-control": `public, max-age=${seconds}, immutable`, "netlify-cdn-cache-control": `public, durable, max-age=${seconds}, immutable` }
+    : { "cache-control": browser ? `public, max-age=${browser}` : "public, max-age=0, must-revalidate", "netlify-cdn-cache-control": `public, durable, s-maxage=${seconds}, stale-while-revalidate=${seconds * 5}` };
+  if (vary) h["netlify-vary"] = vary;
+  return h;
 }
 
 // A refusal with an HTTP status and a plain sentence. update() passes it on and writes nothing.
@@ -97,7 +115,7 @@ async function tryUpdate(s, key, fn, init) {
 }
 
 // The config with defaults filled in. A fresh copy each time, so nobody changes DEFAULT_CFG by accident.
-export function mergeCfg(c) { return { ...structuredClone(DEFAULT_CFG), ...(c || {}) }; }
+export function mergeCfg(c) { const m = { ...structuredClone(DEFAULT_CFG), ...(c || {}) }; m.flags = { ...FLAGS, ...((c && c.flags) || {}) }; return m; }
 export async function readCfg(s) { return mergeCfg(await s.get("cfg", { type: "json" })); }
 // Changes the config through update(). fn changes the config in place. cfg.at always moves forward.
 export function updateCfg(s, fn) {
@@ -108,7 +126,24 @@ export function updateCfg(s, fn) {
 }
 export async function readPolls(s) { return (await s.get("polls", { type: "json" })) || structuredClone(DEFAULT_POLLS); }
 export const updatePolls = (s, fn) => update(s, "polls", fn, { init: DEFAULT_POLLS });
-export async function readSnap(s) { return (await s.get("snap", { type: "json" })) || { photos: [], profiles: [] }; }
+// The public snapshot: approved photos, profiles and takeaways. Served by /api/snap, versioned by snapV.
+const SNAP_PHOTOS = 300;
+export function normSnap(v) { v = v || {}; return { at: v.at || 0, photos: v.photos || [], profiles: v.profiles || [], takeaways: v.takeaways || [] }; }
+export async function readSnap(s) { return normSnap(await s.get("snap", { type: "json" })); }
+// Changes the snapshot through update(). fn changes it in place. snap.at always moves forward.
+export function updateSnap(s, fn) {
+  return update(s, "snap", async v => {
+    const snap = normSnap(v); await fn(snap);
+    snap.photos = snap.photos.slice(0, SNAP_PHOTOS);
+    snap.at = Math.max(Date.now(), ((v && v.at) || 0) + 1); return snap;
+  });
+}
+// The version clients compare to know when to fetch the snapshot again. links is the number of connections.
+export const snapVersion = (snap, links = 0) => `${snap.at || 0}.${links}`;
+export const photoItem = (id, m) => ({ id, name: m.name || "", caption: m.caption || "", at: m.at || 0 });
+export const profileItem = (pub, p) => ({ id: pub, name: p.name, company: p.company, role: p.role, looking: p.looking, offer: p.offer, linkedin: p.linkedin, at: p.at });
+export function putItem(list, item) { dropItem(list, item.id); list.push(item); list.sort((a, b) => b.at - a.at); }
+export function dropItem(list, id) { const i = list.findIndex(x => x.id === id); if (i >= 0) list.splice(i, 1); }
 
 export const idOk = d => /^[a-z0-9]{6,40}$/i.test(d || "");
 export function clean(v, n) { return String(v == null ? "" : v).replace(/[\u0000-\u001f\u007f<>]/g, "").replace(/\s+/g, " ").trim().slice(0, n); }
@@ -128,11 +163,13 @@ export function normWord(t) {
   return parts.join(" ").slice(0, 28);
 }
 
-export async function tally(s, pid, hidden) {
-  const { blobs } = await s.list({ prefix: `ans/${pid}/` });
-  const counts = {}; let total = 0;
+export async function tally(s, pid, hidden) { return tallyFrom((await s.list({ prefix: `ans/${pid}/` })).blobs, pid, hidden); }
+// The same from a listing that may hold other polls too.
+export function tallyFrom(blobs, pid, hidden) {
+  const pre = `ans/${pid}/`, counts = {}; let total = 0;
   for (const b of blobs) {
-    const rest = b.key.slice(`ans/${pid}/`.length); const i = rest.indexOf("/");
+    if (!b.key.startsWith(pre)) continue;
+    const rest = b.key.slice(pre.length); const i = rest.indexOf("/");
     if (i < 0) continue;
     let w = ""; try { w = decodeURIComponent(rest.slice(i + 1)); } catch { continue; }
     if (!w) continue;
@@ -143,26 +180,18 @@ export async function tally(s, pid, hidden) {
   return { total, words: Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 80) };
 }
 
-// Rebuild the public snapshot of approved photos and profiles. Called only by operator actions.
-export async function rebuild(s) {
-  const okPh = (await s.list({ prefix: "ok/ph/" })).blobs.map(b => b.key.slice(6));
-  const photos = [];
-  for (const id of okPh) {
-    const m = await s.getMetadata(`ph/${id}`);
-    if (m) photos.push({ id, name: m.metadata.name || "", caption: m.metadata.caption || "", at: m.metadata.at || 0 });
-  }
-  photos.sort((a, b) => b.at - a.at);
-  // Profiles are keyed by public id. Anything else under ok/pr/ is ignored, so no device id can reach the snapshot.
-  const okPr = (await s.list({ prefix: "ok/pr/" })).blobs.map(b => b.key.slice(6)).filter(pubOk);
-  const profiles = [];
-  for (const pub of okPr) {
-    const p = await s.get(`pr/${pub}`, { type: "json" });
-    if (p) profiles.push({ id: pub, name: p.name, company: p.company, role: p.role, looking: p.looking, offer: p.offer, linkedin: p.linkedin, at: p.at });
-  }
-  profiles.sort((a, b) => b.at - a.at);
-  const snap = { photos: photos.slice(0, 80), profiles, at: Date.now() };
-  await s.setJSON("snap", snap);
-  return snap;
+// Rebuilds the public snapshot from the approval markers. Used by Repair Lists and by wipe.
+// Normal approvals change one item through updateSnap.
+async function mapLimit(items, n, fn) { const out = []; for (let i = 0; i < items.length; i += n) out.push(...await Promise.all(items.slice(i, i + n).map(fn))); return out; }
+export function rebuild(s) {
+  return updateSnap(s, async snap => {
+    const [okPh, okPr] = await Promise.all([s.list({ prefix: "ok/ph/" }), s.list({ prefix: "ok/pr/" })]);
+    const photos = await mapLimit(okPh.blobs.map(b => b.key.slice(6)), 16, async id => { const m = await s.getMetadata(`ph/${id}`); return m ? photoItem(id, m.metadata) : null; });
+    // Profiles are keyed by public id. Anything else under ok/pr/ is skipped, so no device id reaches the snapshot.
+    const profiles = await mapLimit(okPr.blobs.map(b => b.key.slice(6)).filter(pubOk), 16, async pub => { const p = await s.get(`pr/${pub}`, { type: "json" }); return p ? profileItem(pub, p) : null; });
+    snap.photos = photos.filter(Boolean).sort((x, y) => y.at - x.at);
+    snap.profiles = profiles.filter(Boolean).sort((x, y) => y.at - x.at);
+  });
 }
 
 export async function log(s, who, what) {

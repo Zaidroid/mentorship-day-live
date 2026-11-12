@@ -1,6 +1,6 @@
 // Networking Board profiles. One profile per person, keyed by the public id (pub), never by device.
 // The phone sends its device id in the x-dev header. New or edited profiles wait for approval.
-import { st, clean, isBad, rebuild, J, TAGS } from "../lib/store.mjs";
+import { st, clean, isBad, updateSnap, dropItem, J, TAGS } from "../lib/store.mjs";
 import { devOk, pubFor } from "../lib/ids.mjs";
 
 function pickTags(v) { return Array.isArray(v) ? [...new Set(v.filter(t => TAGS.includes(t)))].slice(0, 3) : []; }
@@ -35,7 +35,7 @@ export default async (req) => {
   const p = { name, company, role, looking, offer, linkedin, at: Date.now(), status: "pending" };
   await s.setJSON(`pr/${pub}`, p);
   await s.set(`q/pr/${pub}`, "");
-  if ((await s.get(`ok/pr/${pub}`)) !== null) { await s.delete(`ok/pr/${pub}`); await rebuild(s); }
+  if ((await s.get(`ok/pr/${pub}`)) !== null) { await s.delete(`ok/pr/${pub}`); await updateSnap(s, sn => dropItem(sn.profiles, pub)); }
   return J({ ok: true, status: "pending", id: pub });
 };
 

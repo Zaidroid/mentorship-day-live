@@ -1,5 +1,5 @@
 // Operator remote API. Every call needs the team PIN. Every change is logged with who made it.
-import { st, readCfg, updateCfg, mergeCfg, readPolls, updatePolls, readSnap, rebuild, tally, log, readLog, pinOk, whoOf, idOk, clean, J, Refuse, VIDEOS } from "../lib/store.mjs";
+import { st, update, readCfg, updateCfg, mergeCfg, readPolls, updatePolls, readSnap, updateSnap, putItem, dropItem, photoItem, profileItem, tally, log, readLog, pinOk, whoOf, idOk, clean, J, Refuse, VIDEOS } from "../lib/store.mjs";
 import { pubOk } from "../lib/ids.mjs";
 
 const MODES = ["auto", "welcome", "opening", "video", "choose", "live", "lunch", "close"];
@@ -42,7 +42,7 @@ export default async (req) => {
 };
 
 // One operator action. Returns the line for the log, or throws a Refuse.
-// Shared JSON (cfg, polls) changes only through updateCfg and updatePolls.
+// Shared JSON (cfg, polls, snap) changes only through updateCfg, updatePolls and updateSnap.
 async function act(s, b) {
   const a = b.action;
   if (a === "mode") {
@@ -85,22 +85,38 @@ async function act(s, b) {
     await updateCfg(s, c => { c.way = Object.keys(w).length ? w : null; });
     return "Updated the This Way directions";
   }
+  // Approvals set or clear the marker first, then change that one item in the snapshot.
   if (a === "approvePhoto" || a === "rejectPhoto" || a === "hidePhoto") {
-    if (!idOk(b.id)) throw new Refuse(400, "Unknown photo.");
-    await s.delete(`q/ph/${b.id}`);
-    if (a === "approvePhoto") await s.set(`ok/ph/${b.id}`, "");
-    if (a === "rejectPhoto") await s.delete(`ph/${b.id}`);
-    if (a === "hidePhoto") await s.delete(`ok/ph/${b.id}`);
-    await rebuild(s);
+    const id = b.id;
+    if (!idOk(id)) throw new Refuse(400, "Unknown photo.");
+    await s.delete(`q/ph/${id}`);
+    if (a === "approvePhoto") {
+      const m = await s.getMetadata(`ph/${id}`);
+      if (!m) throw new Refuse(404, "That photo is gone.");
+      await s.set(`ok/ph/${id}`, "");
+      await updateSnap(s, sn => putItem(sn.photos, photoItem(id, m.metadata)));
+    } else {
+      await s.delete(`ok/ph/${id}`);
+      if (a === "rejectPhoto") await s.delete(`ph/${id}`);
+      await updateSnap(s, sn => dropItem(sn.photos, id));
+    }
     return { approvePhoto: "Approved a photo", rejectPhoto: "Declined a photo", hidePhoto: "Removed a photo from the wall" }[a];
   }
   if (a === "approveProfile" || a === "rejectProfile" || a === "hideProfile") {
-    if (!pubOk(b.id)) throw new Refuse(400, "Unknown profile.");
-    const p = await s.get(`pr/${b.id}`, { type: "json" });
-    await s.delete(`q/pr/${b.id}`);
-    if (a === "approveProfile") { await s.set(`ok/pr/${b.id}`, ""); if (p) { p.status = "approved"; await s.setJSON(`pr/${b.id}`, p); } }
-    else { await s.delete(`ok/pr/${b.id}`); if (p) { p.status = "declined"; await s.setJSON(`pr/${b.id}`, p); } }
-    await rebuild(s);
+    const pub = b.id;
+    if (!pubOk(pub)) throw new Refuse(400, "Unknown profile.");
+    const approve = a === "approveProfile";
+    const exists = (await s.get(`pr/${pub}`)) !== null;
+    if (!exists && approve) { await s.delete(`q/pr/${pub}`); throw new Refuse(404, "That profile is gone."); }
+    // The status changes through update(), so an edit sent at the same moment is not overwritten.
+    // When the remote sends at, the card must still be the version the team looked at.
+    const p = exists ? await update(s, `pr/${pub}`, v => {
+      if (approve && b.at && v.at !== b.at) throw new Refuse(409, "This card just changed. Look at it again.");
+      v.status = approve ? "approved" : "declined";
+    }) : null;
+    await s.delete(`q/pr/${pub}`);
+    if (approve) { await s.set(`ok/pr/${pub}`, ""); await updateSnap(s, sn => putItem(sn.profiles, profileItem(pub, p))); }
+    else { await s.delete(`ok/pr/${pub}`); await updateSnap(s, sn => dropItem(sn.profiles, pub)); }
     return `${{ approveProfile: "Approved", rejectProfile: "Declined", hideProfile: "Removed" }[a]} the profile of ${p ? p.name : "someone"}`;
   }
   if (a === "pollActivate") {

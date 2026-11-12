@@ -611,14 +611,14 @@ R.survey = (c) => ({title:'Your Feedback', html:`<div style="flex:1;display:flex
 
 /* ============ Live system: phones and the operator remote ============ */
 const LIVE = {videos:DAY.videos.map(v => Object.assign({}, v))};
-Object.assign(S, {photos:[], profiles:[], pollQ:'', pollType:'words', pollOpts:[], pollTotal:0, pollOpen:true, remoteMode:null, pin:null, way:null, cfgAt:null, videoAt:null, annAt:null, annUntil:0, liveOk:false, skew:0});
+Object.assign(S, {photos:[], profiles:[], snapV:'', pollQ:'', pollType:'words', pollOpts:[], pollTotal:0, pollOpen:true, remoteMode:null, pin:null, way:null, cfgAt:null, videoAt:null, annAt:null, annUntil:0, liveOk:false, skew:0});
 function applyState(d){
   if (d.t) S.skew = d.t - Date.now();
   const p = d.poll;
   if (p) { S.pollQ = p.q; S.pollType = p.type; S.pollOpen = !!p.open; S.pollTotal = p.total || 0; S.pollOpts = p.options || [];
     if (p.type === 'choice') { const m = Object.fromEntries(p.words || []); S.poll = S.pollOpts.map(o => [o, m[o] || 0]); } else S.poll = p.words || []; }
   else { S.pollQ = ''; S.poll = []; S.pollTotal = 0; S.pollType = 'words'; }
-  S.photos = d.photos || []; S.profiles = d.profiles || []; if (d.videos && d.videos.length) LIVE.videos = d.videos;
+  if (d.videos && d.videos.length) LIVE.videos = d.videos;
   const c = d.cfg || {}; if (c.at === S.cfgAt) return;
   const first = S.cfgAt === null, srv = Date.now() + S.skew; S.cfgAt = c.at;
   const rm = c.mode && c.mode !== 'auto' ? c.mode : null;
@@ -632,9 +632,16 @@ function applyState(d){
   if (c.video && c.video.at !== S.videoAt) { S.videoAt = c.video.at; if (!first || srv - c.video.at < 20000) { if (c.video.id) playVideo(c.video.id); else stopVideo(); } }
 }
 async function pullState(){
-  try { const r = await fetch('/api/state', {cache:'no-store'}); if (!r.ok) throw 0; const d = await r.json(); applyState(d); S.liveOk = true; try { localStorage.setItem('md4_state', JSON.stringify(d)); } catch(e) {} }
+  try { const r = await fetch('/api/state', {cache:'no-store'}); if (!r.ok) throw 0; const d = await r.json(); applyState(d); S.liveOk = true; try { localStorage.setItem('md4_state', JSON.stringify(d)); } catch(e) {} if (d.snapV && d.snapV !== S.snapV) pullSnap(d.snapV); }
   catch(e) { S.liveOk = false; }
   setConn(); loop(false);
+}
+/* lists (photos, profiles) live in the snapshot. Fetched only when state.snapV changes, kept for offline */
+function applySnap(v, d){ S.snapV = v; S.photos = d.photos || []; S.profiles = d.profiles || []; }
+async function pullSnap(v){
+  if (S.snapBusy === v) return; S.snapBusy = v;
+  try { const r = await fetch('/api/snap?v=' + encodeURIComponent(v)); if (!r.ok) throw 0; const d = await r.json(); applySnap(v, d); try { localStorage.setItem('md4_snap', JSON.stringify({v, d})); } catch(e) {} loop(false); }
+  catch(e) {} finally { S.snapBusy = ''; }
 }
 function setConn(){ const ok = S.liveOk; $('conn').classList.toggle('live', ok); $('connTxt').innerHTML = (S.demo ? 'Demo data&nbsp; ' : '') + (ok ? 'Live' : 'Offline, saved data'); }
 function setOverlay(o){ S.overlay = o; $('black').classList.toggle('hide', o !== 'black'); $('logo').classList.toggle('hide', o !== 'logo'); if (o === 'check') renderCheck(); $('check').classList.toggle('hide', o !== 'check'); }
@@ -910,7 +917,7 @@ async function refresh(){ let ok = 0, tried = 0;
   for (const [k, fn] of JOBS) { const u = feedUrl(k); if (!u) continue; tried++; try { const rows = await getCSV(u); fn(rows); ok++; try { localStorage.setItem('md4_' + k, JSON.stringify(rows)); } catch(e) {} } catch(e) {} }
   S.live = tried > 0 && ok === tried;
   loop(true); }
-function restore(){ try { const v = localStorage.getItem('md4_state'); if (v) applyState(JSON.parse(v)); } catch(e) {} JOBS.forEach(([k, fn]) => { if (!feedUrl(k)) return; try { const v = localStorage.getItem('md4_' + k); if (v) fn(JSON.parse(v)); } catch(e) {} }); }
+function restore(){ try { const v = localStorage.getItem('md4_snap'); if (v) { const x = JSON.parse(v); applySnap(x.v, x.d); } } catch(e) {} try { const v = localStorage.getItem('md4_state'); if (v) applyState(JSON.parse(v)); } catch(e) {} JOBS.forEach(([k, fn]) => { if (!feedUrl(k)) return; try { const v = localStorage.getItem('md4_' + k); if (v) fn(JSON.parse(v)); } catch(e) {} }); }
 
 /* ============ Demo ============ */
 const DEMO_WORDS = ['clients','funding','confidence','network','clarity','growth','mentors','sales','strategy','leadership','visibility','pitch','focus','partners','ideas','direction','courage','markets','branding','skills','connections','execution','feedback','vision','momentum','investors'];

@@ -256,3 +256,155 @@ describe("profiles", () => {
     assert.equal(none.json.status, "none"); assert.match(none.json.id, /^g[a-f0-9]{10}$/);
   });
 });
+
+/* ---------- state and snap ---------- */
+const JPEG = Buffer.from("/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=", "base64");
+const upload = (base, dev, extra = {}) => call(base, "POST", "/api/photo", { body: extra.body || JPEG, raw: true, headers: { "content-type": "image/jpeg", "x-dev": dev, "x-name": encodeURIComponent(extra.name || "Test Photographer"), "x-caption": encodeURIComponent(extra.caption || "Coffee in the Main Hall"), ...(extra.headers || {}) } });
+const snapOf = async base => { const st = await state(base); return (await call(base, "GET", "/api/snap?v=" + st.json.snapV)).json; };
+
+describe("state", () => {
+  test("has the documented shape, and nothing private", async () => {
+    await call(S.base, "POST", "/api/answer", { body: { pid: "p1", text: "clarity", dev: newDev() } });
+    await op(S.base, { action: "hideWord", word: "secretword" });
+    await call(S.base, "POST", "/api/answer", { body: { pid: "p1", text: "secretword", dev: newDev() } });
+    const r = await state(S.base);
+    assert.equal(r.status, 200);
+    const d = r.json;
+    assert.deepEqual(Object.keys(d).sort(), ["cfg", "hello", "interest", "n", "phase", "poll", "reh", "rx", "snapV", "t", "tags", "videos"]);
+    assert.deepEqual(Object.keys(d.cfg).sort(), ["ann", "at", "finale", "flags", "mode", "overlay", "photoAt", "pin", "reloadAt", "speaker", "theme", "video", "way"]);
+    assert.ok(!r.text.includes("secretword"), "hidden words never leave the server");
+    assert.ok(!r.text.includes("rehearsal") && !r.text.includes("hidden"));
+    assert.deepEqual(Object.keys(d.poll).sort(), ["id", "manual", "open", "options", "q", "total", "type", "words"]);
+    assert.equal(d.poll.manual, true);
+    assert.ok(d.poll.words.some(([w]) => w === "clarity"));
+    assert.deepEqual(d.cfg.flags, { trustProfiles: true, trustTakeaways: true, trustPhotos: false });
+    assert.equal(d.reh, false); assert.equal(d.phase, "before");
+    assert.ok(Math.abs(d.t - Date.now()) < 60 * 1000, "t is the server time");
+    assert.equal(d.rx.on, false); assert.equal(d.rx.total, 0); assert.equal(d.rx.b.length, 2);
+    assert.equal(d.rx.b[0][0], Math.floor(d.t / 4000)); assert.equal(d.rx.b[1][0], d.rx.b[0][0] - 1);
+    assert.deepEqual(d.rx.b.map(x => x.slice(1)), [[0, 0, 0], [0, 0, 0]]);
+    assert.deepEqual(Object.keys(d.n).sort(), ["answers", "board", "here", "links", "photos", "takeaways"]);
+    assert.ok(d.n.answers >= 2); assert.equal(d.n.here, 0); assert.equal(d.n.links, 0);
+    assert.deepEqual(d.interest, {}); assert.deepEqual(d.hello, []);
+    assert.match(d.snapV, /^\d+\.\d+$/);
+    assert.ok(d.tags.includes("Funding"));
+    assert.deepEqual(d.videos.map(v => v.id), ["tareq", "kassim"]);
+    assert.equal(r.headers.get("cache-control"), "public, max-age=0, must-revalidate");
+        await op(S.base, { action: "showWord", word: "secretword" });
+  });
+
+  test("on Netlify the CDN keeps state for 2 seconds", async () => {
+    await openDirect(S.dir);
+    const fn = (await import("../netlify/functions/state.mjs")).default;
+    const r = await fn(new Request("http://localhost/api/state"));
+    assert.match(r.headers.get("netlify-cdn-cache-control"), /s-maxage=2\b/);
+  });
+});
+
+describe("photos and the snapshot", () => {
+  let id, dev;
+  test("an upload waits, and only the team sees it", async () => {
+    dev = newDev();
+    const r = await upload(S.base, dev);
+    assert.equal(r.status, 200, r.text); id = r.json.id;
+    const pub = await call(S.base, "GET", "/api/photo/" + id);
+    assert.equal(pub.status, 404);
+    const team = await call(S.base, "GET", "/api/photo/" + id, { headers: { "x-pin": PIN } });
+    assert.equal(team.status, 200); assert.equal(team.headers.get("content-type"), "image/jpeg");
+    assert.equal(team.headers.get("cache-control"), "no-store");
+    const s = await openDirect(S.dir);
+    const m = (await s.getMetadata("ph/" + id)).metadata;
+    assert.equal(m.pub, lib.ids.guestPub(dev)); assert.equal(m.dev, undefined);
+    assert.ok((await opGet(S.base)).json.pending.photos.some(p => p.id === id));
+  });
+
+  test("approval changes the snapshot version and adds one photo", async () => {
+    const v0 = (await state(S.base)).json.snapV;
+    assert.equal((await op(S.base, { action: "approvePhoto", id })).status, 200);
+    const st1 = await state(S.base);
+    assert.notEqual(st1.json.snapV, v0);
+    assert.ok(st1.json.n.photos >= 1);
+    const sn = await call(S.base, "GET", "/api/snap?v=" + st1.json.snapV);
+    assert.deepEqual(Object.keys(sn.json).sort(), ["at", "links", "photos", "profiles", "takeaways", "v"]);
+    assert.equal(sn.json.v, st1.json.snapV);
+    assert.deepEqual(sn.json.photos.find(p => p.id === id), { id, name: "Test Photographer", caption: "Coffee in the Main Hall", at: sn.json.photos.find(p => p.id === id).at });
+    assert.equal(sn.headers.get("cache-control"), "public, max-age=3600");
+    const old = await call(S.base, "GET", "/api/snap?v=" + v0);
+    assert.equal(old.headers.get("cache-control"), "no-store", "a stale version is answered but not cached");
+    assert.equal(old.json.v, st1.json.snapV);
+    const img = await call(S.base, "GET", "/api/photo/" + id);
+    assert.equal(img.status, 200); assert.match(img.headers.get("cache-control"), /immutable/);
+  });
+
+  test("on Netlify the snapshot is cached for an hour, keyed on v only", async () => {
+    await openDirect(S.dir);
+    const fn = (await import("../netlify/functions/snap.mjs")).default;
+    const v = (await state(S.base)).json.snapV;
+    const r = await fn(new Request("http://localhost/api/snap?v=" + v));
+    assert.match(r.headers.get("netlify-cdn-cache-control"), /s-maxage=3600/);
+    assert.equal(r.headers.get("netlify-vary"), "query=v");
+    const r2 = await fn(new Request("http://localhost/api/snap?v=1.0"));
+    assert.equal(r2.headers.get("netlify-cdn-cache-control"), null);
+  });
+
+  test("approved profiles are in the snapshot by public id", async () => {
+    const d = newDev();
+    const p = await call(S.base, "POST", "/api/profile", { body: { name: "Rana Odeh", company: "Nablus Tech", role: "Marketing Lead", looking: ["Partnerships"], offer: ["Marketing"], consent: true }, headers: { "x-dev": d } });
+    const at = (await opGet(S.base)).json.pending.profiles.find(x => x.id === p.json.id).at;
+    assert.equal((await op(S.base, { action: "approveProfile", id: p.json.id, at: at + 1 })).status, 409, "a card that changed is not approved");
+    assert.equal((await op(S.base, { action: "approveProfile", id: p.json.id, at })).status, 200);
+    const sn = await snapOf(S.base);
+    const item = sn.profiles.find(x => x.id === p.json.id);
+    assert.deepEqual(Object.keys(item).sort(), ["at", "company", "id", "linkedin", "looking", "name", "offer", "role"]);
+    assert.equal((await state(S.base)).json.n.board, sn.profiles.length);
+  });
+
+  test("remove and decline take the photo off the snapshot", async () => {
+    await op(S.base, { action: "hidePhoto", id });
+    assert.ok(!(await snapOf(S.base)).photos.some(p => p.id === id));
+    assert.equal((await call(S.base, "GET", "/api/photo/" + id)).status, 404);
+    const r2 = await upload(S.base, dev, { caption: "Room A session" });
+    await op(S.base, { action: "approvePhoto", id: r2.json.id });
+    await op(S.base, { action: "rejectPhoto", id: r2.json.id });
+    assert.ok(!(await snapOf(S.base)).photos.some(p => p.id === r2.json.id));
+    assert.equal((await call(S.base, "GET", "/api/photo/" + r2.json.id, { headers: { "x-pin": PIN } })).status, 404, "a declined photo is deleted");
+  });
+
+  test("refusals", async () => {
+    const d = newDev();
+    assert.equal((await op(S.base, { action: "approvePhoto", id: "nosuchphoto1" })).status, 404);
+    assert.equal((await op(S.base, { action: "approvePhoto", id: "../x" })).status, 400);
+    assert.equal((await upload(S.base, "bad")).status, 400);
+    assert.equal((await upload(S.base, d, { headers: { "content-type": "text/html" } })).status, 415);
+    assert.equal((await upload(S.base, d, { body: Buffer.alloc(0) })).status, 400);
+    assert.equal((await upload(S.base, d, { body: Buffer.alloc(4 * 1024 * 1024 + 10) })).status, 413);
+    assert.equal((await upload(S.base, d, { caption: "porn" })).status, 422);
+    assert.equal((await call(S.base, "GET", "/api/photo/..%2Fcfg")).status, 404);
+    const many = newDev();
+    for (let i = 0; i < 12; i++) assert.equal((await upload(S.base, many)).status, 200);
+    assert.equal((await upload(S.base, many)).status, 429);
+  });
+});
+
+describe("answers", () => {
+  test("one answer per phone per poll, a new one replaces it", async () => {
+    const d = newDev(), ans = (body, h = { "x-dev": d }) => call(S.base, "POST", "/api/answer", { body: h["x-dev"] ? { ...body, dev: h["x-dev"] } : body });
+    const t0 = (await state(S.base)).json.poll.total;
+    assert.equal((await ans({ pid: "p1", text: "Momentum!" })).json.word, "momentum");
+    assert.equal((await ans({ pid: "p1", text: "focus" })).status, 200);
+    const p = (await state(S.base)).json.poll;
+    assert.equal(p.total, t0 + 1);
+    assert.ok(p.words.some(([w]) => w === "focus") && !p.words.some(([w]) => w === "momentum"));
+    assert.equal((await ans({ pid: "p1", text: "x", dev: newDev() }, {})).status, 200, "version 1 phones send dev in the body");
+    assert.equal((await ans({ pid: "p2", text: "Funding" })).status, 409);
+    assert.equal((await ans({ pid: "p1", text: "  " })).status, 400);
+    assert.equal((await ans({ pid: "p1", text: "shit" })).status, 422);
+    assert.equal((await ans({ pid: "p1", text: "ok" }, {})).status, 400);
+    await op(S.base, { action: "pollActivate", pid: "p2" });
+    assert.equal((await ans({ pid: "p2", text: "Nope" })).status, 400);
+    assert.equal((await ans({ pid: "p2", text: "Funding" })).status, 200);
+    await op(S.base, { action: "pollClose" });
+    assert.equal((await ans({ pid: "p2", text: "Funding" })).status, 409);
+    await op(S.base, { action: "pollActivate", pid: "p1" });
+  });
+});
