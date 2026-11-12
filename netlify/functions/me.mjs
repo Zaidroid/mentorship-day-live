@@ -2,7 +2,8 @@
 // { status, me, stars, profile, code, links, takeaways, feedback }. Never cached.
 import { st, J } from "../lib/store.mjs";
 import { devOk, whoFor } from "../lib/ids.mjs";
-import { meBody, seenToday } from "../lib/people.mjs";
+import { meBody } from "../lib/people.mjs";
+import { seenToday } from "../lib/signin.mjs";
 
 export default async (req) => {
   const dev = req.headers.get("x-dev") || "";

@@ -3,7 +3,7 @@
 // and public ids only, and no answer to a phone carries k4, a last 4 digits value, or a bare person id.
 import crypto from "node:crypto";
 import { DAY, toMin, fmtMin } from "./day.mjs";
-import { clean, firstWord, cleanLinkedin, readSnap, readCfg, withLock, TOPIC_TAGS } from "./store.mjs";
+import { clean, firstWord, cleanLinkedin, readSnap, withLock, TOPIC_TAGS } from "./store.mjs";
 import { personId, personPub, k4Of, normName } from "./ids.mjs";
 
 export const PEOPLE_MAX = 800;
@@ -214,23 +214,3 @@ export async function meBody(s, w, { people } = {}) {
     feedback: fb ? { overall: fb.overall, recommend: fb.recommend ?? null, text: fb.text || "", at: fb.at } : null
   };
 }
-
-/* ---------- sign in bookkeeping ---------- */
-
-// sig/<pub>: signed in at least once, { kind, name, at }. Returns true the first time for this pub.
-export async function markSigned(s, pub, kind, name) {
-  const r = await s.setJSON(`sig/${pub}`, { kind, name, at: Date.now() }, { onlyIfNew: true });
-  if (r.modified) return true;
-  if (kind === "guest") { const old = await s.get(`sig/${pub}`, { type: "json" }); await s.setJSON(`sig/${pub}`, { ...(old || {}), kind, name }); } // a guest may give a new name
-  return false;
-}
-// What happens after a person or a guest signs in. w is the new who record, prev the one before.
-export async function afterSignIn(s, { w, prev, person }) {
-  const cfg = await readCfg(s);
-  const first = await markSigned(s, w.pub, w.status, w.name);
-  if (person) await syncTeam(s, person);
-  if (person && first && cfg.flags.picks) await makePicks(s, person);
-  return { first };
-}
-// Called by GET /api/me for a phone that signed in earlier. Filled in by the here and hello task.
-export async function seenToday(s, w) { return w; }

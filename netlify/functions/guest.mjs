@@ -2,7 +2,8 @@
 // Guests can do everything, but their card and takeaways wait for the team.
 import { st, readBody, J, clean, isBad, withLock } from "../lib/store.mjs";
 import { devOk, whoFor, guestPub } from "../lib/ids.mjs";
-import { meBody, afterSignIn } from "../lib/people.mjs";
+import { meBody } from "../lib/people.mjs";
+import { afterSignIn } from "../lib/signin.mjs";
 
 export default async (req) => {
   const { body: b, error } = await readBody(req, 512, "Send your name as JSON."); if (error) return error;

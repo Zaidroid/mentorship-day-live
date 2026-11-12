@@ -4,6 +4,7 @@ import { pubOk, personPub } from "../lib/ids.mjs";
 import { nowMs, realNow, rehearsalOn, rehearsalFor, isEventDay, localMin } from "../lib/day.mjs";
 import { readPeople, personFrom, personOf, syncTeam, PEOPLE_MAX } from "../lib/people.mjs";
 import { pollNow, autoNow } from "../lib/rules.mjs";
+import { approveCard, unlistCard } from "../lib/board.mjs";
 
 const MODES = ["auto", "welcome", "opening", "video", "choose", "live", "lunch", "close"];
 const SCENES = ["rooms", "choose", "board", "spotlight", "advisors", "meet", "photos", "poll", "pulse", "way", "welcome", "speaker", "recap", "thanks"];
@@ -145,9 +146,8 @@ async function act(s, b) {
       if (approve && b.at && v.at !== b.at) throw new Refuse(409, "This card just changed. Look at it again.");
       v.status = approve ? "approved" : "declined";
     }) : null;
-    await s.delete(`q/pr/${pub}`);
-    if (approve) { await s.set(`ok/pr/${pub}`, ""); await updateSnap(s, sn => putItem(sn.profiles, profileItem(pub, p))); }
-    else { await s.delete(`ok/pr/${pub}`); await updateSnap(s, sn => dropItem(sn.profiles, pub)); }
+    if (approve) await approveCard(s, pub, p);
+    else { await s.delete(`q/pr/${pub}`); await unlistCard(s, pub); }
     return `${{ approveProfile: "Approved", rejectProfile: "Declined", hideProfile: "Removed" }[a]} the profile of ${p ? p.name : "someone"}`;
   }
   // Opening or closing a poll from the remote holds it (manual). pollManual {on: false} goes back to the schedule.

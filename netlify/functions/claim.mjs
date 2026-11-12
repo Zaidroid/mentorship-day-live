@@ -3,7 +3,8 @@
 // then 423 until the team taps Unlock. An answer never says how close a wrong number was.
 import { st, readBody, J, withLock, randHex } from "../lib/store.mjs";
 import { devOk, whoFor } from "../lib/ids.mjs";
-import { readPeople, personOf, last4Ok, meBody, afterSignIn } from "../lib/people.mjs";
+import { readPeople, personOf, last4Ok, meBody } from "../lib/people.mjs";
+import { afterSignIn } from "../lib/signin.mjs";
 
 const PHONE_TRIES = 5, PERSON_TRIES = 10, PHONES = 3;
 const LOCKED = "Too many tries. Ask the team at the registration desk.";

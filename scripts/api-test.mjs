@@ -994,6 +994,107 @@ describe("sign in", () => {
   });
 });
 
+/* ---------- verified cards, here and hello (plan sections 5.4 and 5.9) ---------- */
+describe("cards, here and hello", () => {
+  let P;
+  const card = { name: "Someone Else", company: "Other Co", role: "Founder", looking: ["Funding"], offer: ["Product"], linkedin: "", consent: true };
+  const postCard = (dev, body = card) => call(P.base, "POST", "/api/profile", { body, headers: { "x-dev": dev } });
+  const signIn = async (p, dev = newDev(), hello = false) => { const r = await claim(P.base, dev, { id: pubOf(p), last4: p.last4, hello }); assert.equal(r.status, 200, r.text); return dev; };
+  before(async () => {
+    P = await startServer(); await openDirect(P.dir);
+    await op(P.base, { action: "peopleImport", people: [...SAMPLE, { name: "Zib Tester", last4: "6006" }] });
+  });
+  after(async () => { await P.stop(); await openDirect(S.dir); });
+
+  test("a verified person's card is approved at once, with name and company from registration", async () => {
+    const d = await signIn(SAMPLE[0]);
+    const r = await postCard(d);
+    assert.equal(r.status, 200, r.text);
+    assert.deepEqual(r.json, { ok: true, status: "approved", id: pubOf(SAMPLE[0]) });
+    const sn = await snapOf(P.base);
+    const item = sn.profiles.find(x => x.id === pubOf(SAMPLE[0]));
+    assert.equal(item.name, "Layla Khoury"); assert.equal(item.company, "Byte Studio");
+    const m = (await me(P.base, d)).json;
+    assert.equal(m.profile.status, "approved"); assert.equal(m.profile.name, "Layla Khoury");
+    assert.ok(!(await opGet(P.base)).json.pending.profiles.some(x => x.id === pubOf(SAMPLE[0])));
+    assert.equal((await postCard(d, { ...card, role: "shit" })).status, 422, "the role is still checked");
+    assert.equal((await postCard(d, { ...card, name: "porn star" })).status, 200, "the typed name is ignored for a verified person");
+  });
+
+  test("with trustProfiles off, and for guests, a card waits for the team", async () => {
+    await op(P.base, { action: "flags", name: "trustProfiles", on: false });
+    const d = await signIn(SAMPLE[1]);
+    assert.equal((await postCard(d)).json.status, "pending");
+    await op(P.base, { action: "flags", name: "trustProfiles", on: true });
+    const g = newDev();
+    await call(P.base, "POST", "/api/guest", { body: { name: "Sami Guest" }, headers: { "x-dev": g } });
+    const r = await postCard(g, { ...card, name: "Sami Guest" });
+    assert.equal(r.json.status, "pending"); assert.equal(r.json.id, lib.ids.guestPub(g));
+    const pend = (await opGet(P.base)).json.pending.profiles.map(x => x.id);
+    assert.ok(pend.includes(pubOf(SAMPLE[1])) && pend.includes(lib.ids.guestPub(g)));
+  });
+
+  test("a guest card and own stars made on a phone move to the person who signs in there", async () => {
+    const d = newDev(), gp = lib.ids.guestPub(d), pp = pubOf(SAMPLE[3]);
+    assert.equal((await postCard(d, { ...card, name: "Yousef A" })).json.status, "pending");
+    await call(P.base, "POST", "/api/star", { body: { b: 1, sid: "1C" }, headers: { "x-dev": d } });
+    const r = await claim(P.base, d, { id: pp, last4: SAMPLE[3].last4 });
+    assert.equal(r.status, 200);
+    assert.equal(r.json.profile.status, "approved"); assert.equal(r.json.profile.name, "Yousef Amin"); assert.equal(r.json.profile.role, "Founder");
+    assert.deepEqual(r.json.stars[1], { sid: "1C", by: "own", why: null }, "the guest's own star is kept, not replaced by a pick");
+    assert.equal(r.json.stars[3].by, "auto");
+    const s = await openDirect(P.dir);
+    assert.equal(await s.get(`pr/${gp}`), null); assert.equal(await s.get(`q/pr/${gp}`), null);
+    assert.equal((await s.list({ prefix: `star/1/${gp}/` })).blobs.length, 0);
+    const sn = await snapOf(P.base);
+    assert.ok(sn.profiles.some(x => x.id === pp) && !sn.profiles.some(x => x.id === gp));
+  });
+
+  test("before the day nobody is here; on the day the first sign in says hello with consent", async () => {
+    await signIn(SAMPLE[2], newDev(), true);
+    let d = (await state(P.base)).json;
+    assert.equal(d.n.here, 0, "a sign in before the day is not someone here"); assert.deepEqual(d.hello, []);
+    await op(P.base, { action: "rehearsal", hhmm: "09:40" });
+    await signIn(SAMPLE[4], newDev(), true);
+    await signIn(SAMPLE[5], newDev(), false);
+    await call(P.base, "POST", "/api/guest", { body: { name: "سامي ضيف", hello: true }, headers: { "x-dev": newDev() } });
+    await signIn({ name: "Zib Tester", last4: "6006" }, newDev(), true);
+    d = (await state(P.base)).json;
+    assert.equal(d.n.here, 4);
+    assert.deepEqual(d.hello.map(h => h.f), ["سامي", "Dina"], "newest first, first names only, no hello without consent or past the word filter");
+    for (const h of d.hello) { assert.deepEqual(Object.keys(h).sort(), ["at", "f"]); assert.ok(Math.abs(h.at - d.t) < 60000, "at is in the time base of t"); }
+    await signIn(SAMPLE[4], newDev(), true);
+    assert.equal((await state(P.base)).json.hello.length, 2, "a second phone of the same person says no second hello");
+  });
+
+  test("a phone signed in before the day is marked here by its first GET /api/me on the day", async () => {
+    const rana = (await opGet(P.base)).json.people.list.find(x => x.name === "Rana Odeh");
+    assert.equal(rana.here, false);
+    const s = await openDirect(P.dir);
+    const devs = await Promise.all((await s.list({ prefix: "who/" })).blobs.map(async b => ({ dev: b.key.slice(4), w: await s.get(b.key, { type: "json" }) })));
+    const ranaDev = devs.find(x => x.w.name === "Rana Odeh").dev;
+    await me(P.base, ranaDev);
+    const d = (await state(P.base)).json;
+    assert.equal(d.n.here, 5); assert.equal(d.hello[0].f, "Rana", "the hello she agreed to before the day comes now");
+    await me(P.base, ranaDev);
+    assert.equal((await state(P.base)).json.hello.length, 3);
+  });
+
+  test("12 newest hellos, and the hello switch hides them", async () => {
+    const s = await openDirect(P.dir), t = (await state(P.base)).json.t;
+    for (let i = 0; i < 14; i++) await s.set(`hi/${String(t + 1000 + i).padStart(15, "0")}~g${String(i).padStart(10, "0")}~${encodeURIComponent("Name" + i)}`, "");
+    let d = (await state(P.base)).json;
+    assert.equal(d.hello.length, 12); assert.equal(d.hello[0].f, "Name13"); assert.equal(d.hello[11].f, "Name2");
+    await op(P.base, { action: "flags", name: "hello", on: false });
+    d = (await state(P.base)).json;
+    assert.deepEqual(d.hello, []);
+    await signIn(SAMPLE[0], newDev(), true);
+    await op(P.base, { action: "flags", name: "hello", on: true });
+    assert.equal((await state(P.base)).json.hello[0].f, "Name13", "no hello was written while the switch was off");
+    await op(P.base, { action: "rehearsal", hhmm: null });
+  });
+});
+
 /* ---------- stars, interest and Picked for You (plan section 5.11) ---------- */
 describe("stars and picks", () => {
   let P, s, n = 0;

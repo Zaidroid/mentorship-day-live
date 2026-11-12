@@ -6,9 +6,15 @@ import { nowMs, rehearsalOn, phase } from "../lib/day.mjs";
 import { interestFrom } from "../lib/people.mjs";
 import { pollNow } from "../lib/rules.mjs";
 
+// The newest 12 hellos: hi/<t>~<pub>~<first name>. Only the first name and the time leave the server.
+function hellos(blobs) {
+  return blobs.map(b => b.key.slice(3).split("~")).filter(x => x.length === 3).sort((a, b) => (a[0] < b[0] ? 1 : -1)).slice(0, 12)
+    .map(([at, , f]) => { try { return { f: decodeURIComponent(f), at: +at }; } catch { return null; } }).filter(Boolean);
+}
+
 export default async () => {
   const s = st();
-  const [cfg, polls, snap, ans, stars] = await Promise.all([readCfg(s), readPolls(s), readSnap(s), s.list({ prefix: "ans/" }), s.list({ prefix: "star/" })]);
+  const [cfg, polls, snap, ans, stars, here, hi] = await Promise.all([readCfg(s), readPolls(s), readSnap(s), s.list({ prefix: "ans/" }), s.list({ prefix: "star/" }), s.list({ prefix: "here/" }), s.list({ prefix: "hi/" })]);
   const t = nowMs(cfg);
   // The poll follows the schedule unless the remote holds one (plan section 5.8).
   const cur = pollNow(cfg, polls, t), p = cur && cur.p;
@@ -20,9 +26,9 @@ export default async () => {
     cfg: publicCfg(cfg),
     poll,
     rx: { on: false, b: [[w, 0, 0, 0], [w - 1, 0, 0, 0]], total: 0 },
-    n: { here: 0, board: snap.profiles.length, links, photos: snap.photos.length, takeaways: snap.takeaways.length, answers: ans.blobs.length },
+    n: { here: here.blobs.length, board: snap.profiles.length, links, photos: snap.photos.length, takeaways: snap.takeaways.length, answers: ans.blobs.length },
     interest: interestFrom(stars.blobs),
-    hello: [],
+    hello: cfg.flags.hello ? hellos(hi.blobs) : [],
     snapV: snapVersion(snap, links),
     tags: TAGS, videos: VIDEOS
   }, 200, CDN(2));
