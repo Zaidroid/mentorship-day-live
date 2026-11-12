@@ -1,6 +1,6 @@
 #!/bin/bash
 # Local test data only. Never run against production.
-B=${1:-http://localhost:8899}; P=${REMOTE_PIN:-123456}
+B=${1:-http://localhost:8897}; P=${REMOTE_PIN:-123456}
 case "$B" in http://localhost*|http://127.0.0.1*) ;; *) echo "Refusing to seed $B. Test data is for a local server only."; exit 1;; esac
 op(){ curl -s -X POST $B/api/op -H "x-pin: $P" -H 'x-who: Test' -H 'content-type: application/json' -d "$1" >/dev/null; }
 i=0; for w in funding clients funding clients network funding mentors clarity markets funding sales visibility clients partners investors confidence; do i=$((i+1)); curl -s -X POST $B/api/answer -H 'content-type: application/json' -d "{\"pid\":\"p1\",\"dev\":\"device$(printf %04d $i)x\",\"text\":\"$w\"}" >/dev/null; done

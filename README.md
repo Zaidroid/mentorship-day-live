@@ -12,7 +12,7 @@ The big screen, phone page and team remote for Mentorship Day 2026 at the Palest
 
 ```
 npm ci
-npm run dev        # http://localhost:8899, PIN 123456, local data
+npm run dev        # http://localhost:8897, PIN 123456, local data
 npm run seed       # sample data for the local server
 ```
 

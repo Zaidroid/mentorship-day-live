@@ -1,5 +1,5 @@
 const { chromium, devices } = require('playwright');
-const B = process.env.BASE || 'http://localhost:8899';
+const B = process.env.BASE || 'http://localhost:8897';
 (async () => {
   const b = await chromium.launch(); const errs = [];
   const phone = await b.newContext({ ...devices['iPhone 13'] }); const p = await phone.newPage();

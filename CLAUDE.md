@@ -66,7 +66,7 @@ Storage is one Netlify Blobs store `md26` with strong consistency. Keys: `cfg`, 
 
 ## Testing
 
-* `npm run dev` starts the server on port 8899 with PIN `123456` and data in `dev/blobs`.
+* `npm run dev` starts the server on port 8897 with PIN `123456` and data in `dev/blobs`.
 * `npm run seed` fills that local server with sample answers, profiles and photos. It refuses any address that is not localhost. Never seed the live site.
 * `npm test` runs the end to end test (Playwright: `npm i -D playwright && npx playwright install chromium` first): phone answer, photo upload, profile, remote approval, announcement, scene hold, screen render.
 * `node scripts/shoot.cjs 3840x1920 "/screen/?t=11:20&quiet&scene=meet" out.png` takes a screenshot. Check 3840x1920 (the wall, 2:1), 1920x1080 and 3840x1080.
