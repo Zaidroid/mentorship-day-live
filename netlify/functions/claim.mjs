@@ -5,11 +5,12 @@ import { st, readBody, J, withLock, randHex } from "../lib/store.mjs";
 import { devOk, whoFor } from "../lib/ids.mjs";
 import { readPeople, personOf, last4Ok, meBody } from "../lib/people.mjs";
 import { afterSignIn } from "../lib/signin.mjs";
+import { alertSoon, originOf } from "../lib/alert.mjs";
 
 const PHONE_TRIES = 5, PERSON_TRIES = 10, PHONES = 3;
 const LOCKED = "Too many tries. Ask the team at the registration desk.";
 
-export default async (req) => {
+export default async (req, context) => {
   const { body: b, error } = await readBody(req, 512, "Send the sign in as JSON."); if (error) return error;
   const dev = req.headers.get("x-dev") || "";
   if (!devOk(dev)) return J({ error: "Unknown device." }, 400);
@@ -29,6 +30,7 @@ export default async (req) => {
   if (all > PERSON_TRIES || mine > PHONE_TRIES) { await s.delete(mark); return J({ error: LOCKED, left: 0 }, 423); }
   if (!last4Ok(person, b.last4)) {
     const left = Math.max(0, Math.min(PHONE_TRIES - mine, PERSON_TRIES - all));
+    if (all === PERSON_TRIES) await alertSoon(context, s, "locked", { origin: originOf(req) });
     return J({ error: left ? "That is not the right number. Try again." : LOCKED, left }, 401);
   }
   await s.delete(mark);

@@ -5,6 +5,7 @@ import { st, pinOk, countPinFail, whoOf, log, J, readPolls, TAGS } from "../lib/
 import { localDate, localMin, fmtMin } from "../lib/day.mjs";
 import { pubOk } from "../lib/ids.mjs";
 import { readPeople, personOf, pairsFrom, SESSIONS } from "../lib/people.mjs";
+import { alertSoon, originOf } from "../lib/alert.mjs";
 
 async function mapLimit(items, n, fn) { const out = []; for (let i = 0; i < items.length; i += n) out.push(...await Promise.all(items.slice(i, i + n).map(fn))); return out; }
 const when = ms => (ms ? `${localDate(ms)} ${fmtMin(localMin(ms))}` : "");
@@ -85,7 +86,11 @@ const EXPORTS = {
 
 export default async (req, context) => {
   const s = st();
-  if (!pinOk(req)) { await countPinFail(s).catch(() => {}); return J({ error: "Wrong PIN." }, 401); }
+  if (!pinOk(req)) {
+    const n = await countPinFail(s).catch(() => 0);
+    if (n >= 50) await alertSoon(context, s, "pin", { count: n, origin: originOf(req) });
+    return J({ error: "Wrong PIN." }, 401);
+  }
   const what = context.params.what;
   if (!Object.hasOwn(EXPORTS, what)) return J({ error: "Unknown export." }, 404);
   const rows = await EXPORTS[what](s);

@@ -6,11 +6,12 @@ import { st, clean, isBad, cleanLinkedin, readCfg, readBody, J, TAGS } from "../
 import { devOk, whoFor } from "../lib/ids.mjs";
 import { readPeople, personOf } from "../lib/people.mjs";
 import { approveCard, unlistCard } from "../lib/board.mjs";
+import { alertSoon, originOf, waitingCount } from "../lib/alert.mjs";
 
 function pickTags(v) { return Array.isArray(v) ? [...new Set(v.filter(t => TAGS.includes(t)))].slice(0, 3) : []; }
 const devOf = (req, b) => req.headers.get("x-dev") || (b && b.dev) || new URL(req.url).searchParams.get("dev") || "";
 
-export default async (req) => {
+export default async (req, context) => {
   const s = st();
   if (req.method === "GET") {
     const dev = devOf(req);
@@ -50,6 +51,7 @@ export default async (req) => {
   else {
     await s.set(`q/pr/${pub}`, "");
     if ((await s.get(`ok/pr/${pub}`)) !== null) await unlistCard(s, pub);
+    await alertSoon(context, s, "waiting", { origin: originOf(req), count: () => waitingCount(s) });
   }
   return J({ ok: true, status: p.status, id: pub });
 };

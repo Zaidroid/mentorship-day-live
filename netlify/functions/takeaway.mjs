@@ -8,10 +8,11 @@ import { DAY, nowMs, localDate, localMin, fmtMin } from "../lib/day.mjs";
 import { tkOpen, tkWindow } from "../lib/rules.mjs";
 import { SESSIONS } from "../lib/people.mjs";
 import { hasLink, hasNumber, placeTakeaway } from "../lib/tk.mjs";
+import { alertSoon, originOf, waitingCount } from "../lib/alert.mjs";
 
 const MAX_TEXT = 120, EDITS = 5;
 
-export default async (req) => {
+export default async (req, context) => {
   const { body: b, error } = await readBody(req, 1024, "Send the takeaway as JSON."); if (error) return error;
   const dev = req.headers.get("x-dev") || "";
   if (!devOk(dev)) return J({ error: "Unknown device." }, 400);
@@ -41,6 +42,7 @@ export default async (req) => {
   const rec = { rating: b.rating, text, first, showName: b.showName === true && !!first, at: t, status: !text ? "none" : trusted ? "approved" : "pending", n: ((prev && prev.n) || 0) + 1 };
   await s.setJSON(key, rec);
   await placeTakeaway(s, sx.id, w.pub, rec);
+  if (rec.status === "pending") await alertSoon(context, s, "waiting", { origin: originOf(req), count: () => waitingCount(s) });
   return J({ ok: true, status: rec.status });
 };
 

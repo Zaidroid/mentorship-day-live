@@ -5,6 +5,7 @@
 import { st, idOk, clean, isBad, pinOk, countPinFail, readCfg, updateSnap, putItem, photoItem, J, CDN } from "../lib/store.mjs";
 import { devOk, whoFor } from "../lib/ids.mjs";
 import { readPeople, personOf } from "../lib/people.mjs";
+import { alertSoon, originOf } from "../lib/alert.mjs";
 
 const TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX = 4 * 1024 * 1024;
@@ -21,7 +22,7 @@ export default async (req, context) => {
     if (!idOk(id)) return notFound();
     const approved = (await s.get(`ok/ph/${id}`)) !== null;
     const authed = pinOk(req);
-    if (!authed && req.headers.get("x-pin")) await countPinFail(s).catch(() => {});
+    if (!authed && req.headers.get("x-pin")) await pinFailed(s, req, context);
     if (!approved && !authed) return notFound();
     const e = await s.getWithMetadata(`ph/${id}`, { type: "arrayBuffer" });
     if (e === null) return notFound();
@@ -31,7 +32,7 @@ export default async (req, context) => {
   }
 
   const team = req.headers.get("x-pin") !== null;
-  if (team && !pinOk(req)) { await countPinFail(s).catch(() => {}); return J({ error: "Wrong PIN." }, 401); }
+  if (team && !pinOk(req)) { await pinFailed(s, req, context); return J({ error: "Wrong PIN." }, 401); }
   const dev = req.headers.get("x-dev") || "";
   if (!team && !devOk(dev)) return J({ error: "Unknown device." }, 400);
   const type = (req.headers.get("content-type") || "").split(";")[0].trim();
@@ -56,8 +57,14 @@ export default async (req, context) => {
   await s.set(`ph/${id}`, buf, { metadata: meta });
   if (!team) await s.set(`byd/${dev}/${id}`, "");
   if (now) { await s.set(`ok/ph/${id}`, ""); await updateSnap(s, sn => putItem(sn.photos, photoItem(id, meta))); }
-  else await s.set(`q/ph/${id}`, "");
+  else { await s.set(`q/ph/${id}`, ""); await alertSoon(context, s, "photos", { origin: originOf(req), count: async () => (await s.list({ prefix: "q/ph/" })).blobs.length }); }
   return J({ ok: true, id, status: now ? "approved" : "pending" });
 };
+
+// A wrong PIN is counted; 50 in 10 minutes raise an alert.
+async function pinFailed(s, req, context) {
+  const n = await countPinFail(s).catch(() => 0);
+  if (n >= 50) await alertSoon(context, s, "pin", { count: n, origin: originOf(req) });
+}
 
 export const config = { path: ["/api/photo", "/api/photo/:id"], method: ["GET", "POST"] };

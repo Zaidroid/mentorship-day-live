@@ -8,6 +8,7 @@
 import { test, describe, before, after, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
+import http from "node:http";
 import { once } from "node:events";
 import net from "node:net";
 import os from "node:os";
@@ -30,16 +31,16 @@ async function freePort() {
 }
 const servers = [];
 // A free port can be taken by another process between the check and the listen, so a failed start is retried.
-async function startServer(now = BEFORE_DAY) {
+async function startServer(now = BEFORE_DAY, env = {}) {
   for (let i = 1; ; i++) {
-    try { return await startServerOnce(now); }
+    try { return await startServerOnce(now, env); }
     catch (e) { if (i >= 3 || !/EADDRINUSE/.test(e.message)) throw e; }
   }
 }
-async function startServerOnce(now) {
+async function startServerOnce(now, extraEnv) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), "md26-api-test-"));
   const port = await freePort();
-  const child = spawn(process.execPath, ["server/index.mjs"], { cwd: ROOT, env: { ...process.env, REMOTE_PIN: PIN, PORT: String(port), DATA_DIR: dir, MD_TEST_FAKE_NOW: now }, stdio: ["ignore", "pipe", "pipe"] });
+  const child = spawn(process.execPath, ["server/index.mjs"], { cwd: ROOT, env: { ...process.env, REMOTE_PIN: PIN, PORT: String(port), DATA_DIR: dir, MD_TEST_FAKE_NOW: now, ...extraEnv }, stdio: ["ignore", "pipe", "pipe"] });
   let out = ""; child.stdout.on("data", d => { out += d; }); child.stderr.on("data", d => { out += d; });
   const base = `http://127.0.0.1:${port}`;
   let up = false, gone = false;
@@ -1532,6 +1533,75 @@ describe("team tools", () => {
     assert.equal((await call(P.base, "GET", "/api/export/takeaways")).status, 401);
     assert.ok((await opGet(P.base)).json.log.some(l => l.what === "Exported takeaways"));
     await op(P.base, { action: "rehearsal", hhmm: null });
+  });
+});
+
+/* ---------- alerts (plan section 5.10), against a local stub of the Telegram API ---------- */
+describe("alerts", () => {
+  let P, stub, sent = [], mode = "ok";
+  const NAMES = [...SAMPLE.map(p => p.name), "Sami", "Layla", "Omar"];
+  before(async () => {
+    stub = http.createServer((req, res) => {
+      let body = ""; req.on("data", c => { body += c; });
+      req.on("end", () => {
+        if (mode === "hang") return; // never answers: the server must give up after 2.5 seconds
+        sent.push({ url: req.url, body: JSON.parse(body) }); res.writeHead(mode === "fail" ? 500 : 200); res.end("{}");
+      });
+    });
+    stub.listen(0, "127.0.0.1"); await once(stub, "listening");
+    P = await startServer(BEFORE_DAY, { ALERT_TELEGRAM_BOT: "testbot", ALERT_TELEGRAM_CHAT: "-100", ALERT_TELEGRAM_API: `http://127.0.0.1:${stub.address().port}` });
+    await openDirect(P.dir);
+    await op(P.base, { action: "peopleImport", people: SAMPLE });
+  });
+  after(async () => { await P.stop(); stub.closeAllConnections(); stub.close(); await openDirect(S.dir); });
+  const last = () => sent[sent.length - 1];
+
+  test("photos waiting: one message with the count and the remote link, then quiet for 3 minutes", async () => {
+    assert.equal((await upload(P.base, newDev())).status, 200);
+    assert.equal(sent.length, 1);
+    assert.equal(last().url, "/bottestbot/sendMessage");
+    assert.equal(last().body.chat_id, "-100");
+    assert.equal(last().body.text, `1 photo is waiting for approval. ${P.base}/remote/`);
+    await upload(P.base, newDev());
+    assert.equal(sent.length, 1, "no second message within 3 minutes");
+  });
+
+  test("a guest card or takeaway waiting, a locked person, a wall error, 50 wrong PINs", async () => {
+    const g = newDev();
+    await call(P.base, "POST", "/api/guest", { body: { name: "Sami Guest" }, headers: { "x-dev": g } });
+    await call(P.base, "POST", "/api/profile", { body: { name: "Sami Guest", role: "Founder", looking: ["Funding"], consent: true }, headers: { "x-dev": g } });
+    assert.equal(last().body.text, `1 card or takeaway is waiting for approval. ${P.base}/remote/`);
+    for (let i = 0; i < 10; i++) await claim(P.base, newDev(), { id: pubOf(SAMPLE[2]), last4: String(5000 + i) });
+    assert.equal(last().body.text, `Someone is locked out of sign in and needs Unlock. ${P.base}/remote/`);
+    const n = sent.length;
+    await call(P.base, "POST", "/api/beat", { body: { w: 1920, h: 1080, err: "" } });
+    assert.equal(sent.length, n, "a beat without an error says nothing");
+    await call(P.base, "POST", "/api/beat", { body: { w: 1920, h: 1080, err: "TypeError: x is undefined" } });
+    assert.equal(last().body.text, `The wall reported an error. ${P.base}/remote/`);
+    for (let i = 0; i < 50; i++) await opGet(P.base, "wrong" + i);
+    assert.equal(last().body.text, `50 wrong PINs in the last 10 minutes. ${P.base}/remote/`);
+    assert.equal(sent.length, n + 2);
+    for (const m of sent) for (const name of NAMES) assert.ok(!m.body.text.includes(name), "an alert never carries a name: " + m.body.text);
+  });
+
+  test("a failing or silent Telegram never fails the request", async () => {
+    const s = await openDirect(P.dir);
+    const clear = async () => { for (const b of (await s.list({ prefix: "alert/" })).blobs) await s.delete(b.key); };
+    await clear(); mode = "fail";
+    assert.equal((await upload(P.base, newDev())).status, 200);
+    await clear(); mode = "hang";
+    const t0 = Date.now();
+    const r = await upload(P.base, newDev());
+    assert.equal(r.status, 200);
+    assert.ok(Date.now() - t0 < 4000, "the alert gives up after 2.5 seconds: " + (Date.now() - t0));
+    mode = "ok";
+  });
+
+  test("without the two settings nothing is sent and nothing is written", async () => {
+    const s = await openDirect(S.dir);
+    await upload(S.base, newDev());
+    await call(S.base, "POST", "/api/beat", { body: { err: "boom" } });
+    assert.equal((await s.list({ prefix: "alert/" })).blobs.length, 0);
   });
 });
 

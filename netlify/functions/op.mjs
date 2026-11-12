@@ -8,6 +8,7 @@ import { approveCard, unlistCard } from "../lib/board.mjs";
 import { placeTakeaway, takeawayPub } from "../lib/tk.mjs";
 import { takeawayId } from "../lib/ids.mjs";
 import { SESSIONS } from "../lib/people.mjs";
+import { alertSoon, originOf } from "../lib/alert.mjs";
 
 const MODES = ["auto", "welcome", "opening", "video", "choose", "live", "lunch", "close"];
 const SCENES = ["rooms", "choose", "board", "spotlight", "advisors", "meet", "photos", "poll", "pulse", "way", "welcome", "speaker", "recap", "thanks"];
@@ -62,8 +63,12 @@ async function pendingProfiles(s) {
   return out.sort((a, b) => a.at - b.at);
 }
 
-export default async (req) => {
-  if (!pinOk(req)) { await countPinFail(st()).catch(() => {}); return J({ error: "Wrong PIN." }, 401); }
+export default async (req, context) => {
+  if (!pinOk(req)) {
+    const s = st(), n = await countPinFail(s).catch(() => 0);
+    if (n >= 50) await alertSoon(context, s, "pin", { count: n, origin: originOf(req) });
+    return J({ error: "Wrong PIN." }, 401);
+  }
   const s = st(), who = whoOf(req);
 
   if (req.method === "GET") {
