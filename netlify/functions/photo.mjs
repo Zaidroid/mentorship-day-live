@@ -1,7 +1,10 @@
-// Photo wall uploads and serving. New photos wait for operator approval.
+// Photo wall uploads and serving. New photos wait for operator approval, except (docs/PLAN.md section 5.9):
+// a team upload with a valid x-pin is approved at once, and while flags.trustPhotos is on so is a photo from
+// a verified person who agreed to photos at registration. Answers { ok, id, status } (approved or pending).
 // Approved photos are public and cached; pending photos are only served to the remote with the PIN.
-import { st, idOk, clean, isBad, pinOk, countPinFail, J, CDN } from "../lib/store.mjs";
-import { devOk, pubFor } from "../lib/ids.mjs";
+import { st, idOk, clean, isBad, pinOk, countPinFail, readCfg, updateSnap, putItem, photoItem, J, CDN } from "../lib/store.mjs";
+import { devOk, whoFor } from "../lib/ids.mjs";
+import { readPeople, personOf } from "../lib/people.mjs";
 
 const TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX = 4 * 1024 * 1024;
@@ -27,25 +30,34 @@ export default async (req, context) => {
     return new Response(e.data, { headers: { "content-type": type, ...cache, ...NOSNIFF } });
   }
 
+  const team = req.headers.get("x-pin") !== null;
+  if (team && !pinOk(req)) { await countPinFail(s).catch(() => {}); return J({ error: "Wrong PIN." }, 401); }
   const dev = req.headers.get("x-dev") || "";
-  if (!devOk(dev)) return J({ error: "Unknown device." }, 400);
+  if (!team && !devOk(dev)) return J({ error: "Unknown device." }, 400);
   const type = (req.headers.get("content-type") || "").split(";")[0].trim();
   if (!TYPES.includes(type)) return J({ error: "Send a JPEG, PNG or WebP photo." }, 415);
   if ((+req.headers.get("content-length") || 0) > MAX) return J({ error: "That photo is too large. Try a smaller one." }, 413);
   const buf = await req.arrayBuffer();
   if (!buf.byteLength) return J({ error: "The photo was empty." }, 400);
   if (buf.byteLength > MAX) return J({ error: "That photo is too large. Try a smaller one." }, 413);
-  const mine = (await s.list({ prefix: `byd/${dev}/` })).blobs.length;
-  if (mine >= PER_PHONE) return J({ error: "You have shared the maximum number of photos. Thank you!" }, 429);
+  if (!team && (await s.list({ prefix: `byd/${dev}/` })).blobs.length >= PER_PHONE) return J({ error: "You have shared the maximum number of photos. Thank you!" }, 429);
   const dec = h => { try { return decodeURIComponent(req.headers.get(h) || ""); } catch { return ""; } };
   const name = clean(dec("x-name"), 40), caption = clean(dec("x-caption"), 90);
   if (isBad(name) || isBad(caption)) return J({ error: "Please change the name or caption." }, 422);
   const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-  // The photo records who sent it by public id. The device id stays only in the byd/ count key.
-  await s.set(`ph/${id}`, buf, { metadata: { type, name, caption, pub: await pubFor(s, dev), at: Date.now() } });
-  await s.set(`q/ph/${id}`, "");
-  await s.set(`byd/${dev}/${id}`, "");
-  return J({ ok: true, id });
+  // The photo records who sent it by public id ("team" for the team). The device id stays only in the byd/ count key.
+  let pub = "team", now = team;
+  if (!team) {
+    const [w, cfg] = await Promise.all([whoFor(s, dev), readCfg(s)]);
+    pub = w.pub;
+    if (cfg.flags.trustPhotos && w.status === "person") { const p = personOf(await readPeople(s), w.pid); now = !!(p && p.photoOk === true); }
+  }
+  const meta = { type, name, caption, pub, at: Date.now() };
+  await s.set(`ph/${id}`, buf, { metadata: meta });
+  if (!team) await s.set(`byd/${dev}/${id}`, "");
+  if (now) { await s.set(`ok/ph/${id}`, ""); await updateSnap(s, sn => putItem(sn.photos, photoItem(id, meta))); }
+  else await s.set(`q/ph/${id}`, "");
+  return J({ ok: true, id, status: now ? "approved" : "pending" });
 };
 
 export const config = { path: ["/api/photo", "/api/photo/:id"], method: ["GET", "POST"] };

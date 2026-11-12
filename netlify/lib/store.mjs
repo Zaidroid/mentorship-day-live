@@ -41,8 +41,9 @@ export const DEFAULT_CFG = {
   rx: "auto",            // reactions: auto (by MD_DAY.reactionWindows), on or off. Never public; state says rx.on
   hidden: [],            // poll words hidden by the operator. Never public
   reloadAt: 0,           // grows when the remote asks the wall to reload. A version, not a clock
-  photoAt: null,         // group photo countdown (WP2)
-  finale: null,          // lunch finale step (WP2)
+  photoAt: null,         // group photo countdown { at, secs }, at in the time base of state.t; ends at at + secs * 1000
+  finale: null,          // lunch finale step held by the remote { step, at }, or null for the wall's own loop
+  links: null,           // { survey } after the event survey link, or null
   flags: {},             // feature switches that differ from FLAGS
   rehearsal: null,       // { shift, until, hhmm, at } while a rehearsal runs. Never public
   at: 0                  // moves forward on every write, so clients can tell the config changed
@@ -55,7 +56,9 @@ export const DEFAULT_CFG = {
 export const FLAGS = { trustProfiles: true, trustTakeaways: true, trustPhotos: false, hello: true, picks: true, meet: true, takeaways: true };
 
 // The part of the config that /api/state shows. Everything else (hidden words, the rehearsal) stays private.
-export const PUBLIC_CFG = ["mode", "pin", "speaker", "theme", "overlay", "ann", "video", "way", "reloadAt", "photoAt", "finale", "flags", "at"];
+export const PUBLIC_CFG = ["mode", "pin", "speaker", "theme", "overlay", "ann", "video", "way", "reloadAt", "photoAt", "finale", "links", "flags", "at"];
+// The steps of the Lunch Finale on the wall (docs/PLAN.md WP4 task 14), for op finale {step}.
+export const FINALE_STEPS = ["numbers", "poll", "photos", "voices", "connectors", "thanks"];
 export const publicCfg = cfg => Object.fromEntries(PUBLIC_CFG.map(k => [k, cfg[k] === undefined ? null : cfg[k]]));
 
 const NOSTORE = { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", "x-content-type-options": "nosniff" };

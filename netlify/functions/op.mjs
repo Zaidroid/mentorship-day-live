@@ -1,5 +1,5 @@
 // Operator remote API. Every call needs the team PIN. Every change is logged with who made it.
-import { st, update, readCfg, updateCfg, mergeCfg, readPolls, updatePolls, readSnap, updateSnap, putItem, dropItem, photoItem, profileItem, tally, log, readLog, pinOk, whoOf, idOk, clean, J, Refuse, readBody, countPinFail, pinFails, VIDEOS, FLAGS, rebuild, wipeAll, readBeat } from "../lib/store.mjs";
+import { st, update, readCfg, updateCfg, mergeCfg, readPolls, updatePolls, readSnap, updateSnap, putItem, dropItem, photoItem, profileItem, tally, log, readLog, pinOk, whoOf, idOk, clean, J, Refuse, readBody, countPinFail, pinFails, VIDEOS, FLAGS, FINALE_STEPS, rebuild, wipeAll, readBeat } from "../lib/store.mjs";
 import { pubOk, personPub } from "../lib/ids.mjs";
 import { nowMs, realNow, rehearsalOn, rehearsalFor, isEventDay, localMin } from "../lib/day.mjs";
 import { readPeople, personFrom, personOf, syncTeam, PEOPLE_MAX } from "../lib/people.mjs";
@@ -222,8 +222,9 @@ async function act(s, b) {
     return `${a === "hideWord" ? "Hid" : "Restored"} the word ${w}`;
   }
   if (a === "reset") {
-    // Screen controls go back to automatic. Polls, directions, hidden words, switches and a rehearsal stay.
-    await updateCfg(s, c => ({ ...mergeCfg(null), poll: c.poll, way: c.way, hidden: c.hidden, flags: c.flags, rehearsal: c.rehearsal, reloadAt: c.reloadAt }));
+    // Screen controls go back to automatic. Polls, directions, hidden words, switches, a rehearsal,
+    // the reactions setting and the survey link stay.
+    await updateCfg(s, c => ({ ...mergeCfg(null), poll: c.poll, way: c.way, hidden: c.hidden, flags: c.flags, rehearsal: c.rehearsal, reloadAt: c.reloadAt, rx: c.rx, links: c.links }));
     return "Reset the screen controls";
   }
   if (a === "rehearsal") {
@@ -254,6 +255,25 @@ async function act(s, b) {
   if (a === "repair") {
     const snap = await rebuild(s);
     return { note: "Repaired the lists", extra: { photos: snap.photos.length, profiles: snap.profiles.length, takeaways: snap.takeaways.length } };
+  }
+  if (a === "groupPhoto") {
+    if (b.secs === null || b.secs === 0) { await updateCfg(s, c => { c.photoAt = null; }); return "Stopped the group photo countdown"; }
+    if (!Number.isInteger(b.secs) || b.secs < 5 || b.secs > 600) throw new Refuse(400, "Give the countdown in seconds, from 5 to 600.");
+    await updateCfg(s, c => { c.photoAt = { at: nowMs(c), secs: b.secs }; });
+    return `Started a ${b.secs} second group photo countdown`;
+  }
+  if (a === "finale") {
+    if (b.step !== null && !FINALE_STEPS.includes(b.step)) throw new Refuse(400, "Unknown finale step.");
+    await updateCfg(s, c => { c.finale = b.step === null ? null : { step: b.step, at: nowMs(c) }; });
+    return b.step === null ? "The finale runs by itself" : `Showed the finale step ${b.step}`;
+  }
+  if (a === "links") {
+    const v = typeof b.survey === "string" ? b.survey.trim() : b.survey;
+    if (v === null || v === "") { await updateCfg(s, c => { c.links = null; }); return "Removed the survey link"; }
+    let u = null; try { u = new URL(v); } catch {}
+    if (typeof v !== "string" || v.length > 300 || !u || u.protocol !== "https:" || !u.hostname.includes(".")) throw new Refuse(400, "Give the survey link as a full https address.");
+    await updateCfg(s, c => { c.links = { survey: u.href }; });
+    return "Set the survey link";
   }
   if (a === "rx") {
     if (!["auto", "on", "off"].includes(b.mode)) throw new Refuse(400, "Say auto, on or off.");

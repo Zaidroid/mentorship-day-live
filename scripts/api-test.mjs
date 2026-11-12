@@ -281,7 +281,7 @@ describe("state", () => {
     assert.equal(r.status, 200);
     const d = r.json;
     assert.deepEqual(Object.keys(d).sort(), ["cfg", "hello", "interest", "n", "phase", "poll", "reh", "rx", "snapV", "t", "tags", "videos"]);
-    assert.deepEqual(Object.keys(d.cfg).sort(), ["ann", "at", "finale", "flags", "mode", "overlay", "photoAt", "pin", "reloadAt", "speaker", "theme", "video", "way"]);
+    assert.deepEqual(Object.keys(d.cfg).sort(), ["ann", "at", "finale", "flags", "links", "mode", "overlay", "photoAt", "pin", "reloadAt", "speaker", "theme", "video", "way"]);
     assert.ok(!r.text.includes("secretword"), "hidden words never leave the server");
     assert.ok(!r.text.includes("rehearsal") && !r.text.includes("hidden"));
     assert.deepEqual(Object.keys(d.poll).sort(), ["id", "manual", "open", "options", "q", "total", "type", "words"]);
@@ -1429,6 +1429,108 @@ describe("takeaways", () => {
     const r = await op(P.base, { action: "repair" });
     assert.equal(r.json.takeaways, before.length);
     assert.deepEqual((await snapOf(P.base)).takeaways.map(x => x.id).sort(), before);
+    await op(P.base, { action: "rehearsal", hhmm: null });
+  });
+});
+
+/* ---------- the team's tools: exports, team photos, group photo, finale, survey link ---------- */
+describe("team tools", () => {
+  let P;
+  const exp = (what, pin = PIN) => call(P.base, "GET", "/api/export/" + what, { headers: { "x-pin": pin, "x-who": "Test" } });
+  const rowsOf = r => r.buf.toString("utf8").replace(/^\ufeff/, "").trim().split("\r\n");
+  before(async () => {
+    P = await startServer(); await openDirect(P.dir);
+    await op(P.base, { action: "peopleImport", people: SAMPLE });
+  });
+  after(async () => { await P.stop(); await openDirect(S.dir); });
+
+  test("a team upload with the PIN is approved at once, without a device id", async () => {
+    const r = await call(P.base, "POST", "/api/photo", { body: JPEG, raw: true, headers: { "content-type": "image/jpeg", "x-pin": PIN, "x-name": "Team", "x-caption": "Group%20photo" } });
+    assert.equal(r.status, 200, r.text); assert.equal(r.json.status, "approved");
+    assert.ok((await snapOf(P.base)).photos.some(p => p.id === r.json.id && p.caption === "Group photo"));
+    assert.equal((await call(P.base, "GET", "/api/photo/" + r.json.id)).status, 200);
+    const s = await openDirect(P.dir);
+    assert.equal((await s.getMetadata("ph/" + r.json.id)).metadata.pub, "team");
+    assert.ok(!(await opGet(P.base)).json.pending.photos.some(p => p.id === r.json.id));
+    const bad = await call(P.base, "POST", "/api/photo", { body: JPEG, raw: true, headers: { "content-type": "image/jpeg", "x-pin": "wrong" } });
+    assert.equal(bad.status, 401);
+  });
+
+  test("trustPhotos lets verified people who agreed to photos skip the queue", async () => {
+    const yes = newDev(), no = newDev();
+    await claim(P.base, yes, { id: pubOf(SAMPLE[0]), last4: SAMPLE[0].last4 });
+    await claim(P.base, no, { id: pubOf(SAMPLE[1]), last4: SAMPLE[1].last4 });
+    assert.equal((await upload(P.base, yes)).json.status, "pending", "the switch is off by default");
+    await op(P.base, { action: "flags", name: "trustPhotos", on: true });
+    assert.equal((await upload(P.base, yes)).json.status, "approved");
+    assert.equal((await upload(P.base, no)).json.status, "pending", "this person did not agree to photos");
+    assert.equal((await upload(P.base, newDev())).json.status, "pending", "a phone that never signed in waits");
+    await op(P.base, { action: "flags", name: "trustPhotos", on: false });
+  });
+
+  test("group photo countdown, finale steps and the survey link are public config", async () => {
+    assert.equal((await op(P.base, { action: "groupPhoto", secs: 60 })).status, 200);
+    let d = (await state(P.base)).json;
+    assert.equal(d.cfg.photoAt.secs, 60); assert.ok(Math.abs(d.cfg.photoAt.at - d.t) < 5000);
+    await op(P.base, { action: "groupPhoto", secs: null });
+    assert.equal((await state(P.base)).json.cfg.photoAt, null);
+    for (const secs of [4, 601, "60", 1.5]) assert.equal((await op(P.base, { action: "groupPhoto", secs })).status, 400, String(secs));
+    assert.equal((await op(P.base, { action: "finale", step: "voices" })).status, 200);
+    d = (await state(P.base)).json;
+    assert.equal(d.cfg.finale.step, "voices"); assert.ok(Math.abs(d.cfg.finale.at - d.t) < 5000);
+    await op(P.base, { action: "finale", step: null });
+    assert.equal((await state(P.base)).json.cfg.finale, null);
+    assert.equal((await op(P.base, { action: "finale", step: "dance" })).status, 400);
+    assert.equal((await op(P.base, { action: "links", survey: "https://forms.example.org/md26" })).status, 200);
+    assert.deepEqual((await state(P.base)).json.cfg.links, { survey: "https://forms.example.org/md26" });
+    await op(P.base, { action: "reset" });
+    assert.deepEqual((await state(P.base)).json.cfg.links, { survey: "https://forms.example.org/md26" }, "Reset screen controls keeps the link");
+    for (const survey of ["http://forms.example.org", "javascript:alert(1)", "forms", "https://x", 5, "https://e.org/" + "x".repeat(300)]) assert.equal((await op(P.base, { action: "links", survey })).status, 400, String(survey));
+    await op(P.base, { action: "links", survey: null });
+    assert.equal((await state(P.base)).json.cfg.links, null);
+    const log = (await opGet(P.base)).json.log.map(l => l.what);
+    assert.ok(log.includes("Started a 60 second group photo countdown") && log.includes("Showed the finale step voices") && log.includes("Set the survey link"));
+  });
+
+  test("every export is a CSV with a byte order mark, needs the PIN, and is logged", async () => {
+    const L = newDev(), O = newDev();
+    await claim(P.base, L, { id: pubOf(SAMPLE[0]), last4: SAMPLE[0].last4 });
+    await claim(P.base, O, { id: pubOf(SAMPLE[1]), last4: SAMPLE[1].last4 });
+    const card = { name: "x", role: "=HYPERLINK(1)", looking: ["Funding"], offer: ["Product"], consent: true };
+    for (const d of [L, O]) await call(P.base, "POST", "/api/profile", { body: card, headers: { "x-dev": d } });
+    const codeO = (await me(P.base, O)).json.code;
+    await call(P.base, "POST", "/api/meet", { body: { code: codeO }, headers: { "x-dev": L } });
+    await op(P.base, { action: "rehearsal", hhmm: "11:50" });
+    await call(P.base, "POST", "/api/takeaway", { body: { sid: "1A", rating: 5, text: "Pitch, then listen, then \"ask\"", showName: true }, headers: { "x-dev": L } });
+    await call(P.base, "POST", "/api/takeaway", { body: { sid: "1A", rating: 2, text: "Too fast", showName: false }, headers: { "x-dev": O } });
+    await op(P.base, { action: "pollActivate", pid: "p1" });
+    await call(P.base, "POST", "/api/answer", { body: { pid: "p1", text: "focus" }, headers: { "x-dev": L } });
+    await call(P.base, "POST", "/api/answer", { body: { pid: "p1", text: "focus" }, headers: { "x-dev": O } });
+    for (const what of ["takeaways", "ratings", "polls", "board", "links", "feedback", "signins"]) {
+      const r = await exp(what);
+      assert.equal(r.status, 200, what);
+      assert.equal(r.headers.get("content-type"), "text/csv; charset=utf-8");
+      assert.equal(r.headers.get("content-disposition"), `attachment; filename="md26-${what}.csv"`);
+      assert.equal(r.headers.get("cache-control"), "no-store");
+      assert.deepEqual([...r.buf.subarray(0, 3)], [0xef, 0xbb, 0xbf], what + " starts with a byte order mark");
+    }
+    const tk = rowsOf(await exp("takeaways"));
+    assert.equal(tk[0], "Session,Title,Room,Rating,Takeaway,First name,Status,Time");
+    assert.ok(tk.some(l => l.startsWith('1A,Pitching and Outreach to International Clients,Room A,5,"Pitch, then listen, then ""ask""",Layla,approved,2026-11-17 11:50')), tk.join("\n"));
+    assert.ok(tk.some(l => l.includes(",2,Too fast,,approved,")), "no first name when it was not allowed");
+    const ra = rowsOf(await exp("ratings"));
+    assert.ok(ra.includes("1A,Pitching and Outreach to International Clients,Room A,2,3.5,0,1,0,0,1"), ra.join("\n"));
+    assert.ok(rowsOf(await exp("polls")).includes("p1,\"In one word, what do you need most to grow?\",focus,2,no"));
+    const bd = rowsOf(await exp("board"));
+    assert.ok(bd.some(l => l.startsWith("Layla Khoury,Byte Studio,'=HYPERLINK(1),Funding,Product,")), "a formula is made harmless: " + bd.join("\n"));
+    assert.ok(rowsOf(await exp("links")).some(l => /^(Layla Khoury,Omar Saleh|Omar Saleh,Layla Khoury),2026-/.test(l)));
+    const si = rowsOf(await exp("signins"));
+    assert.equal(si[0], "Name,Kind,First sign in,Here on the day,Phones");
+    assert.ok(si.some(l => l.startsWith("Layla Khoury,person,") && l.endsWith(",2")), si.join("\n"));
+    assert.equal((await exp("people")).status, 404);
+    assert.equal((await exp("takeaways", "wrong")).status, 401);
+    assert.equal((await call(P.base, "GET", "/api/export/takeaways")).status, 401);
+    assert.ok((await opGet(P.base)).json.log.some(l => l.what === "Exported takeaways"));
     await op(P.base, { action: "rehearsal", hhmm: null });
   });
 });
