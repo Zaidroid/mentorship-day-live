@@ -1,0 +1,11 @@
+{
+  "note": "Findings in version 1 that are known and not fixed. The probe prints them as KNOWN and does not fail on them. Each entry says why. Remove an entry when the cause is fixed. Do not add an entry to hide a new problem.",
+  "known": [
+    {
+      "check": "overflow",
+      "key": "[Today's Advisors] div.wall.hl",
+      "views": ["3840x1920_light_t0940", "3840x1920_dark_t0940"],
+      "why": "Version 1 on 12 November 2026: the Today's Advisors grid (eleven advisors in four rows) is 19 px taller than its slot at 3840x1920 before 10:00. First seen when WP0 wrote the probe. public/ was not changed."
+    }
+  ]
+}

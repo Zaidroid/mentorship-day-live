@@ -12,7 +12,8 @@
     "seed": "bash scripts/seed.sh http://localhost:8897",
     "test": "node scripts/e2e.cjs",
     "deploy": "netlify deploy --prod",
-    "baseline": "node scripts/baseline.cjs"
+    "baseline": "node scripts/baseline.cjs",
+    "probe": "node scripts/probe.cjs"
   },
   "dependencies": {
     "@netlify/blobs": "^11.1.9"
