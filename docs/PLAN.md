@@ -299,6 +299,24 @@ Rules:
 
 If the budget cannot be met, the fallbacks are, in order: a paid Netlify plan for November, or the self hosted server on Zaid's own machine behind a public HTTPS address doing the API work. Both are Zaid's decision (section 10). In both cases the printed QR address stays the Netlify one: with the self hosted fallback, Netlify keeps serving the pages and a `[[redirects]]` rule with status 200 in `netlify.toml` passes `/api/*` through to the self hosted server, which uses no function calls.
 
+### 5.13 Settled in WP1
+
+WP1 is done (commits `2868682` to `8109f9e`). These points are now fact and override anything above that says otherwise:
+
+* Public `cfg` also carries `at`. The wall detects config changes by it. `cfg.poll` is not public; the poll is the top level `poll`.
+* `cfg.reloadAt` is a growing version number, not a time. A client reloads when the value differs from the one it saw when it loaded.
+* `ann.at` and `video.at` are in the time base of `t`, so they stay right during a rehearsal. The `rx` window is computed from `t`.
+* The snap carries its own `v`. A request with an old `v` gets the current content, uncached.
+* A stored rehearsal never applies on the real 17 November.
+* On the self hosted server `onlyIfNew` and `onlyIfMatch` are not atomic. `update()` already guards with a lock per key. Anything else that must be unique (meet codes) goes through `withLock(name, fn)` from `store.mjs`.
+* New public config fields go into `PUBLIC_CFG`, new switches into `FLAGS`, the device lookup into `pubFor()`, all in `netlify/lib/`. State and snap must both use `snapVersion(snap, links)`.
+* Every CDN header comes from `CDN(seconds, {browser, vary, immutable})` in `store.mjs`.
+* `server/index.mjs` strips `netlify-cdn-cache-control` and `netlify-vary`.
+* `day.js` has a few more fields than section 5.2 shows: `where` and `name` on program rows, and `dayFrom`.
+* Tests: `MD_TEST_FAKE_NOW` sets the real clock for the self hosted server only. In `scripts/api-test.mjs` use `startServer(iso)`, `openDirect(dir)`, `newDev()`, and always `call()`, so the device id scan sees every response. `scripts/text-snap.cjs` proves a change kept all visible text the same.
+* Small changes to version 1 behavior: approving a missing photo or card answers 404, approving a card that changed since the team saw it answers 409.
+* Not verified yet, because nothing of version 2 is deployed: that conditional writes are atomic on Netlify and that reads return an etag there. WP2 checks both on its first deploy.
+
 ### 5.11 Picked for You
 
 Sessions are free choice, but nobody starts from an empty page. On a person's first sign in the server picks one session per block from what they asked for at registration, and stores it as an `auto` star. The person can keep it or change it with one tap.
@@ -390,7 +408,7 @@ Read first: section 4, section 7, the whole of `public/screen/index.html`, then 
 
 Keep: the three layouts, the U unit, both themes, every keyboard key, every URL option, the offline behavior.
 
-1. P0. Plumbing. `day.js`, state and snap, the clock rule, polling as section 5.12 says, heartbeat every 60 seconds, reload when `cfg.reloadAt` is newer than page load (never during a video or a moment), `navigator.wakeLock`, `window.onerror` into the next beat, a watchdog that reloads if the main loop has not ticked for 20 seconds. Expose `window.__md = {S, slotState, force(id)}` for probes. `theme=` in the URL wins over `cfg.theme`, and the T key workaround leaves `scripts/wall-urls.cjs`. Fix the Today's Advisors overflow at 3840x1920 and remove its entry from `scripts/probe-known.json`.
+1. P0. Plumbing. `day.js`, state and snap, the clock rule, polling as section 5.12 says, heartbeat every 60 seconds, reload when `cfg.reloadAt` differs from the value seen at load (never during a video or a moment), `navigator.wakeLock`, `window.onerror` into the next beat, a watchdog that reloads if the main loop has not ticked for 20 seconds. Expose `window.__md = {S, slotState, force(id)}` for probes. `theme=` in the URL wins over `cfg.theme`, and the T key workaround leaves `scripts/wall-urls.cjs`. Fix the Today's Advisors overflow at 3840x1920 and remove its entry from `scripts/probe-known.json`.
 2. P0. Performance governor. Measure frame time for the first 6 seconds and then on a rolling 120 frames. If the average stays over 22 ms for 3 seconds, set `data-lite` on the root: no `backdrop-filter` (glass becomes a solid fill at .86 alpha), no blur in reveals, half the background nodes, at most 30 effect particles. Never switch back in the same session. Report `lite` and fps in the beat. `?lite=1` and `?lite=0` force it. The screen check view shows fps and lite state.
 3. P0. Motion system, as in section 7.2. One set of duration and easing tokens. Scene change, title change, leaf pills, blue rules and numbers each get one treatment, used everywhere.
 4. P0. The director. Replace fixed rotation with `nextFor(slot)`:
