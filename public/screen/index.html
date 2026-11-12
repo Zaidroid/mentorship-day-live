@@ -11,11 +11,24 @@
 @font-face{font-family:SS3;font-weight:600;src:url(/assets/ss3-600.woff2) format('woff2')}
 @font-face{font-family:SS3;font-weight:700;src:url(/assets/ss3-700.woff2) format('woff2')}
 @font-face{font-family:SS3;font-weight:900;src:url(/assets/ss3-900.woff2) format('woff2')}
-:root{--red:#DF6236;--teal:#2F9CC3;--navy:#1F2E33;--orange:#E78B3F;--u:10px;--ease:cubic-bezier(.2,.8,.2,1)}
-[data-theme=light]{--bg1:#E3E3E3;--bg2:#F7F7F7;--ink:#1F2E33;--ink2:rgba(31,46,51,.70);--ink3:rgba(31,46,51,.44);--line:rgba(31,46,51,.14);--glass:rgba(255,255,255,.64);--glassline:rgba(255,255,255,.95);--shadow:0 calc(var(--u)*.6) calc(var(--u)*2.6) rgba(31,46,51,.07);--soft2:rgba(31,46,51,.08);--chip:transparent;--redsoft:rgba(223,98,54,.12)}
-[data-theme=dark]{--bg1:#1F2E33;--bg2:#162226;--ink:#FFFFFF;--ink2:rgba(255,255,255,.72);--ink3:rgba(255,255,255,.44);--line:rgba(255,255,255,.14);--glass:rgba(255,255,255,.06);--glassline:rgba(255,255,255,.10);--shadow:none;--soft2:rgba(255,255,255,.10);--chip:#FFFFFF;--redsoft:rgba(223,98,54,.22)}
+/* Noto Sans Arabic 400 and 700 (SIL Open Font License, /assets/noto-ar-OFL.txt), copied from @fontsource/noto-sans-arabic 5.3.0.
+   After SS3 in every stack: it loads only when Arabic text shows (unicode-range), for names and answers typed in Arabic. */
+@font-face{font-family:NotoAr;font-weight:400;font-display:swap;src:url(/assets/noto-ar-400.woff2) format('woff2');unicode-range:U+0600-06FF,U+0750-077F,U+0870-088E,U+0890-0891,U+0897-08E1,U+08E3-08FF,U+200C-200E,U+2010-2011,U+204F,U+2E41,U+FB50-FDFF,U+FE70-FE74,U+FE76-FEFC}
+@font-face{font-family:NotoAr;font-weight:700;font-display:swap;src:url(/assets/noto-ar-700.woff2) format('woff2');unicode-range:U+0600-06FF,U+0750-077F,U+0870-088E,U+0890-0891,U+0897-08E1,U+08E3-08FF,U+200C-200E,U+2010-2011,U+204F,U+2E41,U+FB50-FDFF,U+FE70-FE74,U+FE76-FEFC}
+/* Motion tokens (docs/PLAN.md 7.2). The same values live in M in the script. */
+:root{--red:#DF6236;--teal:#2F9CC3;--navy:#1F2E33;--orange:#E78B3F;--u:10px;--ease:cubic-bezier(.2,.8,.2,1);--ease-io:cubic-bezier(.65,0,.25,1);--t-s:240ms;--t-e:520ms;--t-x:900ms}
+[data-theme=light]{--glass-solid:rgba(250,250,250,.86);--bg1:#E3E3E3;--bg2:#F7F7F7;--ink:#1F2E33;--ink2:rgba(31,46,51,.70);--ink3:rgba(31,46,51,.44);--line:rgba(31,46,51,.14);--glass:rgba(255,255,255,.64);--glassline:rgba(255,255,255,.95);--shadow:0 calc(var(--u)*.6) calc(var(--u)*2.6) rgba(31,46,51,.07);--soft2:rgba(31,46,51,.08);--chip:transparent;--redsoft:rgba(223,98,54,.12)}
+[data-theme=dark]{--glass-solid:rgba(41,55,60,.86);--bg1:#1F2E33;--bg2:#162226;--ink:#FFFFFF;--ink2:rgba(255,255,255,.72);--ink3:rgba(255,255,255,.44);--line:rgba(255,255,255,.14);--glass:rgba(255,255,255,.06);--glassline:rgba(255,255,255,.10);--shadow:none;--soft2:rgba(255,255,255,.10);--chip:#FFFFFF;--redsoft:rgba(223,98,54,.22)}
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{width:100%;height:100%;overflow:hidden;color:var(--ink);font-family:SS3,system-ui,sans-serif;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;background:linear-gradient(180deg,var(--bg1),var(--bg2));transition:color .9s var(--ease)}
+html,body{width:100%;height:100%;overflow:hidden;color:var(--ink);font-family:SS3,NotoAr,system-ui,sans-serif;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;background:linear-gradient(180deg,var(--bg1),var(--bg2));transition:color var(--t-x) var(--ease)}
+/* Masked text: each line sits in its own clip and rises from behind its lower edge. The clip reaches past
+   the line box so descenders are never cut, and is lifted (.ok) once the line has arrived. */
+/* Custom tags, so no rule written for spans (.join span, .qrtxt span) can reach them. */
+m-l{display:block;overflow:hidden;padding:.12em 0 .2em;margin:-.12em 0 -.2em}
+m-l.ok{overflow:visible}
+m-i{display:inline-block;white-space:nowrap}
+m-i.lb{display:block;white-space:inherit}
+m-w{display:inline}
 ::view-transition-old(root),::view-transition-new(root){animation:none;mix-blend-mode:normal}
 #bg{position:fixed;inset:0;width:100%;height:100%;display:block}
 #app{position:fixed;inset:0;display:grid;grid-template-columns:calc(var(--u)*var(--nowW)) minmax(0,1fr) calc(var(--u)*var(--railW));grid-template-rows:minmax(0,1fr) calc(var(--u)*11.5) calc(var(--u)*8.2);column-gap:calc(var(--u)*3);padding:calc(var(--u)*3.2) calc(var(--u)*3.4) 0}
@@ -23,9 +36,14 @@ html,body{width:100%;height:100%;overflow:hidden;color:var(--ink);font-family:SS
 #app[data-layout=standard] #rail{display:none}
 .glass{background:var(--glass);border:1px solid var(--glassline);border-radius:10px;box-shadow:var(--shadow);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
 .leaf{border-radius:calc(var(--u)*.7) calc(var(--u)*3) 0 calc(var(--u)*3)}
+/* lite: set by the performance governor. Glass becomes a solid fill, no backdrop blur anywhere */
+[data-lite] .glass:not(.free){backdrop-filter:none;-webkit-backdrop-filter:none;background:var(--glass-solid)}
+[data-lite] *{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 
 /* Now zone */
-#now{display:flex;flex-direction:column;min-height:0;padding:calc(var(--u)*2.6) calc(var(--u)*2.8) calc(var(--u)*2.4)}
+/* Every part of #app has a fixed place in the grid, so the moment can lie over the stage and the rail
+   without pushing them out of their cells. */
+#now{grid-row:1;grid-column:1;display:flex;flex-direction:column;min-height:0;padding:calc(var(--u)*2.6) calc(var(--u)*2.8) calc(var(--u)*2.4)}
 .wm h1{font-weight:700;font-size:calc(var(--u)*4.4);line-height:1;color:var(--red);letter-spacing:-.01em;white-space:nowrap}
 .wm i{display:block;height:calc(var(--u)*.55);background:var(--teal);margin-top:calc(var(--u)*1.2);width:100%}
 .wm span{display:block;font-size:calc(var(--u)*1.6);color:var(--ink2);margin-top:calc(var(--u)*1.1)}
@@ -49,21 +67,19 @@ html,body{width:100%;height:100%;overflow:hidden;color:var(--ink);font-family:SS
 .logos img{display:block;width:auto}
 
 /* Stage */
-#stage{position:relative;min-width:0;min-height:0;display:flex;gap:calc(var(--u)*3)}
+#stage{grid-row:1;grid-column:2;position:relative;min-width:0;min-height:0;display:flex;gap:calc(var(--u)*3)}
 .slot{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column}
 .sh{display:flex;align-items:flex-end;gap:calc(var(--u)*2);margin:calc(var(--u)*.6) 0 calc(var(--u)*2.2)}
 .sh h2{font-weight:700;font-size:calc(var(--u)*3.4);line-height:1;color:var(--red);white-space:nowrap}
 .sh .rule{position:absolute}
 .pager{margin-left:auto;display:flex;gap:calc(var(--u)*1.8);font-size:calc(var(--u)*1.5);font-weight:600;color:var(--ink3)}
-.pager span{position:relative;padding-bottom:calc(var(--u)*.7);white-space:nowrap;transition:color .4s}
+.pager span{position:relative;padding-bottom:calc(var(--u)*.7);white-space:nowrap;transition:color var(--t-s) var(--ease)}
 .pager span.on{color:var(--ink)}
-.pager span.on:after{content:"";position:absolute;left:0;bottom:0;height:3px;width:100%;background:var(--teal);transform-origin:left;animation:fill var(--dwell) linear both}
-@keyframes fill{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.pager .segs{display:flex;gap:calc(var(--u)*.6);margin-bottom:calc(var(--u)*.4)}
+.pager .segs span{width:calc(var(--u)*2.6);height:3px;padding:0;background:var(--soft2)}
+.pager span.on:after{content:"";position:absolute;left:0;bottom:0;height:3px;width:100%;background:var(--teal);transform-origin:left;transform:scaleX(var(--p,0));transition:transform 1s linear}
 .shrule{height:calc(var(--u)*.4);background:var(--teal);margin:calc(var(--u)*-1) 0 calc(var(--u)*2.4);width:calc(var(--u)*12)}
 .sb{position:relative;flex:1;min-height:0;display:flex;flex-direction:column}
-.rv{opacity:0}
-.out{animation:out .42s var(--ease) both}
-@keyframes out{to{opacity:0;transform:translateY(calc(var(--u)*-1.4))}}
 
 /* shared */
 .av{border-radius:50%;object-fit:cover;flex:none;background:var(--soft2);display:grid;place-items:center;font-weight:700;color:var(--ink2);box-shadow:0 0 0 3px rgba(255,255,255,.9)}
@@ -76,7 +92,7 @@ html,body{width:100%;height:100%;overflow:hidden;color:var(--ink);font-family:SS
 .pill.ghost.blue{color:var(--teal);box-shadow:inset 0 0 0 2px var(--teal)}
 .pill.mute{background:var(--soft2);color:var(--ink3)}
 .bar{height:calc(var(--u)*.5);background:var(--soft2);overflow:hidden}
-.bar i{display:block;height:100%;background:var(--teal);transition:width 1.2s var(--ease)}
+.bar i{display:block;height:100%;background:var(--teal);transition:width var(--t-x) var(--ease)}
 .bar.hot i{background:var(--red)}
 .muted{color:var(--ink2)}
 
@@ -96,6 +112,17 @@ html,body{width:100%;height:100%;overflow:hidden;color:var(--ink);font-family:SS
 .room.free{background:transparent;border:2px dashed var(--line);box-shadow:none;backdrop-filter:none}
 .room.free .ttl{color:var(--ink3);font-weight:600;font-size:calc(var(--u)*2)}
 .room.live{box-shadow:var(--shadow),inset 0 calc(var(--u)*.5) 0 var(--red)}
+.room .foot{margin-top:auto;display:flex;flex-direction:column;gap:calc(var(--u)*1.2)}
+.room .foot .seats{margin-top:0}
+.room.done .ttl{color:var(--ink2)}
+/* planning to join: blue, it is about what comes next */
+.plan{display:flex;align-items:baseline;gap:calc(var(--u)*.6);font-size:calc(var(--u)*1.6);font-weight:600;color:var(--ink2)}
+.plan b{font-weight:700;color:var(--teal)}
+.plan.big{gap:calc(var(--u)*1)}
+.plan.big b{font-weight:300;font-size:calc(var(--u)*4.6);line-height:.8;letter-spacing:-.02em}
+/* the 45 minutes of a live session */
+.lbar{height:calc(var(--u)*.45);background:var(--soft2);overflow:hidden}
+.lbar i{display:block;height:100%;background:var(--red);transition:width 1s linear}
 .stack{display:flex}
 .stack>*+*{margin-left:calc(var(--u)*-1.4)}
 
@@ -108,8 +135,12 @@ html,body{width:100%;height:100%;overflow:hidden;color:var(--ink);font-family:SS
 .cg .c{border-top:1px solid var(--line);border-left:1px solid var(--line);padding:calc(var(--u)*1.4);display:flex;flex-direction:column;gap:calc(var(--u)*.8);min-height:0;overflow:hidden}
 .cg .c .s{font-weight:700;font-size:calc(var(--u)*1.9);line-height:1.15;text-wrap:balance}
 .cg .c .p{display:flex;align-items:center;gap:calc(var(--u)*.8);font-size:calc(var(--u)*1.5);color:var(--ink2);margin-top:auto}
-.cg .c .m{display:flex;align-items:center;gap:calc(var(--u)*1.2);font-size:calc(var(--u)*1.4);color:var(--ink2)}
-.cg .c .m .bar{flex:1}
+.cg .c .m{display:flex;align-items:center;flex-wrap:wrap;gap:calc(var(--u)*.5) calc(var(--u)*1.2);font-size:calc(var(--u)*1.4);color:var(--ink2)}
+.cg .c .m .bar{flex:1 1 calc(var(--u)*4)}
+.cg .c .m .plan{font-size:calc(var(--u)*1.4)}
+/* narrow cells (the wall at 2 to 1 has five columns in about 80 U) */
+.cg.tight .c .s{font-size:calc(var(--u)*1.7)}
+.cg.tight .c{padding:calc(var(--u)*1.2)}
 .cg .c.free{color:var(--ink3);font-size:calc(var(--u)*1.6);justify-content:center}
 
 /* one to one chips */
@@ -119,7 +150,7 @@ html,body{width:100%;height:100%;overflow:hidden;color:var(--ink);font-family:SS
 .oo-who b{font-weight:700;font-size:calc(var(--u)*1.75);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
 .oo-who span{font-size:calc(var(--u)*1.3);color:var(--ink2);display:block;white-space:nowrap}
 .chips{display:flex;gap:calc(var(--u)*.6)}
-.chp{width:calc(var(--u)*6.4);height:calc(var(--u)*3.4);border-radius:6px;display:grid;place-items:center;font-weight:700;font-size:calc(var(--u)*1.45);border:2px solid var(--teal);color:var(--ink);background:rgba(255,255,255,.5);transition:all .6s var(--ease)}
+.chp{width:calc(var(--u)*6.4);height:calc(var(--u)*3.4);border-radius:6px;display:grid;place-items:center;font-weight:700;font-size:calc(var(--u)*1.45);border:2px solid var(--teal);color:var(--ink);background:rgba(255,255,255,.5);transition:border-color var(--t-e) var(--ease),background-color var(--t-e) var(--ease),color var(--t-e) var(--ease)}
 .chips.sm .chp{width:calc(var(--u)*5.6);height:calc(var(--u)*3.1);font-size:calc(var(--u)*1.35)}
 .chp.taken{border-color:transparent;background:var(--soft2);color:var(--ink3)}
 .chp.now{border-color:var(--red);background:var(--red);color:#fff}
@@ -130,7 +161,7 @@ html,body{width:100%;height:100%;overflow:hidden;color:var(--ink);font-family:SS
 .legend i.n{border-color:var(--red);background:var(--red)}
 
 /* rail */
-#rail{display:flex;flex-direction:column;gap:calc(var(--u)*1.8);min-height:0}
+#rail{grid-row:1;grid-column:3;display:flex;flex-direction:column;gap:calc(var(--u)*1.8);min-height:0}
 .mod{padding:calc(var(--u)*2) calc(var(--u)*2.2)}
 .mod h3{display:flex;align-items:baseline;justify-content:space-between;font-weight:700;font-size:calc(var(--u)*2.1);margin-bottom:calc(var(--u)*1.6)}
 .mod h3 em{font-style:normal;font-weight:300;font-size:calc(var(--u)*3.8);line-height:.8;color:var(--teal)}
@@ -141,17 +172,22 @@ html,body{width:100%;height:100%;overflow:hidden;color:var(--ink);font-family:SS
 .qrrow{display:flex;gap:calc(var(--u)*1.8);align-items:center}
 .qr{background:#fff;border-radius:10px;padding:calc(var(--u)*.9);flex:none;box-shadow:var(--shadow)}
 .qr svg{display:block;width:100%;height:100%}
+/* the QR block of the moment: a soft ring every 20 seconds */
+.qr.ping{position:relative}
+.qr.ping:after{content:"";position:absolute;inset:calc(var(--u)*-.25);border:calc(var(--u)*.3) solid var(--red);border-radius:12px;opacity:0;pointer-events:none;animation:qrping 20s var(--ease) 3s infinite}
+@keyframes qrping{0%{opacity:.8;transform:scale(1)}7%{opacity:0;transform:scale(1.16)}100%{opacity:0;transform:scale(1.16)}}
 .qrph{flex:none;border:2px dashed var(--ink3);border-radius:10px;display:grid;place-items:center;text-align:center;color:var(--ink3);font-weight:700;font-size:calc(var(--u)*1.4);line-height:1.3}
 .qrtxt b{display:block;font-weight:700;font-size:calc(var(--u)*2);line-height:1.2}
 .qrtxt span{display:block;font-size:calc(var(--u)*1.5);color:var(--ink2);margin-top:calc(var(--u)*.6);line-height:1.3}
 
 /* spotlight */
 .spot{flex:1;display:grid;align-items:center;gap:calc(var(--u)*3.6)}
-.spot .ph{position:relative;justify-self:center}
-.spot .ph svg.ring{position:absolute;inset:calc(var(--u)*-1.3);width:calc(100% + var(--u)*2.6);height:calc(100% + var(--u)*2.6);transform:rotate(-90deg)}
-.spot .ph svg.ring circle{fill:none;stroke-width:1.4}
+/* .pic, not .ph: .ph is the Photo Wall tile, whose rules collapsed this box in version 1 */
+.spot .pic{position:relative;justify-self:center}
+.spot .pic svg.ring{position:absolute;inset:calc(var(--u)*-1.3);width:calc(100% + var(--u)*2.6);height:calc(100% + var(--u)*2.6);transform:rotate(-90deg)}
+.spot .pic svg.ring circle{fill:none;stroke-width:1.4}
 @keyframes ring{to{stroke-dashoffset:0}}
-.spot .ph .av{box-shadow:0 calc(var(--u)*1) calc(var(--u)*3) rgba(31,46,51,.18)}
+.spot .pic .av{box-shadow:0 calc(var(--u)*1) calc(var(--u)*3) rgba(31,46,51,.18)}
 .spot .kick{font-size:calc(var(--u)*1.9);color:var(--ink2)}
 .spot .nm{font-weight:700;font-size:calc(var(--u)*5.4);line-height:1;letter-spacing:-.01em;color:var(--red);margin-top:calc(var(--u)*.6)}
 .spot .rule{height:calc(var(--u)*.45);background:var(--teal);width:calc(var(--u)*14);margin-top:calc(var(--u)*1.6)}
@@ -165,10 +201,10 @@ html,body{width:100%;height:100%;overflow:hidden;color:var(--ink);font-family:SS
 
 /* wall */
 .wall{flex:1;display:grid;align-content:center;gap:calc(var(--u)*2.4) calc(var(--u)*1.6)}
-.wall .w{display:flex;flex-direction:column;align-items:center;text-align:center;gap:calc(var(--u)*.9);transition:transform .7s var(--ease),opacity .7s}
+.wall .w{display:flex;flex-direction:column;align-items:center;text-align:center;gap:calc(var(--u)*.9);transition:transform var(--t-e) var(--ease),opacity var(--t-e) var(--ease)}
 .wall .w b{font-size:calc(var(--u)*1.6);font-weight:700;line-height:1.15}
 .wall .w span{font-size:calc(var(--u)*1.3);color:var(--ink2)}
-.wall .w .av{transition:box-shadow .7s var(--ease)}
+.wall .w .av{transition:box-shadow var(--t-e) var(--ease)}
 .wall.hl .w{opacity:.45}
 .wall.hl .w.on{opacity:1;transform:scale(1.08)}
 .wall.hl .w.on .av{box-shadow:0 0 0 3px #fff,0 0 0 7px var(--red)}
@@ -176,9 +212,11 @@ html,body{width:100%;height:100%;overflow:hidden;color:var(--ink);font-family:SS
 /* poll */
 .poll{flex:1;min-height:0;display:grid;gap:calc(var(--u)*3)}
 .cloud{position:relative;min-height:0;min-width:0}
-.cloud span{position:absolute;white-space:nowrap;font-weight:700;line-height:1;transform:translate(-50%,-50%);transition:left 1.2s var(--ease),top 1.2s var(--ease),font-size 1.2s var(--ease)}
-.cloud span.new{animation:pop .9s cubic-bezier(.2,1.5,.4,1) both}
-@keyframes pop{from{opacity:0;transform:translate(-50%,-50%) scale(.3)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+.cloud span{position:absolute;white-space:nowrap;font-weight:700;line-height:1;transform:translate(-50%,-50%);transition:left var(--t-x) var(--ease),top var(--t-x) var(--ease),font-size var(--t-x) var(--ease)}
+/* a new word rises from behind its own edge, like every other text */
+.cloud span{padding:.16em 0}
+.cloud span.new{overflow:hidden}
+.cloud span i{display:inline-block;font-style:normal}
 .empty{display:grid;place-items:center;text-align:center;color:var(--ink3);font-size:calc(var(--u)*2);line-height:1.4}
 
 /* hero, speaker, recap */
@@ -190,6 +228,22 @@ html,body{width:100%;height:100%;overflow:hidden;color:var(--ink);font-family:SS
 .hero .feat{display:flex;gap:calc(var(--u)*3.4);margin-top:calc(var(--u)*3.4);flex-wrap:wrap}
 .hero .feat span{display:flex;align-items:center;gap:calc(var(--u)*1.1);font-size:calc(var(--u)*2.2);font-weight:600}
 .hero .feat span:before{content:"";width:calc(var(--u)*1.1);height:calc(var(--u)*1.1);border-radius:50%;background:var(--red)}
+/* welcome: people here and hellos, variants a and b */
+.wv{flex:1;min-height:0;display:grid;align-items:center;column-gap:calc(var(--u)*4)}
+.wv .hero{min-width:0}
+.herecount{display:flex;align-items:baseline;gap:calc(var(--u)*1.4);margin-top:calc(var(--u)*2.8)}
+.herecount b{font-weight:300;line-height:.82;letter-spacing:-.03em;color:var(--ink)}
+.herecount span{font-weight:700;line-height:1.1;color:var(--ink)}
+.herecount.big{margin-top:0;flex-direction:column;align-items:flex-start;gap:calc(var(--u)*1.2)}
+.hellos{position:relative;min-width:0}
+.hello{position:absolute;left:0;right:0;top:calc(var(--row)*var(--hs)*2.6)}
+.hp{display:inline-flex;align-items:baseline;gap:.28em;max-width:100%;white-space:nowrap;font-size:var(--hs);font-weight:400;line-height:1.2;color:#fff;background:var(--red);padding:.42em .9em .46em;border-radius:calc(var(--u)*.7) calc(var(--u)*3) 0 calc(var(--u)*3)}
+.hp b{font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.wv.b .wr{min-width:0;display:flex;flex-direction:column;justify-content:center}
+.wv.b .wr p{font-size:calc(var(--u)*2.5);line-height:1.4;color:var(--ink)}
+.wv.b .wr .rule{height:calc(var(--u)*.6);background:var(--teal);margin:calc(var(--u)*2.6) 0 calc(var(--u)*2.2);width:100%}
+.wv.b .hello{top:calc(var(--row)*var(--hs)*1.5);font-size:var(--hs);font-weight:400;line-height:1.15;color:var(--ink);white-space:nowrap}
+.wv.b .hello b{font-weight:700;color:var(--red)}
 .speaker{flex:1;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:calc(var(--u)*6)}
 .speaker .k{font-size:calc(var(--u)*3);color:var(--ink2)}
 .speaker .nm{font-weight:700;line-height:.92;letter-spacing:-.02em;color:var(--red);margin-top:calc(var(--u)*1)}
@@ -197,7 +251,7 @@ html,body{width:100%;height:100%;overflow:hidden;color:var(--ink);font-family:SS
 .speaker .org{font-weight:700;font-size:calc(var(--u)*3.4);margin-top:calc(var(--u)*2.4)}
 .speaker .what{font-size:calc(var(--u)*2.4);color:var(--ink2);margin-top:calc(var(--u)*.8)}
 .sl{display:flex;flex-direction:column;min-width:calc(var(--u)*40);padding:calc(var(--u)*1.4) calc(var(--u)*2.4)}
-.sl>div{display:grid;grid-template-columns:calc(var(--u)*8) 1fr;gap:calc(var(--u)*1.2);padding:calc(var(--u)*1.5) 0;transition:opacity .6s}
+.sl>div{display:grid;grid-template-columns:calc(var(--u)*8) 1fr;gap:calc(var(--u)*1.2);padding:calc(var(--u)*1.5) 0;transition:opacity var(--t-e) var(--ease)}
 .sl>div+div{border-top:1px solid var(--line)}
 .sl>div>b{font-weight:700;font-size:calc(var(--u)*2.2);color:var(--ink2)}
 .sl>div strong{display:block;font-weight:700;font-size:calc(var(--u)*2.1)}
@@ -209,20 +263,20 @@ html,body{width:100%;height:100%;overflow:hidden;color:var(--ink);font-family:SS
 .recap .kpi b{font-size:calc(var(--u)*7.4);color:var(--ink)}
 
 /* garden timeline */
-#garden{grid-column:1/-1;position:relative;margin:0 calc(var(--u)*-3.4)}
-.fl{position:absolute;bottom:0;width:calc(var(--u)*3.4);height:calc(var(--u)*8);transform-origin:50% 100%;transition:opacity .8s}
+#garden{grid-row:2;grid-column:1/-1;position:relative;margin:0 calc(var(--u)*-3.4)}
+.fl{position:absolute;bottom:0;width:calc(var(--u)*3.4);height:calc(var(--u)*8);transform-origin:50% 100%;transition:opacity var(--t-e) var(--ease)}
 .fl svg{display:block;width:100%;height:100%}
 .fl.past{opacity:.38}
 .fl.on{animation:sway 4s ease-in-out infinite}
 @keyframes sway{0%,100%{transform:rotate(-2.5deg)}50%{transform:rotate(2.5deg)}}
-.fl-l{position:absolute;bottom:calc(var(--u)*3.4);white-space:nowrap;line-height:1.1;transition:opacity .8s}
+.fl-l{position:absolute;bottom:calc(var(--u)*3.4);white-space:nowrap;line-height:1.1;transition:opacity var(--t-e) var(--ease)}
 .fl-l b{display:block;font-weight:700;font-size:calc(var(--u)*1.7);overflow:hidden;text-overflow:ellipsis}
 .fl-l span{display:block;font-size:calc(var(--u)*1.35);color:var(--ink2);margin-top:calc(var(--u)*.2)}
 .fl-l.past{opacity:.45}
 .fl-l.on b{color:var(--red)}
 
 /* band with ticker */
-#band{grid-column:1/-1;margin:0 calc(var(--u)*-3.4);display:flex;flex-direction:column;gap:calc(var(--u)*.35)}
+#band{grid-row:3;grid-column:1/-1;margin:0 calc(var(--u)*-3.4);display:flex;flex-direction:column;gap:calc(var(--u)*.35)}
 .thin{height:calc(var(--u)*.45);background:var(--teal);position:relative}
 .thin i{position:absolute;left:0;top:0;bottom:0;background:var(--red);transition:width 1s linear}
 #needle{position:absolute;top:50%;width:calc(var(--u)*1.6);height:calc(var(--u)*1.6);margin:calc(var(--u)*-.8) 0 0 calc(var(--u)*-.8);border-radius:50%;background:var(--red);box-shadow:0 0 0 calc(var(--u)*.5) var(--redsoft),0 0 calc(var(--u)*2) rgba(223,98,54,.6);transition:left 1s linear;z-index:2}
@@ -234,21 +288,34 @@ html,body{width:100%;height:100%;overflow:hidden;color:var(--ink);font-family:SS
 #conn{position:absolute;right:0;top:0;bottom:0;display:flex;align-items:center;gap:calc(var(--u)*.7);padding:0 calc(var(--u)*3) 0 calc(var(--u)*6);background:linear-gradient(90deg,transparent,var(--teal) 35%);font-size:calc(var(--u)*1.3);color:rgba(255,255,255,.85);font-weight:600}
 #conn i{width:calc(var(--u)*.8);height:calc(var(--u)*.8);border-radius:50%;background:rgba(255,255,255,.5)}
 #conn.live i{background:#fff}
+#conn .reh{margin-left:calc(var(--u)*.9);padding:calc(var(--u)*.3) calc(var(--u)*.8);border-radius:calc(var(--u)*.3) calc(var(--u)*1) 0 calc(var(--u)*1);background:#fff;color:var(--teal);font-weight:700}
 .leaves{height:calc(var(--u)*2.2);margin-top:calc(var(--u)*.6)}
 .leaves svg{display:block;width:100%;height:100%}
 
 /* moments */
-#moment{position:absolute;inset:0;z-index:5;display:none;flex-direction:column;justify-content:center;padding:calc(var(--u)*4) calc(var(--u)*5);overflow:hidden}
+/* A moment covers the stage and, on an ultra wide wall, the rail. What it covers recedes. */
+#moment{grid-row:1;grid-column:2;z-index:5;display:none;flex-direction:column;justify-content:center;min-width:0;min-height:0;padding:calc(var(--u)*4) calc(var(--u)*5);overflow:hidden}
+#app[data-layout=wide] #moment{grid-column:2 / 4}
 #moment.show{display:flex}
+#stage,#rail{transition:opacity var(--t-e) var(--ease-io),transform var(--t-e) var(--ease-io)}
+#app.mom #stage,#app.mom #rail{opacity:0;transform:scale(.97)}
 #moment .k{display:flex;align-items:center;gap:calc(var(--u)*1.2);font-weight:600;font-size:calc(var(--u)*3);color:var(--ink)}
-#moment h1{font-weight:700;font-size:calc(var(--u)*10.5);line-height:.92;letter-spacing:-.02em;margin-top:calc(var(--u)*1.6);color:var(--red)}
+#moment h1{font-weight:700;font-size:calc(var(--u)*10.5);line-height:.92;letter-spacing:-.02em;margin-top:calc(var(--u)*1.6);color:var(--red);text-wrap:balance}
 #moment .rule{height:calc(var(--u)*.8);background:var(--teal);margin-top:calc(var(--u)*2.6);width:60%}
 #moment p{font-size:calc(var(--u)*2.8);color:var(--ink2);margin-top:calc(var(--u)*2.4)}
-#moment .mr{display:flex;gap:calc(var(--u)*3.6);margin-top:calc(var(--u)*4);flex-wrap:wrap}
-#moment .mr div{display:flex;flex-direction:column;align-items:flex-start;gap:calc(var(--u)*1);max-width:calc(var(--u)*44)}
-#moment .mr .pill{font-size:calc(var(--u)*2);padding:calc(var(--u)*.9) calc(var(--u)*1.8)}
-#moment .mr strong{font-weight:700;font-size:calc(var(--u)*2.1);line-height:1.15}
-#moment .wipe{position:absolute;inset:0;background:var(--teal)}
+#moment .cd{position:relative;font-weight:300;line-height:.84;letter-spacing:-.04em;color:var(--red);margin-top:calc(var(--u)*1.4)}
+/* the countdown clip is exactly one line tall; the old and the new number stack in it and move up together */
+#moment .cd m-l{height:.84em;padding:.1em 0 .06em;margin:-.1em 0 -.06em;box-sizing:content-box}
+#moment .cd m-i{display:block}
+#moment .mr{display:flex;gap:calc(var(--u)*3.4);margin-top:calc(var(--u)*4);flex-wrap:wrap}
+#moment .mrc{display:flex;align-items:flex-start;gap:calc(var(--u)*1.8);flex:1 1 0;min-width:calc(var(--u)*24);max-width:calc(var(--u)*50)}
+#moment .mrt{display:flex;flex-direction:column;align-items:flex-start;gap:calc(var(--u)*1);min-width:0}
+#moment .mrt .pill{font-size:calc(var(--u)*2);padding:calc(var(--u)*.9) calc(var(--u)*1.8)}
+#moment .mrt strong{font-weight:700;font-size:calc(var(--u)*2.2);line-height:1.15;text-wrap:balance}
+#moment .mrt .who{font-size:calc(var(--u)*1.7);color:var(--ink2)}
+#moment .arr{width:calc(var(--u)*7.6);height:calc(var(--u)*7.6);flex:none;background:var(--red);display:grid;place-items:center}
+#moment .arr i{display:grid;place-items:center;width:100%;height:100%}
+#moment .arr svg{width:62%;height:62%;animation:nudge 1.6s var(--ease) .9s 2}
 
 .ov{position:fixed;inset:0;z-index:30;display:grid;place-items:center}
 #black{background:#000}
@@ -281,7 +348,7 @@ html,body{width:100%;height:100%;overflow:hidden;color:var(--ink);font-family:SS
 .bal .r{display:grid;grid-template-columns:calc(var(--u)*14) minmax(0,1fr);align-items:center;gap:calc(var(--u)*1.2);font-size:calc(var(--u)*1.6)}
 .bal .r b{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bal .bars{display:flex;flex-direction:column;gap:3px}
-.bal .bars i{display:block;height:calc(var(--u)*.75);border-radius:2px;min-width:3px;transition:width 1s var(--ease)}
+.bal .bars i{display:block;height:calc(var(--u)*.75);border-radius:2px;min-width:3px;transition:width var(--t-x) var(--ease)}
 .bal .bars i.lk{background:var(--red)}
 .bal .bars i.of{background:var(--teal)}
 .names{display:flex;flex-wrap:wrap;gap:calc(var(--u)*.7) calc(var(--u)*1.8);font-size:calc(var(--u)*1.6);color:var(--ink2)}
@@ -309,7 +376,7 @@ html,body{width:100%;height:100%;overflow:hidden;color:var(--ink);font-family:SS
 .wy .arr{width:calc(var(--u)*10);height:calc(var(--u)*10);flex:none;background:var(--red);display:grid;place-items:center}
 .wy .arr.blue{background:var(--teal)}
 .wy .arr i{display:grid;place-items:center;width:100%;height:100%}
-.wy .arr svg{width:62%;height:62%;animation:nudge 1.8s var(--ease) infinite}
+.wy .arr svg{width:62%;height:62%;animation:nudge 1.6s var(--ease) .9s 2}
 @keyframes nudge{0%,100%{transform:translateX(0)}50%{transform:translateX(calc(var(--u)*.9))}}
 .wy b{display:block;font-weight:700;font-size:calc(var(--u)*3.4);line-height:1.05;text-wrap:balance}
 .wy span{display:block;font-size:calc(var(--u)*1.8);color:var(--ink2);margin-top:calc(var(--u)*.6)}
@@ -333,7 +400,7 @@ html,body{width:100%;height:100%;overflow:hidden;color:var(--ink);font-family:SS
 #check .info strong{display:block;font-size:calc(var(--u)*3);color:var(--red)}
 
 .hide{display:none!important}
-@media (prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}.rv{opacity:1}}
+@media (prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
@@ -351,8 +418,9 @@ html,body{width:100%;height:100%;overflow:hidden;color:var(--ink);font-family:SS
     <div class="join" id="join"></div>
     <div class="logos" id="logos"></div>
   </aside>
-  <main id="stage"><div id="moment" class="glass"></div></main>
+  <main id="stage"></main>
   <aside id="rail"></aside>
+  <div id="moment" class="glass"></div>
   <div id="garden"></div>
   <div id="band">
     <div class="thin" id="dayline"><i id="dayfill"></i><div id="needle"></div></div>
@@ -384,8 +452,9 @@ const CONFIG = {
   join: (location.protocol.startsWith('http') && !/^(localhost|127\.)/.test(location.hostname)) ? location.origin + '/' : 'https://mentorship-day-live.netlify.app/',
   hashtag: '#MentorshipDay',
   theme: 'light',
-  refreshSeconds: 30,
-  stateSeconds: 3
+  refreshSeconds: 60,   // sheet tabs (docs/PLAN.md 5.12: the polling numbers are a budget)
+  stateSeconds: 3,
+  beatSeconds: 60
 };
 
 /* ============ Schedule, built from /assets/day.js ============ */
@@ -401,18 +470,61 @@ const SPEAKERS = DAY.speakers.map(x => Object.assign({}, x));
 const VIDEOS = DAY.videos.map(v => v.title);
 
 /* ============ Time ============ */
+// The wall shows venue time (MD_DAY.tz), whatever time zone the computer is set to.
+// It keeps its own clock, unless a fresh state t differs from it by more than 15 seconds
+// (a wrong clock on the wall computer, or a rehearsal): then it runs on Date.now() + skew.
+// ?t=HH:MM[:SS] wins over everything. ?speed=N runs the clock faster, for tests.
 const P = new URLSearchParams(location.search);
 const speed = Math.max(1, +P.get('speed') || 1), t0 = Date.now();
-let base = null;
-if (P.get('t')) { const [h,m,s] = P.get('t').split(':').map(Number); const d = new Date(); d.setHours(h, m||0, s||0, 0); base = d.getTime(); }
-const now = () => (base === null && speed === 1) ? new Date() : new Date((base === null ? t0 : base) + (Date.now() - t0) * speed);
+const TZF = (() => { try { return new Intl.DateTimeFormat('en-US', {timeZone:DAY.tz, hourCycle:'h23', year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit'}); } catch(e) { return null; } })();
+let tzOff = 0, tzAt = -1e13;
+function tzOffset(ms){ // venue wall time minus UTC, in ms, looked up again every 10 minutes
+  if (Math.abs(ms - tzAt) < 6e5) return tzOff; tzAt = ms;
+  if (!TZF) { tzOff = -new Date(ms).getTimezoneOffset() * 60000; return tzOff; }
+  const p = {}; TZF.formatToParts(new Date(ms)).forEach(x => { p[x.type] = x.value; });
+  tzOff = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour % 24, +p.minute, +p.second) - Math.floor(ms / 1000) * 1000; return tzOff;
+}
+let fakeBase = null;
+if (P.get('t')) { const [h,m,s] = P.get('t').split(':').map(Number), n = Date.now(), v = new Date(n + tzOffset(n)); fakeBase = Date.UTC(v.getUTCFullYear(), v.getUTCMonth(), v.getUTCDate(), h || 0, m || 0, s || 0) - tzOffset(n); }
+const CLOCK = {skew:0, use:false};
+function nowMs(){ const off = CLOCK.use ? CLOCK.skew : 0; if (fakeBase !== null) return fakeBase + (Date.now() - t0) * speed; return (speed === 1 ? Date.now() : t0 + (Date.now() - t0) * speed) + off; }
+function venue(){ const ms = nowMs(), d = new Date(ms + tzOffset(ms)); return {h:d.getUTCHours(), m:d.getUTCMinutes(), s:d.getUTCSeconds(), ms:d.getUTCMilliseconds(), t:ms}; }
 function toMin(s){ const [h,m] = String(s).split(':').map(Number); return h*60 + m; }
 function fmt(m){ return String(Math.floor(m/60)).padStart(2,'0') + ':' + String(Math.round(m%60)).padStart(2,'0'); }
-function nowMin(){ const d = now(); return d.getHours()*60 + d.getMinutes() + d.getSeconds()/60 + d.getMilliseconds()/60000; }
+function nowMin(){ const v = venue(); return v.h*60 + v.m + v.s/60 + v.ms/60000; }
 function mmss(sec){ sec = Math.max(0, Math.round(sec)); const h = Math.floor(sec/3600), m = Math.floor(sec%3600/60), s = sec%60; return (h ? h + ':' + String(m).padStart(2,'0') : String(m)) + ':' + String(s).padStart(2,'0'); }
 
+/* ============ Performance governor ============ */
+// Frame time is measured for the first 6 seconds (after 1.5 seconds of warm up, while fonts and photos
+// load) and then over the last 120 frames. When the average stays over 22 ms for 3 seconds, the wall goes
+// lite for the rest of the session: no backdrop blur (glass becomes a solid fill), no blur in reveals,
+// half the background nodes, at most 30 effect particles. The background keeps moving.
+// ?lite=1 and ?lite=0 force it. Frames are not counted while the page is hidden, and a single gap over 2
+// seconds is a stall (a reload, a debugger), not a frame. A slow frame of 300 ms still counts: a wall that
+// slow needs lite the most.
+const GOV = {force:/^[01]$/.test(P.get('lite') || '') ? P.get('lite') : null, lite:false, why:'', fps:null, avg:0, buf:[], sum:0, t0:0, last:0, slow:0, at:0,
+  WARM:1500, FIRST:6000, ROLL:120, LIMIT:22, HOLD:3000};
+function goLite(why){ if (GOV.lite) return; GOV.lite = true; GOV.why = why; GOV.at = Date.now(); document.documentElement.dataset.lite = ''; }
+function govFrame(t){
+  requestAnimationFrame(govFrame);
+  if (document.hidden) { GOV.last = 0; return; }
+  if (!GOV.t0) { GOV.t0 = GOV.last = t; return; }
+  if (!GOV.last) { GOV.last = t; return; } // the first frame after the page was hidden
+  const dt = t - GOV.last; GOV.last = t;
+  if (t - GOV.t0 < GOV.WARM || dt > 2000) return;
+  GOV.buf.push(dt); GOV.sum += dt;
+  if (t - GOV.t0 > GOV.WARM + GOV.FIRST) while (GOV.buf.length > GOV.ROLL) GOV.sum -= GOV.buf.shift();
+  GOV.avg = GOV.sum / GOV.buf.length; GOV.fps = Math.round(1000 / GOV.avg);
+  if (GOV.lite || GOV.force || GOV.buf.length < 10) return;
+  if (GOV.avg > GOV.LIMIT) { if (!GOV.slow) GOV.slow = t; else if (t - GOV.slow >= GOV.HOLD) goLite(`average frame ${GOV.avg.toFixed(1)} ms for 3 seconds`); } else GOV.slow = 0;
+}
+if (GOV.force === '1') goLite('lite=1 in the URL');
+requestAnimationFrame(govFrame);
+
 /* ============ State ============ */
-const S = {mode:null, override:P.get('mode'), demo:P.has('demo'), ann:'', speaker:null, live:false, checkedIn:null, poll:[], theme:P.get('theme') || CONFIG.theme, sheetScene:'', sheetTheme:'', sheetSpeaker:'', wifi:{name:'', pass:''}, plan:'', seen:new Set(), dataKey:'', momentKey:'', annShown:''};
+// Theme: theme= in the URL wins over everything until the T key is pressed. Otherwise the sheet's Theme,
+// then the latest of the remote's cfg.theme and the T key.
+const S = {mode:null, override:P.get('mode'), demo:P.has('demo'), ann:'', speaker:null, live:false, checkedIn:null, poll:[], urlTheme:/^(light|dark)$/.test(P.get('theme') || '') ? P.get('theme') : null, theme:CONFIG.theme, cfgTheme:null, sheetScene:'', sheetTheme:'', sheetSpeaker:'', wifi:{name:'', pass:''}, plan:'', seen:new Set(), dataKey:'', momentKey:'', annShown:''};
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let U = 10;
@@ -432,7 +544,7 @@ function advisorCount(){ return new Set(SESSIONS.flatMap(s => s.who).concat(SLOT
 const leafPad = s => `font-size:calc(var(--u)*${s});padding:calc(var(--u)*${(s*.45).toFixed(2)}) calc(var(--u)*${(s*.9).toFixed(2)})`;
 
 /* ============ Theme ============ */
-function wantedTheme(){ const t = S.sheetTheme || S.theme; return t === 'dark' ? 'dark' : 'light'; }
+function wantedTheme(){ const t = S.urlTheme || S.sheetTheme || S.theme; return t === 'dark' ? 'dark' : 'light'; }
 function applyTheme(animate){
   const t = wantedTheme(), root = document.documentElement;
   if (root.dataset.theme === t) return;
@@ -468,53 +580,83 @@ function layout(){
   return {wide, stageW, n: stageW >= 290 ? 3 : (stageW >= 125 ? 2 : 1)};
 }
 let L = {wide:false, stageW:100, n:1};
+// The slots and the scenes each may show. Roles: pinned (a scene held from the remote or the URL), single
+// (one slot does it all), primary (the big slot) and secondary. Which scene shows when is the director's job.
 function plan(){
-  const pin = P.get('scene') || S.pin; if (pin && R[pin]) return [[pin]];
-  const set = SETS[S.mode], sec = set.s.filter(id => !(L.wide && RAIL_HAS.includes(id)) && !(id === 'way' && !S.way));
-  if (!sec.length || L.n === 1) return [set.p.concat(sec)];
-  if (L.n === 2 || sec.length < 2) return [set.p, sec];
-  return [set.p, sec.filter((_, i) => i % 2 === 0), sec.filter((_, i) => i % 2 === 1)];
+  const pin = P.get('scene') || S.pin; if (pin && R[pin]) return [{role:'pinned', scenes:[pin]}];
+  const set = SETS[S.mode], sec = set.s.filter(id => !(L.wide && RAIL_HAS.includes(id)));
+  if (!sec.length || L.n === 1) return [{role:'single', scenes:set.p.concat(sec)}];
+  if (L.n === 2 || sec.length < 2) return [{role:'primary', scenes:set.p}, {role:'secondary', scenes:sec}];
+  return [{role:'primary', scenes:set.p}, {role:'secondary', scenes:sec.filter((_, i) => i % 2 === 0)}, {role:'secondary', scenes:sec.filter((_, i) => i % 2 === 1)}];
 }
 
 /* ============ Scenes ============ */
 const R = {};
+// Choose and Rooms (docs/PLAN.md WP4 task 7). "N planning to join" counts own choices and picks made for people
+// (state interest) and shows when N is above zero. Seats left and their bar show only when the tracker has at
+// least one booking, so the wall never shows a number nobody counted. A live session has a thin bar for its
+// 45 minutes, and in its last 5 minutes the tag reads Wrapping up.
+const hasBookings = () => SESSIONS.some(s => s.booked > 0);
+const planning = s => +((S.interest || {})[s.id]) || 0;
+const planLine = (s, big) => { const n = planning(s); return n > 0 ? `<div class="plan${big ? ' big' : ''}"><b>${n}</b><span>planning to join</span></div>` : ''; };
+const seatsLine = s => hasBookings() ? `<div class="seats"><span>${seatsLeft(s)} of ${s.seats} seats left</span><div class="bar ${seatsLeft(s) < 6 ? 'hot' : ''}"><i style="width:${Math.round(100 * s.booked / s.seats)}%"></i></div></div>` : '';
+// One room card. state: live (on now), next (starts later), done (ended).
+function roomCard(r, b, state, cw, m){
+  const s = SESSIONS.find(x => x.b === b.n && x.room === r);
+  if (!s) return `<div class="room free glass rv"><div class="top"><span class="pill mute leaf lf">${r}</span></div><div class="ttl tx">No session this hour. Book a one to one at the registration desk.</div></div>`;
+  const big = cw > 40, who = s.who.filter(k => !adv(k).noPhoto), wrap = state === 'live' && m >= toMin(b.e) - 5;
+  const tag = state === 'live' ? `<em class="on">${wrap ? 'Wrapping up' : 'On now'}</em>` : state === 'done' ? `<em>Ended at ${b.e}</em>` : `<em>Starts at ${b.s}</em>`;
+  const pct = Math.max(0, Math.min(100, (m - toMin(b.s)) / (toMin(b.e) - toMin(b.s)) * 100));
+  const foot = state === 'live' ? `${planLine(s)}<div class="lbar"><i style="width:${pct.toFixed(1)}%"></i></div>` : state === 'next' ? `${planLine(s, true)}${seatsLine(s)}` : '';
+  return `<div class="room glass ${state} rv" data-sid="${esc(s.id)}"><div class="top"><span class="pill leaf lf ${state === 'live' ? '' : state === 'done' ? 'mute' : 'ghost'}">${r}</span>${tag}</div>
+    <div class="ttl tx" style="font-size:calc(var(--u)*${cw > 56 ? 3.4 : (big ? 3 : 2.4)})">${esc(s.title)}</div>
+    <div>${dl(s.mode)}</div>
+    <div class="who">${who.length ? `<div class="stack">${who.map(k => av(k, big ? 6.2 : 5.2)).join('')}</div>` : ''}<div><b>${esc(names(s.who))}</b><span>${esc(s.who.length === 1 ? adv(s.who[0]).role : '')}</span></div></div>
+    ${foot ? `<div class="foot">${foot}</div>` : ''}</div>`;
+}
+// The One to Ones card for a time window: the slot on now, or the next one.
+function onesCard(m, from, to){
+  const inWin = SLOTS.filter(x => toMin(x.s) >= from && toMin(x.s) < to), cur = inWin.find(x => m >= toMin(x.s) && m < toMin(x.e)), ref = cur || inWin.find(x => toMin(x.s) > m);
+  if (!ref) return `<div class="room free glass rv"><div class="top"><span class="pill mute leaf lf">One to Ones</span></div><div class="ttl tx">${SLOTS.some(x => toMin(x.s) > m) ? 'No one to ones in this hour.' : 'All one to one slots are done for today.'}</div></div>`;
+  const open = openSlots(m).length;
+  return `<div class="room glass ${cur ? 'live' : ''} rv"><div class="top"><span class="pill leaf lf blue ${cur ? '' : 'ghost'}">One to Ones</span>${cur ? `<em class="on">In session, until ${cur.e}</em>` : `<em>Next slot at ${ref.s}</em>`}</div>
+    <div class="ttl tx" style="font-size:calc(var(--u)*2.4)">${esc(FOCUS[ref.who] || 'One to One Conversations')}</div>
+    <div style="display:flex;gap:calc(var(--u)*1.4);flex-wrap:wrap">${dl(ref.mode)}<span class="dl on" style="color:var(--ink2)">${esc(ref.room)}</span></div>
+    <div class="who">${av(ref.who, 5.6)}<div><b>${esc(adv(ref.who).name)}</b><span>${open} open slot${open === 1 ? '' : 's'} left today</span></div></div></div>`;
+}
 R.rooms = (c) => {
   const m = nowMin(), ph = phase(m); let b, state, title;
   if (ph.kind === 'session') { b = ph.b; state = 'live'; title = `On now, until ${b.e}`; }
-  else { b = ph.next || BLOCKS[BLOCKS.length - 1]; state = 'next'; title = ph.next ? `Up next at ${b.s}` : 'Sessions are done for today'; }
+  else if (ph.next) { b = ph.next; state = 'next'; title = `Up next at ${b.s}`; }
+  else { b = BLOCKS.filter(x => toMin(x.e) <= m).pop() || BLOCKS[BLOCKS.length - 1]; state = 'done'; title = 'Sessions are done for today'; }
   const cols = c.w >= 150 ? 4 : 2, cw = c.w / cols;
-  const cards = ROOMS.map(r => {
-    const s = SESSIONS.find(x => x.b === b.n && x.room === r);
-    if (!s) return `<div class="room free glass rv"><div class="top"><span class="pill mute leaf">${r}</span></div><div class="ttl">No session this hour. Book a one to one at the registration desk.</div></div>`;
-    const big = cw > 40, who = s.who.filter(k => !adv(k).noPhoto);
-    return `<div class="room glass ${state} rv"><div class="top"><span class="pill leaf ${state === 'live' ? '' : 'ghost'}">${r}</span>${state === 'live' ? '<em class="on">On now</em>' : `<em>Starts at ${b.s}</em>`}</div>
-      <div class="ttl" style="font-size:calc(var(--u)*${cw > 56 ? 3.4 : (big ? 3 : 2.4)})">${esc(s.title)}</div>
-      <div>${dl(s.mode)}</div>
-      <div class="who">${who.length ? `<div class="stack">${who.map(k => av(k, big ? 6.2 : 5.2)).join('')}</div>` : ''}<div><b>${esc(names(s.who))}</b><span>${esc(s.who.length === 1 ? adv(s.who[0]).role : '')}</span></div></div>
-      ${state === 'live' ? '' : `<div class="seats"><span>${seatsLeft(s)} of ${s.seats} seats left</span><div class="bar ${seatsLeft(s) < 6 ? 'hot' : ''}"><i style="width:${Math.round(100 * s.booked / s.seats)}%"></i></div></div>`}</div>`;
-  });
-  const cur = SLOTS.find(x => m >= toMin(x.s) && m < toMin(x.e)), up = SLOTS.filter(x => toMin(x.s) > m), ref = cur || up[0];
-  cards.push(ref ? `<div class="room glass ${cur ? 'live' : ''} rv"><div class="top"><span class="pill leaf blue ${cur ? '' : 'ghost'}">One to Ones</span>${cur ? `<em class="on">In session, until ${cur.e}</em>` : `<em>Next slot at ${ref.s}</em>`}</div>
-      <div class="ttl" style="font-size:calc(var(--u)*2.4)">${esc(FOCUS[ref.who] || 'One to One Conversations')}</div>
-      <div style="display:flex;gap:calc(var(--u)*1.4);flex-wrap:wrap">${dl(ref.mode)}<span class="dl on" style="color:var(--ink2)">${esc(ref.room)}</span></div>
-      <div class="who">${av(ref.who, 5.6)}<div><b>${esc(adv(ref.who).name)}</b><span>${openSlots(m).length} open slot${openSlots(m).length === 1 ? '' : 's'} left today</span></div></div></div>`
-    : `<div class="room free glass rv"><div class="top"><span class="pill mute leaf">One to Ones</span></div><div class="ttl">All one to one slots are done for today.</div></div>`);
+  const cards = ROOMS.map(r => roomCard(r, b, state, cw, m));
+  cards.push(onesCard(m, toMin(b.s), toMin(b.end)));
   return {title, html:`<div class="rooms" style="grid-template-columns:repeat(${cols},minmax(0,1fr))">${cards.join('')}</div>`};
 };
 
+// Choose Your Sessions: from 10 minutes before a block it shows that block's sessions large, with how many
+// plan to join each; otherwise the whole day as a grid.
 R.choose = (c) => {
-  let h = `<div></div>${ROOMS.map(r => `<div class="hd rv"><span class="pill leaf">${r}</span></div>`).join('')}<div class="hd rv"><span class="pill leaf blue">One to Ones</span></div>`;
+  const m = nowMin(), nb = nextBlock(m);
+  if (nb && toMin(nb.s) - m <= 10) {
+    const cols = c.w >= 150 ? 4 : 2, cw = c.w / cols, cards = ROOMS.map(r => roomCard(r, nb, 'next', cw, m));
+    cards.push(onesCard(m, toMin(nb.s), toMin(nb.end)));
+    return {title:`Choose Your ${nb.s} Session`, html:`<div class="rooms" style="grid-template-columns:repeat(${cols},minmax(0,1fr))">${cards.join('')}</div>`};
+  }
+  const booked = hasBookings();
+  let h = `<div></div>${ROOMS.map(r => `<div class="hd"><span class="pill leaf lf">${r}</span></div>`).join('')}<div class="hd"><span class="pill leaf lf blue">One to Ones</span></div>`;
   BLOCKS.forEach(b => {
-    h += `<div class="tm rv"><b>${b.s}</b></div>`;
+    h += `<div class="tm"><b class="tx">${b.s}</b></div>`;
     ROOMS.forEach(r => { const s = SESSIONS.find(x => x.b === b.n && x.room === r);
       if (!s) { h += `<div class="c free rv">No session</div>`; return; }
-      h += `<div class="c rv"><div class="s">${esc(s.title)}</div><div class="p">${av(s.who[0], 3.2)}<span>${esc(names(s.who))}</span></div><div class="m">${dl(s.mode)}<div class="bar ${seatsLeft(s) < 6 ? 'hot' : ''}"><i style="width:${Math.round(100 * s.booked / s.seats)}%"></i></div><span>${seatsLeft(s)} left</span></div></div>`; });
+      h += `<div class="c rv" data-sid="${esc(s.id)}"><div class="s tx">${esc(s.title)}</div><div class="p">${av(s.who[0], 3.2)}<span>${esc(names(s.who))}</span></div><div class="m">${dl(s.mode)}${planLine(s)}${booked ? `<div class="bar ${seatsLeft(s) < 6 ? 'hot' : ''}"><i style="width:${Math.round(100 * s.booked / s.seats)}%"></i></div><span>${seatsLeft(s)} left</span>` : ''}</div></div>`; });
     const sl = SLOTS.filter(x => toMin(x.s) >= toMin(b.s) && toMin(x.s) < toMin(b.end));
     if (!sl.length) h += `<div class="c free rv">None</div>`;
     else { const o = sl.filter(x => x.status !== 'Booked').length;
-      h += `<div class="c rv"><div class="s">${esc(FOCUS[sl[0].who] || 'One to Ones')}</div><div class="p">${av(sl[0].who, 3.2)}<span>${esc(adv(sl[0].who).name)}</span></div><div class="m">${dl(sl[0].mode)}<span style="margin-left:auto;font-weight:700;color:${o ? 'var(--teal)' : 'var(--ink3)'}">${o} of ${sl.length} open</span></div></div>`; }
+      h += `<div class="c rv"><div class="s tx">${esc(FOCUS[sl[0].who] || 'One to Ones')}</div><div class="p">${av(sl[0].who, 3.2)}<span>${esc(adv(sl[0].who).name)}</span></div><div class="m">${dl(sl[0].mode)}<span style="margin-left:auto;font-weight:700;color:${o ? 'var(--teal)' : 'var(--ink3)'}">${o} of ${sl.length} open</span></div></div>`; }
   });
-  return {title:'Choose Your Sessions', html:`<div class="cg" style="grid-template-columns:calc(var(--u)*9) repeat(4,minmax(0,1fr));grid-template-rows:auto repeat(3,minmax(0,1fr))">${h}</div>`};
+  return {title:'Choose Your Sessions', html:`<div class="cg ${(c.w - 9) / 4 < 21 ? 'tight' : ''}" style="grid-template-columns:calc(var(--u)*9) repeat(4,minmax(0,1fr));grid-template-rows:auto repeat(3,minmax(0,1fr))">${h}</div>`};
 };
 
 function chipsHtml(m, compact){
@@ -541,9 +683,9 @@ R.spotlight = (c) => {
   const list = spotList(), it = list[spotI % list.length], a = adv(it.k), m = nowMin(), live = m >= it.t && m < it.e;
   const vertical = c.w < 70, d = vertical ? Math.min(c.w * .42, 22) : Math.min(c.w * .3, 30);
   return {title:'Advisor Spotlight', html:`<div class="spot" style="grid-template-columns:${vertical ? '1fr' : 'auto minmax(0,1fr)'};${vertical ? 'text-align:center;justify-items:center' : ''}">
-    <div class="ph rv">${av(it.k, d)}<svg class="ring" viewBox="0 0 100 100"><circle cx="50" cy="50" r="49" stroke="var(--line)"/><circle cx="50" cy="50" r="49" stroke="var(--red)" stroke-dasharray="308" stroke-dashoffset="308" style="animation:ring 7s linear forwards"/></svg></div>
-    <div style="min-width:0;${vertical ? 'display:flex;flex-direction:column;align-items:center' : ''}"><div class="kick rv">${live ? 'On now' : 'Meet'}</div><div class="nm rv">${esc(a.name)}</div><div class="rule rv"></div>${a.role ? `<div class="rl rv">${esc(a.role)}</div>` : ''}<div class="ss rv">${esc(it.what)}</div>
-      <div class="meta rv" style="${vertical ? 'justify-content:center' : ''}"><span class="pill leaf ${it.oo ? 'blue' : ''}">${esc(it.where)}</span><b style="font-size:calc(var(--u)*2)">${fmt(it.t)}</b>${dl(it.mode)}</div>
+    <div class="pic rv">${av(it.k, d)}<svg class="ring" viewBox="0 0 100 100"><circle cx="50" cy="50" r="49" stroke="var(--line)"/><circle cx="50" cy="50" r="49" stroke="var(--red)" stroke-dasharray="308" stroke-dashoffset="308" style="animation:ring 7s linear forwards"/></svg></div>
+    <div style="min-width:0;${vertical ? 'display:flex;flex-direction:column;align-items:center' : ''}"><div class="kick tx">${live ? 'On now' : 'Meet'}</div><div class="nm tx">${esc(a.name)}</div><div class="rule dr"></div>${a.role ? `<div class="rl tx">${esc(a.role)}</div>` : ''}<div class="ss tx">${esc(it.what)}</div>
+      <div class="meta rv" style="${vertical ? 'justify-content:center' : ''}"><span class="pill leaf lf ${it.oo ? 'blue' : ''}">${esc(it.where)}</span><b style="font-size:calc(var(--u)*2)">${fmt(it.t)}</b>${dl(it.mode)}</div>
       <div class="count rv" style="${vertical ? 'justify-content:center' : ''}">${list.map((_, i) => `<i class="${i === spotI % list.length ? 'on' : ''}"></i>`).join('')}</div></div></div>`, tick:7, onTick:() => { spotI++; return true; }};
 };
 
@@ -551,81 +693,188 @@ let wallI = 0;
 function wallKeys(){ return Object.keys(ADVISORS).filter(k => SESSIONS.some(s => s.who.includes(k)) || SLOTS.some(x => x.who === k)); }
 function nextTime(k){ const s = SESSIONS.find(x => x.who.includes(k)); if (s) return BLOCKS[s.b-1].s + ', ' + s.room; const x = SLOTS.find(y => y.who === k); return x ? x.s + ', one to ones' : ''; }
 function wallItem(k, size, i){ const a = adv(k); const pic = a.noPhoto ? `<div class="av" style="width:calc(var(--u)*${size});height:calc(var(--u)*${size});background:transparent;box-shadow:inset 0 0 0 2px var(--line)"></div>` : av(k, size); return `<div class="w rv" data-i="${i}">${pic}<b>${esc(a.name)}</b><span>${esc(nextTime(k))}</span></div>`; }
+// Photo size fits both the width and the height of the slot: a tile is the photo plus about 6.4 U of name and time.
+function wallSize(c, n, cols){ const rows = Math.ceil(n / cols); return Math.max(4, Math.min(12, c.w / cols * .6, (c.h - (rows - 1) * 2.4 - .8) / rows - 6.4)); }
 R.advisors = (c) => {
-  const keys = wallKeys(), cols = Math.max(3, Math.min(Math.ceil(keys.length / 2), Math.floor(c.w / 14))), size = Math.min(12, c.w / cols * .6);
+  const keys = wallKeys(), cols = Math.max(3, Math.min(Math.ceil(keys.length / 2), Math.floor(c.w / 14))), size = wallSize(c, keys.length, cols);
   return {title:"Today's Advisors", html:`<div class="wall hl" style="grid-template-columns:repeat(${cols},1fr)">${keys.map((k, i) => wallItem(k, size, i).replace('class="w rv"', `class="w rv ${i === wallI % keys.length ? 'on' : ''}"`)).join('')}</div>`,
     tick:2.6, onTick:(el) => { wallI++; const n = keys.length; el.querySelectorAll('.w').forEach(w => w.classList.toggle('on', +w.dataset.i === wallI % n)); return false; }};
 };
-R.thanks = (c) => { const keys = wallKeys(), cols = Math.max(3, Math.min(Math.ceil(keys.length / 2), Math.floor(c.w / 14))), size = Math.min(12, c.w / cols * .6);
+R.thanks = (c) => { const keys = wallKeys(), cols = Math.max(3, Math.min(Math.ceil(keys.length / 2), Math.floor(c.w / 14))), size = wallSize(c, keys.length, cols);
   return {title:'Thank You to Our Advisors', html:`<div class="wall" style="grid-template-columns:repeat(${cols},1fr)">${keys.map((k, i) => wallItem(k, size, i)).join('')}</div>`}; };
 
 function qrSvg(text){ try { const q = qrcode(0, 'M'); q.addData(text); q.make(); const n = q.getModuleCount(); let p = ''; for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) p += `M${c},${r}h1v1h-1z`; return `<svg viewBox="0 0 ${n} ${n}" shape-rendering="crispEdges"><path d="${p}" fill="#1F2E33"/></svg>`; } catch(e) { return ''; } }
-function qrBox(link, size, label){ return link ? `<div class="qr" style="width:calc(var(--u)*${size});height:calc(var(--u)*${size})">${qrSvg(link)}</div>` : `<div class="qrph" style="width:calc(var(--u)*${size});height:calc(var(--u)*${size})">${label}</div>`; }
+function qrBox(link, size, label, cls){ return link ? `<div class="qr ${cls || ''}" style="width:calc(var(--u)*${size});height:calc(var(--u)*${size})">${qrSvg(link)}</div>` : `<div class="qrph" style="width:calc(var(--u)*${size});height:calc(var(--u)*${size})">${label}</div>`; }
 const CLOUD_COLORS = ['#DF6236','#2F9CC3','var(--ink)','#E78B3F'];
+// Arabic text (names and answers typed in Arabic) uses Noto Sans Arabic, after SS3 in every font stack.
+const AR = /[؀-ۿݐ-ݿࡰ-ࣿﭐ-﷿ﹰ-ﻼ]/;
+const arReady = () => { try { return document.fonts.check('700 20px NotoAr', 'ع') && document.fonts.check('400 20px NotoAr', 'ع'); } catch(e) { return true; } };
+function loadAr(then){ if (loadAr.busy) return; loadAr.busy = true; Promise.all([document.fonts.load('700 20px NotoAr', 'ع'), document.fonts.load('400 20px NotoAr', 'ع')]).then(() => { loadAr.busy = false; if (then) then(); }, () => { loadAr.busy = false; }); }
 R.poll = (c) => {
   const vertical = c.w < 80, big = c.w >= 120, choice = S.pollType === 'choice', q = S.pollQ || 'The next poll opens soon';
-  const left = `<div class="rv" style="display:flex;flex-direction:${vertical ? 'row' : 'column'};gap:calc(var(--u)*2);align-items:${vertical ? 'center' : 'flex-start'};justify-content:center;max-width:calc(var(--u)*${vertical ? 64 : (big ? 46 : 34)})">${qrBox(CONFIG.join, vertical ? 12 : (big ? 22 : 17), '')}<div class="qrtxt"><b style="${big ? 'font-size:calc(var(--u)*3.2)' : ''}">${esc(q)}</b><span>${S.pollOpen ? 'Scan, answer, and watch your answer appear.' : 'This poll is closed. Thank you for answering.'}</span>${S.pollTotal ? `<span style="margin-top:calc(var(--u)*1.6);color:var(--ink)"><b style="font-weight:300;font-size:calc(var(--u)*4);display:inline">${S.pollTotal}</b> ${S.pollTotal === 1 ? 'answer' : 'answers'}</span>` : ''}</div></div>`;
-  const right = choice ? `<div class="pbars rv">${S.poll.map(([o, n]) => { const f = S.pollTotal ? n / S.pollTotal : 0; return `<div class="r"><b>${esc(o)}<span>${Math.round(f * 100)}%</span></b><div class="bar"><i style="width:${(f * 100).toFixed(1)}%"></i></div></div>`; }).join('')}</div>`
+  const left = `<div class="rv" style="display:flex;flex-direction:${vertical ? 'row' : 'column'};gap:calc(var(--u)*2);align-items:${vertical ? 'center' : 'flex-start'};justify-content:center;max-width:calc(var(--u)*${vertical ? 64 : (big ? 46 : 34)})">${qrBox(CONFIG.join, vertical ? 12 : (big ? 22 : 17), '')}<div class="qrtxt"><b class="tx" dir="auto" style="${big ? 'font-size:calc(var(--u)*3.2)' : ''}">${esc(q)}</b><span>${S.pollOpen ? 'Scan, answer, and watch your answer appear.' : 'This poll is closed. Thank you for answering.'}</span>${S.pollTotal ? `<span style="margin-top:calc(var(--u)*1.6);color:var(--ink)"><b style="font-weight:300;font-size:calc(var(--u)*4);display:inline">${S.pollTotal}</b> ${S.pollTotal === 1 ? 'answer' : 'answers'}</span>` : ''}</div></div>`;
+  const right = choice ? `<div class="pbars rv">${S.poll.map(([o, n]) => { const f = S.pollTotal ? n / S.pollTotal : 0; return `<div class="r"><b><bdi>${esc(o)}</bdi><span>${Math.round(f * 100)}%</span></b><div class="bar"><i style="width:${(f * 100).toFixed(1)}%"></i></div></div>`; }).join('')}</div>`
     : `<div class="cloud rv" data-cloud>${S.poll.length ? '' : '<div class="empty" style="position:absolute;inset:0">The first answers will appear here.</div>'}</div>`;
-  return {title:'Live Poll', html:`<div class="poll" style="grid-template-${vertical ? 'rows:auto minmax(0,1fr)' : 'columns:auto minmax(0,1fr)'}">${left}${right}</div>`, after: choice ? null : layoutCloud};
+  const html = `<div class="poll" style="grid-template-${vertical ? 'rows:auto minmax(0,1fr)' : 'columns:auto minmax(0,1fr)'}">${left}${right}</div>`;
+  return {title:'Live Poll', html, key: choice ? html : html + JSON.stringify(S.poll.slice(0, 40)), after: choice ? null : layoutCloud};
 };
 function layoutCloud(el){
   const box = el.querySelector('[data-cloud]'); if (!box || !S.poll.length) return;
   const W = box.clientWidth, H = box.clientHeight; if (!W || !H) return;
+  // The canvas measures with loaded fonts only: with an Arabic word, load Noto Sans Arabic, then lay out again.
+  if (S.poll.some(([t]) => AR.test(t)) && !arReady()) loadAr(() => { slotState.forEach(st => { if (st.id === 'poll') st.key = ''; }); refreshScenes(); });
   const words = S.poll.slice(0, 40), max = words[0][1], cv = document.createElement('canvas').getContext('2d'), placed = [];
   const scale = Math.min(1, Math.sqrt(W * H) / (U * 60)); let html = '';
   words.forEach(([t, n], i) => {
-    const fs = U * (1.8 + 5.2 * Math.sqrt(n / max)) * scale; cv.font = `700 ${fs}px SS3`;
+    const fs = U * (1.8 + 5.2 * Math.sqrt(n / max)) * scale; cv.font = `700 ${fs}px SS3, NotoAr`;
     const w = cv.measureText(t).width + fs * .3, h = fs * 1.05; let x = W / 2, y = H / 2, ok = false;
     for (let k = 0; k < 1400 && !ok; k++) { const a = k * .35, r = k * .9 * (U / 10); x = W / 2 + r * Math.cos(a) * 1.5; y = H / 2 + r * Math.sin(a) * .85;
       if (x - w / 2 < 0 || x + w / 2 > W || y - h / 2 < 0 || y + h / 2 > H) continue;
       ok = !placed.some(p => Math.abs(p.x - x) < (p.w + w) / 2 && Math.abs(p.y - y) < (p.h + h) / 2); }
     if (!ok) return; placed.push({x, y, w, h});
     const fresh = !S.seen.has(t); S.seen.add(t);
-    html += `<span class="${fresh ? 'new' : ''}" style="left:${x}px;top:${y}px;font-size:${fs.toFixed(1)}px;color:${CLOUD_COLORS[i % CLOUD_COLORS.length]};${fresh ? `animation-delay:${(i * .05).toFixed(2)}s` : ''}">${esc(t)}</span>`;
+    html += `<span class="${fresh ? 'new' : ''}" dir="auto" style="left:${x}px;top:${y}px;font-size:${fs.toFixed(1)}px;color:${CLOUD_COLORS[i % CLOUD_COLORS.length]}"><i>${esc(t)}</i></span>`;
   });
   box.innerHTML = html;
+  // The clip that a new word rises from is lifted once it has risen, so its descenders are never cut.
+  box.querySelectorAll('span.new i').forEach((w, k) => { if (still()) { w.parentNode.classList.remove('new'); return; } w.animate([{transform:'translateY(110%)'}, {transform:'none'}], {duration:M.e, delay:Math.min(k, M.max) * M.stag, easing:M.out, fill:'backwards'}).finished.then(() => w.parentNode.classList.remove('new'), () => {}); });
 }
 
+/* Welcome, with "N people are here" and a hello for each person who arrives (docs/PLAN.md WP4 task 5).
+   Two variants for the look gate, ?v=a and ?v=b:
+     a  Greeting Pills: the title on one line in a left column; the count as a light numeral under the rule;
+        each hello is an orange leaf pill in a column beside the title, unfolding from its square corner.
+     b  Big Count: the title stacked on two lines; beside it the count is the hero numeral, and each hello
+        is a large line of type ("Welcome," and the name in orange) rising from behind its edge.
+   The number and the hellos change in place (hereTick, helloTick), so a repaint never cuts a hello short.
+   With nobody here yet the count is left out and the welcome line of version 1 shows instead. */
+const VARIANT = P.get('v') === 'a' ? 'a' : 'b'; // b is the recommendation; a stays one URL option away
+const WELCOME_P = 'A full day of practical guidance, connecting tech professionals with experienced local and international advisors.';
+const FEAT = '<div class="feat rv"><span>Focused Sessions</span><span>One to One Conversations</span><span>Networking and Lunch</span></div>';
 R.welcome = (c) => {
-  const fs = Math.min(14, c.w / 7.6);
-  return {title:'Welcome', html:`<div class="hero"><div class="k rv">Welcome to</div><h1 class="rv" style="font-size:calc(var(--u)*${fs})">Mentorship Day</h1><div class="rule rv"></div>
-    <p class="rv">A full day of practical guidance, connecting tech professionals with experienced local and international advisors.</p>
-    <div class="feat rv"><span>Focused Sessions</span><span>One to One Conversations</span><span>Networking and Lunch</span></div></div>`};
+  const here = S.n.here > 0, state = here ? 'here' : 'plain';
+  if (VARIANT === 'b') {
+    // "Mentorship" is about 4.7 em wide and the whole title 6.5 em, so at lw / 4.9 the title breaks into two lines.
+    const lw = (c.w - 4) * .5, fs = Math.min(15, lw / 5.2), nw = c.w - 4 - lw, num = Math.min(26, c.h * .34, nw * .42), hs = Math.min(5, nw / 9);
+    const right = here
+      ? `<div class="herecount big rv"><b data-here style="font-size:calc(var(--u)*${num.toFixed(2)})">0</b><span data-here-label style="font-size:calc(var(--u)*${Math.min(3.6, num * .17).toFixed(2)})"></span></div><div class="rule dr"></div><div class="hellos" data-hellos style="height:calc(var(--u)*${(hs * 1.5 * 3).toFixed(2)});--hs:calc(var(--u)*${hs.toFixed(2)})"></div>`
+      : `<p class="tx" style="margin-top:0">${WELCOME_P}</p>`;
+    return {title:'Welcome', state, html:`<div class="wv b" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr)"><div class="hero"><div class="k tx">Welcome to</div><h1 class="tx" style="font-size:calc(var(--u)*${fs.toFixed(2)})">Mentorship Day</h1><div class="rule dr"></div>${FEAT}</div><div class="wr">${right}</div></div>`};
+  }
+  // The pill size lets "Welcome, " and an 18 letter first name fit the column beside the title.
+  const lw = (c.w - 4) * (c.w > 100 ? .66 : .62), fs = Math.min(14, lw / 7.1), ps = Math.min(3, (c.w - 4 - lw) / 11.2);
+  const lower = here
+    ? `<div class="herecount rv"><b data-here style="font-size:calc(var(--u)*${Math.min(9, fs * .9).toFixed(2)})">0</b><span data-here-label style="font-size:calc(var(--u)*${Math.min(3, fs * .3).toFixed(2)})"></span></div>`
+    : `<p class="tx">${WELCOME_P}</p>`;
+  return {title:'Welcome', state, html:`<div class="wv a" style="grid-template-columns:minmax(0,${lw.toFixed(1)}fr) minmax(0,${(c.w - 4 - lw).toFixed(1)}fr)"><div class="hero"><div class="k tx">Welcome to</div><h1 class="tx" style="font-size:calc(var(--u)*${fs.toFixed(2)})">Mentorship Day</h1><div class="rule dr"></div>${lower}${FEAT}</div><div class="hellos" data-hellos style="--hs:calc(var(--u)*${ps.toFixed(2)});height:calc(var(--u)*${(ps * 2.6 * 3).toFixed(2)})"></div></div>`};
 };
+// The count: counts up from what it showed last (from 0 the first time), and words itself for one or many.
+const HERE = {shown:0};
+function hereTick(){
+  const el = document.querySelector('.slot [data-here]'); if (!el) return;
+  const to = S.n.here || 0, lab = el.parentNode.querySelector('[data-here-label]');
+  if (lab) { const t = to === 1 ? 'person is here' : 'people are here'; if (lab.textContent !== t) lab.textContent = t; }
+  if (el.dataset.to === String(to)) return;
+  const from = el.dataset.to === undefined ? (HERE.shown || 0) : +el.dataset.to; el.dataset.to = to;
+  if (still() || from === to) { el.textContent = to; HERE.shown = to; return; }
+  const t1 = performance.now(), step = t => { const f = Math.min(1, (t - t1) / M.x), e = 1 - Math.pow(1 - f, 3); el.textContent = Math.round(from + (to - from) * e); if (f < 1) requestAnimationFrame(step); else HERE.shown = to; };
+  requestAnimationFrame(step);
+}
+// Hellos: the newest 12 come with each state. New ones queue; at most three show at once, one new every
+// 0.7 seconds, each for 4 seconds, in the welcome scene while it is on screen. A hello reaches the wall within
+// seconds of being made, so one more than 30 seconds from the state's time is history, not news (after a reload,
+// a stale cached state, or a rehearsal clock that jumped). In other modes hellos go to the ticker only.
+const HELLO = {seen:new Set(), queue:[], live:[], leaving:new Set(), lastIn:0};
+function helloEvents(list, t, cached){
+  if (list.some(h => AR.test(h.f)) && !arReady()) loadAr(); // so an Arabic name is measured in its own font
+  list.slice().reverse().forEach(h => { const k = h.at + '|' + h.f; if (HELLO.seen.has(k)) return; HELLO.seen.add(k); if (cached || Math.abs(t - h.at) > 30000) return; HELLO.queue.push({f:h.f, came:Date.now()}); });
+  if (HELLO.queue.length > 12) HELLO.queue.splice(0, HELLO.queue.length - 12);
+}
+const welcomeShown = () => slotState.some(st => st.id === 'welcome');
+function helloTick(){
+  const now = Date.now(), box = document.querySelector('.slot [data-hellos]');
+  HELLO.live = HELLO.live.filter(h => { if (h.el.isConnected && now - h.at < 4000) return true; if (h.el.isConnected) helloOut(h); return false; });
+  HELLO.queue = HELLO.queue.filter(h => now - h.came < 60000);
+  if (!box || S.momentKey || !HELLO.queue.length || HELLO.live.length >= 3 || now - HELLO.lastIn < 700) return; // they wait while a moment covers the stage
+  // A leaving hello keeps its row until it is gone, so a new one never lands on top of it.
+  const used = new Set(HELLO.live.map(h => h.row).concat([...HELLO.leaving])); if (used.size >= 3) return; let row = 0; while (used.has(row)) row++;
+  const h = HELLO.queue.shift(), el = document.createElement('div');
+  el.className = 'hello'; el.style.setProperty('--row', row);
+  el.innerHTML = VARIANT === 'b' ? `<m-l class="ln"><m-i class="li">Welcome, <b><bdi>${esc(h.f)}</bdi></b></m-i></m-l>` : `<span class="hp lf">Welcome, <b><bdi>${esc(h.f)}</bdi></b></span>`;
+  box.appendChild(el); HELLO.lastIn = now; HELLO.live.push({el, at:now, row, f:h.f});
+  // A long name gets smaller type rather than being cut: the line shrinks to fit its column, to 60 percent at most.
+  const t = el.firstElementChild, room = box.clientWidth;
+  if (VARIANT !== 'b') { t.style.maxWidth = 'none'; t.style.width = 'max-content'; }
+  const need = VARIANT === 'b' ? t.querySelector('.li').offsetWidth : t.offsetWidth;
+  t.style.maxWidth = t.style.width = '';
+  // Measured widths can round a few pixels short of what the text needs, so keep 3 percent headroom.
+  if (need > room * .97) t.style.fontSize = (parseFloat(getComputedStyle(t).fontSize) * Math.max(.6, room * .95 / need)).toFixed(1) + 'px';
+  if (!still()) { if (VARIANT === 'b') riseLine(el.querySelector('.li'), 0); else unfold(el.querySelector('.hp'), 0); }
+}
+function helloOut(h){
+  const el = h.el, gone = () => { el.remove(); HELLO.leaving.delete(h.row); };
+  HELLO.leaving.add(h.row); el.classList.add('out');
+  if (still()) { gone(); return; }
+  const a = VARIANT === 'b' ? el.querySelector('.li').animate([{transform:'none'}, {transform:'translateY(-110%)'}], {duration:M.s, easing:M.io, fill:'forwards'}) : recede(el, M.e);
+  if (VARIANT === 'b') el.querySelector('.ln').classList.remove('ok');
+  a.finished.then(gone, gone);
+}
+setInterval(() => { hereTick(); helloTick(); }, 250);
 R.speaker = (c) => {
   const m = nowMin(); let i = S.speaker; if (i === null) { i = 0; SPEAKERS.forEach((s, j) => { if (m >= toMin(s.s)) i = j; }); }
   const sp = SPEAKERS[Math.max(0, Math.min(SPEAKERS.length - 1, i))];
-  return {title:'Opening', html:`<div class="speaker"><div><div class="k rv">On stage</div><div class="nm rv" style="font-size:calc(var(--u)*${Math.min(12, c.w / 8.5)})">${esc(sp.name)}</div><div class="rule rv"></div><div class="org rv">${esc(sp.org)}</div><div class="what rv">${esc(sp.what)}</div></div>
+  return {title:'Opening', html:`<div class="speaker"><div><div class="k tx">On stage</div><div class="nm tx" style="font-size:calc(var(--u)*${Math.min(12, c.w / 8.5)})">${esc(sp.name)}</div><div class="rule dr"></div><div class="org tx">${esc(sp.org)}</div><div class="what tx">${esc(sp.what)}</div></div>
     <div class="sl glass rv">${SPEAKERS.map((s, j) => `<div class="${j < i ? 'past' : (j === i ? 'on' : '')}"><b>${s.s}</b><div><strong>${esc(s.name)}</strong><span>${esc(s.org)}</span></div></div>`).join('')}<div><b>10:30</b><div><strong>Video Messages</strong><span>${VIDEOS.map(esc).join(' and ')}</span></div></div></div></div>`};
 };
-R.video = () => ({title:'Video Messages', html:`<div class="hero"><div class="k rv">Up on screen</div><h1 class="rv" style="font-size:calc(var(--u)*11)">Video Messages</h1><div class="rule rv"></div><p class="rv">${VIDEOS.map(esc).join(' and ')}</p></div>`});
+R.video = () => ({title:'Video Messages', html:`<div class="hero"><div class="k tx">Up on screen</div><h1 class="tx" style="font-size:calc(var(--u)*11)">Video Messages</h1><div class="rule dr"></div><p class="tx">${VIDEOS.map(esc).join(' and ')}</p></div>`});
 R.recap = (c) => {
   const m = nowMin(), close = S.mode === 'close', done = SESSIONS.filter(s => m >= toMin(BLOCKS[s.b-1].e)).length, booked = SLOTS.filter(x => x.status === 'Booked').length;
   const k = [[done, 'sessions delivered'], [advisorCount(), 'advisors'], [booked || SLOTS.length, booked ? 'one to ones booked' : 'one to one slots']]; if (S.checkedIn) k.push([S.checkedIn, 'people joined']); if (S.photos.length) k.push([S.photos.length, 'photos shared']); if (S.profiles.length) k.push([S.profiles.length, 'on the Networking Board']); k.splice(4);
-  return {title: close ? 'Thank you' : 'Lunch', html:`<div class="recap hero"><div class="k rv">${close ? 'Mentorship Day' : 'Lunch is served'}</div><h1 class="rv" style="font-size:calc(var(--u)*${Math.min(12, c.w / 8.5)})">${close ? 'Thank you for joining us' : 'Keep connecting'}</h1><div class="rule rv"></div>
-    <p class="rv" style="text-align:left">${close ? 'See you at the next one.' : 'In the Main Hall until 15:00.'} Share your day with ${esc(CONFIG.hashtag)}</p>
+  return {title: close ? 'Thank you' : 'Lunch', html:`<div class="recap hero"><div class="k tx">${close ? 'Mentorship Day' : 'Lunch is served'}</div><h1 class="tx" style="font-size:calc(var(--u)*${Math.min(12, c.w / 8.5)})">${close ? 'Thank you for joining us' : 'Keep connecting'}</h1><div class="rule dr"></div>
+    <p class="tx" style="text-align:left">${close ? 'See you at the next one.' : 'In the Main Hall until 15:00.'} Share your day with ${esc(CONFIG.hashtag)}</p>
     <div class="kpis rv">${k.map(x => `<div class="kpi"><b data-count="${x[0]}">0</b><span>${x[1]}</span></div>`).join('')}</div></div>`};
 };
-R.survey = (c) => ({title:'Your Feedback', html:`<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:calc(var(--u)*2.4);text-align:center"><div class="rv">${qrBox(CONFIG.links.survey, Math.min(24, c.w * .5), 'Survey<br>QR code')}</div><div class="rv" style="font-weight:700;font-size:calc(var(--u)*3.6);color:var(--red)">Tell us how it went</div><div class="rv muted" style="font-size:calc(var(--u)*1.9)">Two minutes, on your phone</div></div>`});
+R.survey = (c) => ({title:'Your Feedback', html:`<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:calc(var(--u)*2.4);text-align:center"><div class="rv">${qrBox(CONFIG.links.survey, Math.min(24, c.w * .5), 'Survey<br>QR code')}</div><div class="tx" style="font-weight:700;font-size:calc(var(--u)*3.6);color:var(--red)">Tell us how it went</div><div class="tx muted" style="font-size:calc(var(--u)*1.9)">Two minutes, on your phone</div></div>`});
 
 /* ============ Live system: phones and the operator remote ============ */
 const LIVE = {videos:DAY.videos.map(v => Object.assign({}, v))};
-Object.assign(S, {photos:[], profiles:[], snapV:'', pollQ:'', pollType:'words', pollOpts:[], pollTotal:0, pollOpen:true, remoteMode:null, pin:null, way:null, cfgAt:null, videoAt:null, annAt:null, annUntil:0, liveOk:false, skew:0});
-function applyState(d){
+Object.assign(S, {photos:[], profiles:[], links:[], takeaways:[], snapV:'', pollQ:'', pollId:'', pollType:'words', pollOpts:[], pollTotal:0, pollOpen:true, remoteMode:null, pin:null, way:null, cfgAt:null, videoAt:null, annAt:null, annUntil:0, liveOk:false, skew:0,
+  n:{here:0, board:0, links:0, photos:0, takeaways:0, answers:0}, interest:{}, hello:[], rx:null, phase:'', reh:false, flags:{}});
+// cfg.reloadAt is a version number. The wall reloads when it differs from the one seen in the first fresh
+// state after load, but never during a video or a moment. Each value causes one reload at most per session.
+const RELOAD = {seen:null, want:null};
+const ss = (k, v) => { try { if (v === undefined) return sessionStorage.getItem(k); sessionStorage.setItem(k, v); } catch(e) { return null; } };
+function checkReload(v){
+  v = String(v == null ? 0 : v);
+  if (RELOAD.seen === null) { RELOAD.seen = v; return; }
+  if (v === RELOAD.seen) { RELOAD.want = null; return; }
+  if (ss('md_reloaded') === v) { RELOAD.seen = v; return; }
+  RELOAD.want = v;
+}
+function busy(){ return !$('vid').classList.contains('hide') || !!S.momentKey; }
+function reloadPending(){ if (RELOAD.want === null || busy()) return; ss('md_reloaded', RELOAD.want); RELOAD.want = null; location.reload(); }
+function applyState(d, cached){
   if (d.t) S.skew = d.t - Date.now();
+  if (d.t && !cached && fakeBase === null) { const use = Math.abs(S.skew) > 15000; if (use !== CLOCK.use || (use && Math.abs(S.skew - CLOCK.skew) > 15000)) S.dataKey = ''; CLOCK.use = use; CLOCK.skew = S.skew; }
+  if (d.n) S.n = Object.assign({here:0, board:0, links:0, photos:0, takeaways:0, answers:0}, d.n);
+  S.interest = d.interest || {}; S.hello = d.hello || []; S.rx = d.rx || null; S.phase = d.phase || ''; S.reh = !!d.reh;
+  helloEvents(S.hello, d.t || Date.now(), cached);
   const p = d.poll;
-  if (p) { S.pollQ = p.q; S.pollType = p.type; S.pollOpen = !!p.open; S.pollTotal = p.total || 0; S.pollOpts = p.options || [];
+  if (p) { S.pollId = p.id; S.pollQ = p.q; S.pollType = p.type; S.pollOpen = !!p.open; S.pollTotal = p.total || 0; S.pollOpts = p.options || [];
     if (p.type === 'choice') { const m = Object.fromEntries(p.words || []); S.poll = S.pollOpts.map(o => [o, m[o] || 0]); } else S.poll = p.words || []; }
-  else { S.pollQ = ''; S.poll = []; S.pollTotal = 0; S.pollType = 'words'; }
+  else { S.pollId = ''; S.pollQ = ''; S.poll = []; S.pollTotal = 0; S.pollType = 'words'; }
+  if (!cached) answerEvents();
   if (d.videos && d.videos.length) LIVE.videos = d.videos;
-  const c = d.cfg || {}; if (c.at === S.cfgAt) return;
+  const c = d.cfg || {};
+  if (!cached) checkReload(c.reloadAt);
+  if (c.at === S.cfgAt) return;
   const first = S.cfgAt === null, srv = Date.now() + S.skew; S.cfgAt = c.at;
   const rm = c.mode && c.mode !== 'auto' ? c.mode : null;
   if (!first && (rm !== S.remoteMode || (c.pin || null) !== S.pin)) S.override = null;
-  S.remoteMode = rm; S.pin = c.pin || null; S.way = c.way || null;
+  S.remoteMode = rm; S.pin = c.pin || null; S.way = c.way || null; S.flags = c.flags || {};
   S.speaker = c.speaker == null ? null : c.speaker;
-  if (c.theme && c.theme !== S.theme) S.theme = c.theme;
+  // The remote's theme applies when it changes, so the latest of the remote and the T key wins.
+  if (c.theme && c.theme !== S.cfgTheme) { S.cfgTheme = c.theme; S.theme = c.theme; }
   setOverlay(c.overlay || null);
   if (c.ann && c.ann.at !== S.annAt) { S.annAt = c.ann.at; S.ann = c.ann.text; const left = c.ann.at + c.ann.secs * 1000 - srv; S.annUntil = first ? (left > 0 ? Date.now() + left : 0) : Date.now() + c.ann.secs * 1000; }
   if (!c.ann) { S.ann = ''; S.annUntil = 0; S.annAt = null; }
@@ -636,14 +885,14 @@ async function pullState(){
   catch(e) { S.liveOk = false; }
   setConn(); loop(false);
 }
-/* lists (photos, profiles) live in the snapshot. Fetched only when state.snapV changes, kept for offline */
-function applySnap(v, d){ S.snapV = v; S.photos = d.photos || []; S.profiles = d.profiles || []; }
+/* lists (photos, profiles, links, takeaways) live in the snapshot. Fetched only when state.snapV changes, kept for offline */
+function applySnap(v, d){ snapEvents(d); S.snapV = v; S.photos = d.photos || []; S.profiles = d.profiles || []; S.links = d.links || []; S.takeaways = d.takeaways || []; }
 async function pullSnap(v){
   if (S.snapBusy === v) return; S.snapBusy = v;
   try { const r = await fetch('/api/snap?v=' + encodeURIComponent(v)); if (!r.ok) throw 0; const d = await r.json(); applySnap(v, d); try { localStorage.setItem('md4_snap', JSON.stringify({v, d})); } catch(e) {} loop(false); }
   catch(e) {} finally { S.snapBusy = ''; }
 }
-function setConn(){ const ok = S.liveOk; $('conn').classList.toggle('live', ok); $('connTxt').innerHTML = (S.demo ? 'Demo data&nbsp; ' : '') + (ok ? 'Live' : 'Offline, saved data'); }
+function setConn(){ const ok = S.liveOk; $('conn').classList.toggle('live', ok); $('connTxt').innerHTML = (S.demo ? 'Demo data&nbsp; ' : '') + (ok ? 'Live' : 'Offline, saved data') + (S.reh ? '<b class="reh">Rehearsal</b>' : ''); }
 function setOverlay(o){ S.overlay = o; $('black').classList.toggle('hide', o !== 'black'); $('logo').classList.toggle('hide', o !== 'logo'); if (o === 'check') renderCheck(); $('check').classList.toggle('hide', o !== 'check'); }
 
 /* video, started from the remote */
@@ -665,14 +914,39 @@ function renderCheck(){
   const corner = (t, l) => `<b style="${t}:0;${l}:0;border-${t}:calc(var(--u)*1.2) solid #2F9CC3;border-${l}:calc(var(--u)*1.2) solid #2F9CC3"></b>`;
   $('check').innerHTML = `<div class="grid">${g.join('')}</div><div class="edge"></div>${corner('top','left')}${corner('top','right')}${corner('bottom','left')}${corner('bottom','right')}<div class="cross"></div>
     <div class="info glass"><strong>Screen check</strong><div>${W} x ${H} browser pixels</div><div>${Math.round(W * dpr)} x ${Math.round(H * dpr)} device pixels</div><div>Shape ${(W / H).toFixed(2)} to 1</div><div>Layout: ${L.wide ? 'ultra wide, with side panel' : (L.n > 1 ? L.n + ' columns' : 'one column')}</div>
+    <div id="ckFps"></div><div id="ckLite"></div>
     <div>The red frame and blue corners should sit exactly on the edges of the wall.</div><div style="font-size:calc(var(--u)*1.3);margin-top:calc(var(--u)*1)">This is the smallest text the screen uses. Check it is readable from the back of the hall.</div></div>`;
+  checkPerf();
 }
+// The live part of the screen check: frame rate and lite state, every half second while it shows.
+function checkPerf(){
+  const f = $('ckFps'), l = $('ckLite'); if (!f || $('check').classList.contains('hide')) return;
+  f.innerHTML = GOV.fps ? `Frame rate <b>${GOV.fps} fps</b>, ${GOV.avg.toFixed(1)} ms a frame` : 'Frame rate: measuring';
+  l.innerHTML = GOV.lite ? `Lite mode <b>on</b>: ${esc(GOV.why)}` : `Lite mode <b>off</b>${GOV.force === '0' ? ', held off by lite=0' : ', full effects'}`;
+}
+setInterval(checkPerf, 500);
 
 /* shared pieces */
 function emptyJoin(title, text, c){ const col = c.w < 70;
   return `<div style="flex:1;display:flex;align-items:center;justify-content:center;gap:calc(var(--u)*4);${col ? 'flex-direction:column;text-align:center' : ''}"><div class="rv">${qrBox(CONFIG.join, Math.min(24, Math.max(14, c.w * .3)), '')}</div>
-    <div class="rv" style="max-width:calc(var(--u)*54)"><div style="font-weight:700;font-size:calc(var(--u)*${col ? 3.6 : 4.6});line-height:1.05;color:var(--red);text-wrap:balance">${esc(title)}</div><div style="height:calc(var(--u)*.45);background:var(--teal);width:calc(var(--u)*12);margin:calc(var(--u)*1.8) ${col ? 'auto' : '0'} 0"></div><p style="font-size:calc(var(--u)*2.1);color:var(--ink2);line-height:1.4;margin-top:calc(var(--u)*1.8)">${esc(text)}</p></div></div>`; }
-function joinBlock(){ const el = $('join'); if (L.wide) { el.style.display = 'none'; return; } el.style.display = ''; el.innerHTML = `${qrBox(CONFIG.join, 9, '')}<div><b>Scan to join</b><span>Live poll, photo wall and the Networking Board</span></div>`; }
+    <div style="max-width:calc(var(--u)*54)"><div class="tx" style="font-weight:700;font-size:calc(var(--u)*${col ? 3.6 : 4.6});line-height:1.05;color:var(--red);text-wrap:balance">${esc(title)}</div><div class="dr" style="height:calc(var(--u)*.45);background:var(--teal);width:calc(var(--u)*12);margin:calc(var(--u)*1.8) ${col ? 'auto' : '0'} 0"></div><p class="tx" style="font-size:calc(var(--u)*2.1);color:var(--ink2);line-height:1.4;margin-top:calc(var(--u)*1.8)">${esc(text)}</p></div></div>`; }
+// The QR block (in the now zone, or in the rail on an ultra wide wall) says one line that fits the moment:
+// find your name until the coffee break, pick your session in a break before a block, meet your 3 people at
+// lunch. Times come from the program in day.js.
+function joinLine(){
+  const m = nowMin(), choose = PROGRAM.find(p => p.mode === 'choose'), lunch = PROGRAM.find(p => p.mode === 'lunch'), nb = nextBlock(m);
+  if (choose && m < toMin(choose.s)) return {b:'Scan and find your name'};
+  if (nb && phase(m).kind !== 'session' && toMin(nb.s) - m <= 20) return {b:`Scan to pick your ${nb.s} session`};
+  if (lunch && m >= toMin(lunch.s) && m < toMin(lunch.e) && S.flags.meet !== false) return {b:'Scan to meet your 3 people'};
+  return {b:'Scan to join', s:'Live poll, photo wall and the Networking Board'};
+}
+function joinBlock(){
+  const el = $('join'); if (L.wide) { el.style.display = 'none'; el.innerHTML = ''; el.dataset.k = ''; return; }
+  el.style.display = ''; const j = joinLine(), key = j.b + '|' + (j.s || '');
+  if (el.dataset.k === key) return; el.dataset.k = key;
+  el.innerHTML = `${qrBox(CONFIG.join, 9, '', 'ping')}<div><b class="tx">${esc(j.b)}</b>${j.s ? `<span>${esc(j.s)}</span>` : ''}</div>`;
+  reveal(el, !!S.started);
+}
 
 /* Networking Board */
 function tagBalance(){ const m = {}; (S.profiles || []).forEach(p => { (p.looking || []).forEach(t => { (m[t] = m[t] || {t, lk:0, of:0}).lk++; }); (p.offer || []).forEach(t => { (m[t] = m[t] || {t, lk:0, of:0}).of++; }); }); return Object.values(m).sort((a, b) => (b.lk + b.of) - (a.lk + a.of)); }
@@ -680,16 +954,16 @@ function matchesFor(p){ const out = []; (S.profiles || []).forEach(q => { if (q.
 let meetI = 0;
 R.meet = (c) => {
   const list = S.profiles || [];
-  if (!list.length) return {title:'Networking Board', html:emptyJoin('Join the Networking Board', 'Add your name, company and what you are looking for. Your card appears here and helps the right people find you.', c)};
+  if (!list.length) return {title:'Networking Board', state:'join', html:emptyJoin('Join the Networking Board', 'Add your name, company and what you are looking for. Your card appears here and helps the right people find you.', c)};
   const p = list[meetI % list.length], mt = matchesFor(p), wide = c.w >= 76, bal = tagBalance().slice(0, wide ? 7 : 4), mx = Math.max(1, ...bal.map(x => Math.max(x.lk, x.of)));
-  const card = `<div class="card glass rv"><div style="display:flex;align-items:center;gap:calc(var(--u)*2)"><div class="ini">${esc(initials(p.name))}</div><div style="min-width:0"><div class="nm">${esc(p.name)}</div><div class="co">${esc([p.role, p.company].filter(Boolean).join(', '))}</div></div></div>
+  const card = `<div class="card glass rv"><div style="display:flex;align-items:center;gap:calc(var(--u)*2)"><div class="ini">${esc(initials(p.name))}</div><div style="min-width:0"><div class="nm" dir="auto">${esc(p.name)}</div><div class="co" dir="auto">${esc([p.role, p.company].filter(Boolean).join(', '))}</div></div></div>
     ${(p.looking || []).length ? `<div class="tagrow"><em>Looking for</em>${p.looking.map(t => `<span class="tg lk">${esc(t)}</span>`).join('')}</div>` : ''}
     ${(p.offer || []).length ? `<div class="tagrow"><em>Can help with</em>${p.offer.map(t => `<span class="tg of">${esc(t)}</span>`).join('')}</div>` : ''}
-    <div class="match">${mt.length ? `Good people to meet: ${mt.map(x => `<b>${esc(x.q.name)}</b>`).join(', ')}` : 'Scan the code to add yourself and find your matches.'}</div></div>`;
+    <div class="match">${mt.length ? `Good people to meet: ${mt.map(x => `<b><bdi>${esc(x.q.name)}</bdi></b>`).join(', ')}` : 'Scan the code to add yourself and find your matches.'}</div></div>`;
   const balH = `<div class="bal rv"><h4>Who is looking for what</h4>${bal.map(x => `<div class="r"><b>${esc(x.t)}</b><div class="bars"><i class="lk" style="width:${(x.lk / mx * 100).toFixed(0)}%"></i><i class="of" style="width:${(x.of / mx * 100).toFixed(0)}%"></i></div></div>`).join('')}
     <div class="legend" style="margin-top:calc(var(--u)*.8)"><span><i class="n"></i>Looking for</span><span><i style="background:var(--teal);border-color:var(--teal)"></i>Can help</span></div></div>`;
   const others = list.filter(x => x.id !== p.id).slice(0, wide ? 12 : 5);
-  const names = `<div class="names rv"><b>${list.length} ${list.length === 1 ? 'person' : 'people'} on the board</b>${others.map(x => `<span>${esc(x.name)}</span>`).join('')}</div>`;
+  const names = `<div class="names rv"><b>${list.length} ${list.length === 1 ? 'person' : 'people'} on the board</b>${others.map(x => `<span dir="auto">${esc(x.name)}</span>`).join('')}</div>`;
   return {title:'Networking Board', html: wide
     ? `<div class="meet" style="grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);grid-template-rows:auto auto;align-content:center">${card}${balH}<div style="grid-column:1/-1">${names}</div></div>`
     : `<div class="meet" style="grid-template-rows:auto minmax(0,1fr)">${card}${balH}</div>`, tick:7, onTick:() => { meetI++; return list.length > 1; }};
@@ -698,45 +972,41 @@ R.meet = (c) => {
 /* Photo Wall */
 let photoI = 0;
 const phUrl = id => '/api/photo/' + encodeURIComponent(id);
-function phCap(x){ if (!x.caption && !x.name) return ''; return `<div class="cap">${x.caption ? `<b>${esc(x.caption)}</b>` : ''}${x.name ? `<span>${x.caption ? 'Shared by ' : 'Shared by '}${esc(x.name)}</span>` : ''}</div>`; }
+function phCap(x){ if (!x.caption && !x.name) return ''; return `<div class="cap">${x.caption ? `<b dir="auto">${esc(x.caption)}</b>` : ''}${x.name ? `<span>Shared by <bdi>${esc(x.name)}</bdi></span>` : ''}</div>`; }
 R.photos = (c) => {
   const list = S.photos || [];
-  if (!list.length) return {title:'Photo Wall', html:emptyJoin('Share your photos of the day', 'Scan the code, take a photo and send it. The team approves every photo before it appears here.', c)};
-  const f = list[photoI % list.length], tick = {tick:7, onTick:() => { photoI++; return list.length > 1; }};
+  if (!list.length) return {title:'Photo Wall', state:'join', html:emptyJoin('Share your photos of the day', 'Scan the code, take a photo and send it. The team approves every photo before it appears here.', c)};
+  // The scene stays 4 seconds a photo (20 to 45 seconds, see dwellFor), so the big photo changes every 4 to 7 seconds.
+  const f = list[photoI % list.length], tick = {tick:Math.max(4, Math.min(7, Math.max(20, Math.min(45, 4 * list.length)) / list.length)), onTick:() => { photoI++; return list.length > 1; }};
   if (c.w < 76 || list.length < 3) return {title:'Photo Wall', html:`<div class="pw"><div class="ph big rv"><img src="${phUrl(f.id)}" alt="">${phCap(f)}</div></div>`, ...tick};
   const n = Math.min(4, list.length - 1), others = []; for (let i = 1; i <= n; i++) others.push(list[(photoI + i) % list.length]);
   const cols = n >= 3 ? '2fr 1fr 1fr' : '2fr 1fr';
-  return {title:'Photo Wall', html:`<div class="pw" style="grid-template-columns:${cols};grid-template-rows:1fr 1fr"><div class="ph big rv" style="grid-row:1/3"><img src="${phUrl(f.id)}" alt="">${phCap(f)}</div>${others.map(x => `<div class="ph rv"><img src="${phUrl(x.id)}" alt="">${x.name ? `<div class="cap sm"><span>${esc(x.name)}</span></div>` : ''}</div>`).join('')}</div>`, ...tick};
+  return {title:'Photo Wall', html:`<div class="pw" style="grid-template-columns:${cols};grid-template-rows:1fr 1fr"><div class="ph big rv" style="grid-row:1/3"><img src="${phUrl(f.id)}" alt="">${phCap(f)}</div>${others.map(x => `<div class="ph rv"><img src="${phUrl(x.id)}" alt="">${x.name ? `<div class="cap sm"><span dir="auto">${esc(x.name)}</span></div>` : ''}</div>`).join('')}</div>`, ...tick};
 };
 
 /* Live Numbers */
+// Live Numbers: the numbers that grow during the day (above zero only), filled up with facts of the day.
 R.pulse = (c) => {
-  const booked = SESSIONS.reduce((a, s) => a + (s.booked || 0), 0), oo = SLOTS.filter(x => x.status === 'Booked').length, k = [];
-  if (S.checkedIn) k.push([S.checkedIn, 'people checked in']);
-  if (booked) k.push([booked, 'session seats booked']);
-  if (oo) k.push([oo, 'one to ones booked']);
-  k.push([S.pollTotal || 0, 'poll answers']);
-  k.push([(S.photos || []).length, 'photos shared']);
-  k.push([(S.profiles || []).length, 'on the Networking Board']);
+  const live = liveNumbers(), k = live.slice(0, 6);
   if (k.length < 6) k.push([advisorCount(), 'advisors today']);
   if (k.length < 6) k.push([SESSIONS.length, 'sessions today']);
-  const cols = c.w >= 76 ? 3 : 2;
-  return {title:'Live Numbers', html:`<div class="pulse" style="grid-template-columns:repeat(${cols},minmax(0,1fr))">${k.slice(0, cols * 2).map(x => `<div class="kpi rv"><b data-count="${x[0]}">0</b><span>${x[1]}</span><i></i></div>`).join('')}</div>`};
+  const cols = c.w >= 76 && k.length > 4 ? 3 : 2;
+  return {title:'Live Numbers', html:`<div class="pulse" style="grid-template-columns:repeat(${cols},minmax(0,1fr))">${k.slice(0, cols * 2).map(x => `<div class="kpi rv"><b data-count="${x[0]}">0</b><span>${x[1]}</span><i class="dr"></i></div>`).join('')}</div>`};
 };
 
 /* This Way */
 const DEG = {'right':0, 'down right':45, 'down':90, 'down left':135, 'left':180, 'up left':225, 'up':270, 'up right':315};
 const ARROW = '<svg viewBox="0 0 100 100" aria-hidden="true"><path d="M18,50 H78 M56,27 L79,50 L56,73" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-const WAYS = [{k:'registration', t:'Registration', s:'Badges and one to one bookings'}, {k:'rooms', t:'Rooms A, B and C', s:'Sessions'}, {k:'oneToOnes', t:'One to Ones', s:'Small Rooms 1 and 3', blue:true}];
 R.way = (c) => {
-  const items = WAYS.filter(w => S.way && S.way[w.k]), row = c.w >= 165;
-  return {title:'This Way', html:`<div class="way" style="grid-template-columns:${row ? `repeat(${items.length},minmax(0,1fr))` : '1fr'}"><div class="here rv" style="grid-column:1/-1">You are in the Main Hall</div>${items.map(w => `<div class="wy glass rv"><div class="arr leaf ${w.blue ? 'blue' : ''}"><i style="rotate:${DEG[S.way[w.k]] || 0}deg">${ARROW}</i></div><div style="min-width:0"><b>${esc(w.t)}</b><span>${esc(w.s)}</span></div></div>`).join('')}</div>`};
+  const items = wayItems(), row = c.w >= 165;
+  return {title:'This Way', html:`<div class="way" style="grid-template-columns:${row ? `repeat(${items.length},minmax(0,1fr))` : '1fr'}"><div class="here rv" style="grid-column:1/-1">You are in the Main Hall</div>${items.map(w => `<div class="wy glass rv"><div class="arr leaf lf ${w.blue ? 'blue' : ''}"><i style="rotate:${DEG[S.way[w.k]] || 0}deg">${ARROW}</i></div><div style="min-width:0"><b>${esc(w.t)}</b><span>${esc(w.s)}</span></div></div>`).join('')}</div>`};
 };
 
 /* ============ Rail ============ */
 function renderRail(){
   if (!L.wide) return;
-  const m = nowMin(), o = openSlots(m).length, booked = SLOTS.filter(x => x.status === 'Booked').length, kp = [];
+  const m = nowMin(), o = openSlots(m).length, booked = SLOTS.filter(x => x.status === 'Booked').length, kp = [], jl = joinLine();
+  if (S.n.here) kp.push([S.n.here, 'people here']);
   if (S.checkedIn) kp.push([S.checkedIn, 'checked in']);
   kp.push([booked, 'one to ones booked']);
   if (S.pollTotal) kp.push([S.pollTotal, 'poll answers']);
@@ -746,57 +1016,257 @@ function renderRail(){
   const wifi = S.wifi.name ? `<div class="mod glass"><h3>WiFi</h3><div style="font-size:calc(var(--u)*2);font-weight:700">${esc(S.wifi.name)}</div><div class="muted" style="font-size:calc(var(--u)*1.7);margin-top:calc(var(--u)*.4)">Password ${esc(S.wifi.pass)}</div></div>` : '';
   $('rail').innerHTML = `<div class="mod glass"><h3>One to Ones <em>${o}</em></h3>${chipsHtml(m, true)}<div class="foot">${o} open. Book at the registration desk.</div></div>
     <div class="mod glass"><h3>Right now</h3><div class="kpis">${kp.slice(0, 4).map(x => `<div class="kpi"><b data-count="${x[0]}">${x[0]}</b><span>${x[1]}</span></div>`).join('')}</div></div>
-    <div class="mod glass"><div class="qrrow">${qrBox(CONFIG.join, 11.5, '')}<div class="qrtxt"><b>Scan to join</b><span>Live poll, photo wall and the Networking Board</span></div></div></div>${wifi}`;
+    <div class="mod glass"><div class="qrrow">${qrBox(CONFIG.join, 11.5, '', 'ping')}<div class="qrtxt"><b>${esc(jl.b)}</b>${jl.s ? `<span>${esc(jl.s)}</span>` : ''}</div></div></div>${wifi}`;
   $('rail').querySelectorAll('.rv').forEach(e => e.classList.remove('rv'));
   countUps($('rail'));
+}
+
+/* ============ Motion ============ */
+// One set of tokens, one treatment per kind of thing, used everywhere (docs/PLAN.md 7.2):
+//   scene change    the old scene recedes (to scale .97 and out), the new one comes forward (scale 1.06 to 1, a small rise)
+//   blocks   .rv    come forward the same way, 520 ms
+//   text     .tx    each line rises from behind its own clipped edge. Text never fades in
+//   leaves   .lf    leaf pills unfold from their square corner (bottom right)
+//   rules    .dr    blue rules draw from the left
+//   numbers         count up ([data-count])
+// Stagger 55 ms per item, up to 14 items. No bounce. Transform, opacity and clip only; blur only on a big
+// photo, never in lite. With prefers-reduced-motion everything simply appears.
+const M = {s:240, e:520, x:900, stag:55, max:14, out:'cubic-bezier(.2,.8,.2,1)', io:'cubic-bezier(.65,0,.25,1)'};
+const RM = matchMedia('(prefers-reduced-motion: reduce)');
+const still = () => RM.matches;
+// Splits the text of each element into the lines it has now, each line in its own clip (.ln > .li).
+// An element with child elements rises as one block. Three passes, so the page lays out once for all.
+function splitLines(els){
+  const plain = [];
+  els.forEach(el => {
+    if (el.dataset.ln) return; el.dataset.ln = '1';
+    const t = el.textContent; if (!t.trim()) return;
+    if (el.children.length) { el.innerHTML = `<m-l class="ln"><m-i class="li lb">${el.innerHTML}</m-i></m-l>`; return; }
+    plain.push(el); el.innerHTML = t.trim().split(/\s+/).map(w => `<m-w>${esc(w)}</m-w>`).join(' ');
+  });
+  const lines = plain.map(el => { const out = []; let top = null; [...el.children].forEach(w => { const y = w.offsetTop; if (top === null || y - top > 2) { out.push([]); top = y; } out[out.length - 1].push(w.textContent); }); return out; });
+  plain.forEach((el, i) => { el.innerHTML = lines[i].map(l => `<m-l class="ln"><m-i class="li">${esc(l.join(' '))}</m-i></m-l>`).join(''); });
+}
+const lift = a => { const ln = a.effect.target.parentNode; a.finished.then(() => ln.classList.add('ok'), () => {}); };
+function riseLine(li, delay, dur){ const a = li.animate([{transform:'translateY(110%)'}, {transform:'none'}], {duration:dur || M.e, delay, easing:M.out, fill:'backwards'}); lift(a); return a; }
+function forward(el, delay, dur){ const big = !GOV.lite && el.classList.contains('big'); return el.animate([Object.assign({opacity:0, transform:`translateY(${(U * .8).toFixed(1)}px) scale(1.06)`}, big ? {filter:'blur(8px)'} : {})], {duration:dur || M.e, delay, easing:M.out, fill:'backwards'}); }
+function recede(el, dur){ return el.animate([{opacity:1, transform:'none'}, {opacity:0, transform:'scale(.97)'}], {duration:dur || M.e, easing:M.io, fill:'forwards'}); }
+function unfold(el, delay){ return el.animate([{clipPath:'circle(0% at 100% 100%)'}, {clipPath:'circle(150% at 100% 100%)'}], {duration:M.e, delay, easing:M.out, fill:'backwards'}); }
+function drawRule(el, delay){ return el.animate([{transform:'scaleX(0)', transformOrigin:'0 50%'}, {transform:'scaleX(1)', transformOrigin:'0 50%'}], {duration:M.e, delay, easing:M.out, fill:'backwards'}); }
+// Plays the entrance of everything marked inside root, in document order, with the shared stagger.
+function reveal(root, animate){
+  if (!animate || still()) { root.querySelectorAll('.ln').forEach(l => l.classList.add('ok')); return; }
+  splitLines([...root.querySelectorAll('.tx')]);
+  let i = 0; const next = () => Math.min(i++, M.max) * M.stag;
+  root.querySelectorAll('.rv,.lf,.dr,.li').forEach(el => {
+    const c = el.classList;
+    if (c.contains('li')) riseLine(el, next());
+    else if (c.contains('lf')) unfold(el, next());
+    else if (c.contains('dr')) drawRule(el, next());
+    else forward(el, next());
+  });
+}
+// The slot title: the old one rises out, the new one rises in from behind the same edge.
+function setTitle(h2, text, animate){
+  if (h2.dataset.t === text) return; const had = h2.dataset.t !== undefined; h2.dataset.t = text;
+  const put = anim => { h2.innerHTML = `<m-l class="ln${anim ? '' : ' ok'}"><m-i class="li">${esc(text)}</m-i></m-l>`; if (anim) riseLine(h2.querySelector('.li'), 0); };
+  if (!animate || still() || !had) { put(animate && !still()); return; }
+  const old = h2.querySelector('.li'); if (!old) { put(true); return; }
+  old.parentNode.classList.remove('ok');
+  const g = h2.dataset.g = (+h2.dataset.g || 0) + 1;
+  old.animate([{transform:'none'}, {transform:'translateY(-110%)'}], {duration:M.s, easing:M.io, fill:'forwards'}).finished.then(() => { if (+h2.dataset.g === g) put(true); }, () => {});
+}
+
+/* ============ The director ============ */
+// Decides what each slot shows next (nextFor). In order:
+//  1. A scene held from the remote or the URL wins: plan() then gives one pinned slot.
+//  2. The clock, when the wall runs by itself: from 10 minutes before a block the primary slot holds
+//     Choose Your Sessions for that block, and during a block it holds Rooms. With a single slot the held
+//     scene comes back after every other scene.
+//  3. A bump: a new photo, three new poll answers within 10 seconds, a new connection or a new takeaway puts
+//     its scene at the front of one secondary slot, once the current scene has shown for 8 seconds. Each
+//     scene bumps at most once per 90 seconds, and not while it is on screen already.
+//  4. Otherwise the next scene of the slot that has content. Photo Wall and Networking Board with nothing to
+//     show become a join prompt, at most once in four turns of the slot.
+// It never shows a scene without content. Dwell follows content: photos 4 seconds a photo within 20 to 45,
+// the poll longer while answers arrive.
+const DIR = {log:[], last:{}, photoIds:null, links:null, tkIds:null, ans:[], pollId:null, pollTotal:0};
+const WAYS = [{k:'registration', t:'Registration', s:'Badges and one to one bookings'}, {k:'rooms', t:'Rooms A, B and C', s:'Sessions'}, {k:'oneToOnes', t:'One to Ones', s:'Small Rooms 1 and 3', blue:true}];
+const wayItems = () => WAYS.filter(w => S.way && S.way[w.k]);
+// Numbers that grow during the day, above zero only. Live Numbers needs three of them.
+function liveNumbers(){
+  const n = S.n || {}, booked = SESSIONS.reduce((a, s) => a + (s.booked || 0), 0), oo = SLOTS.filter(x => x.status === 'Booked').length;
+  return [[n.here, 'people here'], [S.checkedIn, 'people checked in'], [booked, 'session seats booked'], [oo, 'one to ones booked'], [n.answers || S.pollTotal, 'poll answers'],
+    [n.photos || S.photos.length, 'photos shared'], [n.board || S.profiles.length, 'on the Networking Board'], [n.links, 'connections made'], [n.takeaways, 'takeaways shared']].filter(x => +x[0] > 0);
+}
+// 'yes': has content. 'join': empty, but can show as an invitation to join. 'no': not now.
+function content(id){
+  switch (id) {
+    case 'way': return wayItems().length ? 'yes' : 'no';
+    case 'pulse': return liveNumbers().length >= 3 ? 'yes' : 'no';
+    case 'photos': return S.photos.length ? 'yes' : 'join';
+    case 'meet': return S.profiles.length ? 'yes' : 'join';
+    case 'poll': { if (!S.pollQ) return 'no'; const has = S.pollType === 'choice' ? S.pollTotal > 0 : (S.pollTotal > 0 || S.poll.length > 0); return has ? 'yes' : (S.pollOpen ? 'join' : 'no'); }
+    case 'board': { const m = nowMin(); return SLOTS.some(x => toMin(x.e) > m) ? 'yes' : 'no'; }
+    case 'voices': return (S.takeaways || []).length ? 'yes' : 'no';
+    default: return R[id] ? 'yes' : 'no';
+  }
+}
+const autoRun = () => !S.override && !S.remoteMode && !S.sheetScene && !(P.get('scene') || S.pin);
+function holdNow(){
+  if (!autoRun()) return null; const m = nowMin();
+  for (const b of BLOCKS) { const s = toMin(b.s); if (m >= s - 10 && m < s) return {id:'choose', b}; if (m >= s && m < toMin(b.e)) return {id:'rooms', b}; }
+  return null;
+}
+function dwellFor(st){
+  if (st.id === 'photos' && S.photos.length) return Math.max(20, Math.min(45, 4 * S.photos.length));
+  if (st.id === 'poll') return Math.min(40, dwell('poll') + (st.extra || 0));
+  return dwell(st.id);
+}
+function nextFor(st){
+  if (st.role === 'pinned') return st.scenes[0];
+  const hold = st.role === 'secondary' ? null : holdNow();
+  if (st.role === 'primary' && hold) return hold.id;
+  if (st.role === 'single' && hold && st.id !== hold.id) return hold.id;
+  if (st.bump) { const b = st.bump; st.bump = null; if (b !== st.id && content(b) !== 'no') return b; }
+  const list = st.scenes.filter(id => !(hold && id === hold.id)), n = list.length;
+  if (!n) return hold ? hold.id : st.scenes[0];
+  let i = list.indexOf(st.id); if (i < 0 && st.last) i = list.indexOf(st.last);
+  for (let k = 1; k <= n; k++) { const id = list[(i + k + n) % n], c = content(id); if (c === 'yes' || (c === 'join' && st.turn - st.joinAt >= 4)) return id; }
+  // Nothing new qualifies: keep the current scene if it has content, else an invitation, else the advisors.
+  if (st.id && content(st.id) === 'yes') return st.id;
+  return list.find(id => content(id) === 'join') || (hold ? hold.id : 'advisors');
+}
+function go(st, id, why){
+  const c = content(id);
+  DIR.log.push({at:Date.now(), slot:slotState.indexOf(st), from:st.id, to:id, why, content:c}); if (DIR.log.length > 300) DIR.log.splice(0, 100);
+  st.turn++; if (c === 'join') st.joinAt = st.turn;
+  const hold = holdNow(); if (!(hold && hold.id === id)) st.last = id;
+  st.id = id; st.since = Date.now(); st.extra = 0;
+  showScene(st, true);
+}
+// Nothing else to show: the scene stays for another round. That is a turn too, so an invitation to join can
+// still come once in four turns when one scene is all a slot has.
+function stay(st, why){
+  st.turn++; st.since = Date.now();
+  DIR.log.push({at:st.since, slot:slotState.indexOf(st), from:st.id, to:st.id, why:why + ', stays', content:content(st.id)}); if (DIR.log.length > 300) DIR.log.splice(0, 100);
+}
+// Puts a scene at the front of one secondary slot (or the single slot). Returns the slot, or null.
+function bump(id, why){
+  const now = Date.now();
+  if (now - (DIR.last[id] || 0) < 90000) return null;
+  if (slotState.some(st => st.id === id)) return null;
+  const st = slotState.find(x => (x.role === 'secondary' || x.role === 'single') && x.scenes.includes(id)); if (!st) return null;
+  DIR.last[id] = now; st.bump = id;
+  DIR.log.push({at:now, slot:slotState.indexOf(st), bump:id, why});
+  return st;
+}
+// What changed in the data: new photos, connections and takeaways in a snap, answers in a state.
+function snapEvents(d){
+  const ids = new Set((d.photos || []).map(p => p.id)), tk = new Set((d.takeaways || []).map(t => t.id)), links = (d.links || []).length;
+  if (DIR.photoIds && [...ids].some(x => !DIR.photoIds.has(x))) bump('photos', 'new photo');
+  if (DIR.links !== null && links > DIR.links) bump('meet', 'new connection');
+  if (DIR.tkIds && [...tk].some(x => !DIR.tkIds.has(x))) bump('voices', 'new takeaway');
+  DIR.photoIds = ids; DIR.links = links; DIR.tkIds = tk;
+}
+function answerEvents(){
+  const now = Date.now();
+  if (S.pollId !== DIR.pollId) { DIR.pollId = S.pollId; DIR.pollTotal = S.pollTotal; DIR.ans = []; return; }
+  const d = S.pollTotal - DIR.pollTotal; DIR.pollTotal = S.pollTotal; if (d <= 0) return;
+  for (let k = 0; k < Math.min(d, 20); k++) DIR.ans.push(now);
+  DIR.ans = DIR.ans.filter(t => now - t <= 10000);
+  slotState.forEach(st => { if (st.id === 'poll') st.extra = Math.min(20, (st.extra || 0) + 4); });
+  if (DIR.ans.length >= 3 && bump('poll', DIR.ans.length + ' answers in 10 seconds')) DIR.ans = [];
 }
 
 /* ============ Rendering engine ============ */
 const slotState = [];
 function buildStage(){
-  const p = plan(), key = S.mode + '|' + L.n + '|' + L.wide + '|' + p.map(a => a.join(',')).join('/');
+  const p = plan(), key = S.mode + '|' + L.n + '|' + L.wide + '|' + p.map(a => a.role + ':' + a.scenes.join(',')).join('/');
   if (key === S.plan) return false; S.plan = key;
-  const stage = $('stage'), mom = $('moment');
+  const stage = $('stage');
   stage.querySelectorAll('.slot').forEach(s => s.remove()); slotState.length = 0;
-  p.forEach((scenes, i) => {
+  p.forEach((a, i) => {
     const el = document.createElement('section'); el.className = 'slot'; el.style.flex = i === 0 ? (p.length > 1 ? '1.55 1 0' : '1 1 0') : '1 1 0';
     el.innerHTML = `<div class="sh"><h2></h2><div class="pager"></div></div><div class="shrule"></div><div class="sb"></div>`;
-    stage.insertBefore(el, mom);
-    slotState.push({el, scenes, idx:0, since:Date.now(), sub:Date.now(), id:null});
+    stage.appendChild(el);
+    slotState.push({el, role:a.role, scenes:a.scenes, id:null, since:Date.now(), sub:Date.now(), turn:0, joinAt:-99, bump:null, last:null, extra:0, gen:0});
   });
-  slotState.forEach(s => showScene(s, true));
+  slotState.forEach(st => go(st, nextFor(st), 'start'));
   return true;
 }
-function ctxFor(st){ return {w: st.el.clientWidth / U, h: st.el.clientHeight / U}; }
-function showScene(st, animate){
-  const id = st.scenes[st.idx % st.scenes.length]; st.id = id; st.sub = Date.now();
-  const res = R[id](ctxFor(st)); st.res = res;
-  const h2 = st.el.querySelector('h2'), pg = st.el.querySelector('.pager'), sb = st.el.querySelector('.sb');
+// The tabs beside the slot title: the scenes of this slot that have something to show now. When they do not
+// fit beside the title, the ones furthest ahead drop out; when fewer than two names fit, slim segments show
+// instead, one per scene, the current one filling as it shows.
+const pagerTabs = st => st.role === 'pinned' || st.role === 'primary' ? [] : (st.scenes.includes(st.id) ? [] : [st.id]).concat(st.scenes.filter(id => id === st.id || content(id) !== 'no'));
+function pagerFor(st){
+  const pg = st.el.querySelector('.pager');
+  const tabs = pagerTabs(st); st.tabsKey = st.id + '|' + tabs.join();
+  if (tabs.length < 2) { pg.innerHTML = ''; return; }
+  pg.innerHTML = tabs.map(id => `<span class="${id === st.id ? 'on' : ''}">${TITLES[id]}</span>`).join('');
+  const cv = document.createElement('canvas').getContext('2d'); cv.font = `700 ${(U * 3.4).toFixed(1)}px SS3`;
+  const room = st.el.clientWidth - cv.measureText(st.res ? st.res.title : '').width - U * 4;
+  const spans = [...pg.children], w = spans.map(x => x.offsetWidth), gap = U * 1.8, cur = Math.max(0, tabs.indexOf(st.id));
+  let total = w.reduce((a, b) => a + b, 0) + gap * (w.length - 1);
+  const n = spans.length, order = spans.map((_, i) => i).filter(i => i !== cur).sort((a, b) => (b - cur + n) % n - (a - cur + n) % n);
+  let left = n;
+  for (const i of order) { if (total <= room) break; spans[i].style.display = 'none'; total -= w[i] + gap; left--; }
+  if (total > room || left < 2) pg.innerHTML = `<div class="segs">${tabs.map(id => `<span class="${id === st.id ? 'on' : ''}"></span>`).join('')}</div>`;
+}
+// w and h in U: the slot width, and the height left for the scene body under the slot header.
+function ctxFor(st){ const sb = st.el.querySelector('.sb'); return {w: st.el.clientWidth / U, h: (sb ? sb.clientHeight : st.el.clientHeight) / U}; }
+function showScene(st, animate, restart){
+  const id = st.id; st.sub = Date.now();
+  const h2 = st.el.querySelector('h2'), pg = st.el.querySelector('.pager'), sb = st.el.querySelector('.sb'), rule = st.el.querySelector('.shrule');
   const bare = ['welcome','speaker','video','recap'].includes(id);
   st.el.querySelector('.sh').style.visibility = bare && st.scenes.length === 1 ? 'hidden' : '';
-  st.el.querySelector('.shrule').style.display = bare ? 'none' : '';
-  h2.textContent = res.title; pg.style.setProperty('--dwell', dwell(id) + 's');
-  pg.innerHTML = st.scenes.length > 1 ? st.scenes.map((s, i) => `<span class="${i === st.idx % st.scenes.length ? 'on' : ''}">${TITLES[s]}</span>`).join('') : '';
-  const paint = () => { sb.innerHTML = res.html; if (res.after) res.after(sb); countUps(sb); reveal(sb, animate); };
-  if (animate && sb.children.length) { sb.classList.add('out'); setTimeout(() => { sb.classList.remove('out'); paint(); }, 380); } else paint();
+  rule.style.display = bare ? 'none' : '';
+  if (!h2.textContent) h2.textContent = TITLES[id] || ' '; // so the header has its height before the scene measures its room
+  const res = R[id](ctxFor(st)); st.res = res;
+  animate = animate && !still();
+  setTitle(h2, res.title, animate);
+  pagerFor(st);
+  // Scene change: the old scene recedes, then the new one comes forward and its parts arrive in order.
+  const g = st.gen = (st.gen || 0) + 1;
+  const paint = () => {
+    if (st.exit) { st.exit.cancel(); st.exit = null; }
+    sb.innerHTML = res.html; st.key = sceneKey(res); if (res.after) res.after(sb); countUps(sb);
+    if (animate) { sb.animate([{opacity:0, transform:`translateY(${(U * 1.2).toFixed(1)}px) scale(1.06)`}, {opacity:1, transform:'none'}], {duration:M.x, easing:M.out, fill:'backwards'}); if (!bare) drawRule(rule, 120); }
+    reveal(sb, animate);
+  };
+  if (animate && sb.children.length && !restart) { if (st.exit) st.exit.cancel(); st.exit = recede(sb, 420); st.exit.finished.then(() => { if (st.gen === g) paint(); }, () => {}); }
+  else paint();
 }
-function reveal(root, animate){
-  root.querySelectorAll('.rv').forEach((e, i) => { if (!animate || matchMedia('(prefers-reduced-motion: reduce)').matches) { e.style.opacity = 1; return; }
-    e.animate([{opacity:0, transform:`translateY(${U * 2.4}px)`, filter:'blur(4px)'}, {opacity:1, transform:'none', filter:'blur(0)'}], {duration:820, delay:Math.min(i, 14) * 65, easing:'cubic-bezier(.2,.8,.2,1)', fill:'forwards'}); });
+// What a scene shows, as a string: its HTML, plus what its after step draws (the poll's words).
+const sceneKey = res => res.key || res.html;
+// Data changed while a scene shows: repaint it in place, only when what it shows changed. When its title
+// changes, the scene is in a new state (a session ended, a poll closed), so it enters again as a change.
+// Fresh data in the first 1.5 seconds of a scene (the first state answer after a load) restarts its entrance,
+// so the entrance is never cut off by a repaint.
+function refreshScenes(){
+  slotState.forEach(st => {
+    if (!st.id || st.exit) return;
+    const res = R[st.id](ctxFor(st)), h2 = st.el.querySelector('h2');
+    if ((h2.dataset.t !== undefined && h2.dataset.t !== res.title) || (st.res && (st.res.state || '') !== (res.state || ''))) { showScene(st, true); return; }
+    if (sceneKey(res) === st.key) { st.res = res; return; }
+    if (Date.now() - st.sub < 1500) { showScene(st, true, true); return; }
+    st.res = res; const sb = st.el.querySelector('.sb');
+    sb.innerHTML = res.html; st.key = sceneKey(res); if (res.after) res.after(sb); countUps(sb); reveal(sb, false);
+  });
+  renderRail();
 }
-function refreshScenes(){ slotState.forEach(st => { const res = R[st.id](ctxFor(st)); st.res = res; st.el.querySelector('h2').textContent = res.title; const sb = st.el.querySelector('.sb'); sb.innerHTML = res.html; if (res.after) res.after(sb); countUps(sb); reveal(sb, false); }); renderRail(); }
 const COUNT_MEM = {};
 function countUps(root){
   root.querySelectorAll('[data-count]').forEach(el => { const to = +el.dataset.count, key = el.nextElementSibling ? el.nextElementSibling.textContent : ''; const from = COUNT_MEM[key] != null ? COUNT_MEM[key] : 0; COUNT_MEM[key] = to;
-    if (from === to) { el.textContent = to; return; } const t1 = performance.now(), d = 1400;
+    if (from === to || still()) { el.textContent = to; return; } const t1 = performance.now(), d = M.x;
     const step = t => { const f = Math.min(1, (t - t1) / d), e = 1 - Math.pow(1 - f, 3); el.textContent = Math.round(from + (to - from) * e); if (f < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); });
 }
-function dataSig(){ return [Math.floor(nowMin()), S.checkedIn, S.speaker, S.wifi.name, S.wifi.pass, SESSIONS.map(s => s.booked + s.title + s.ok + s.room + s.mode).join(), SLOTS.map(x => x.status + x.s + x.who).join(''), S.poll.map(w => w[0] + w[1]).join(), S.pollQ, S.pollOpen, S.pollTotal, S.photos.map(p => p.id).join(), S.profiles.map(p => p.id + p.at).join(), JSON.stringify(S.way), S.pin].join('|'); }
+function dataSig(){ return [Math.floor(nowMin()), JSON.stringify(S.n), JSON.stringify(S.interest), S.links.length, S.takeaways.length, S.checkedIn, S.speaker, S.wifi.name, S.wifi.pass, SESSIONS.map(s => s.booked + s.title + s.ok + s.room + s.mode).join(), SLOTS.map(x => x.status + x.s + x.who).join(''), S.poll.map(w => w[0] + w[1]).join(), S.pollQ, S.pollOpen, S.pollTotal, S.photos.map(p => p.id).join(), S.profiles.map(p => p.id + p.at).join(), JSON.stringify(S.way), S.pin].join('|'); }
 
 /* ============ Now zone, garden, moments ============ */
 function nowZone(){
-  const d = now(), m = nowMin(), ph = phase(m), mode = S.mode;
-  $('clock').innerHTML = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0') + `<sup>${String(d.getSeconds()).padStart(2,'0')}</sup>`;
+  const d = venue(), m = nowMin(), ph = phase(m), mode = S.mode;
+  $('clock').innerHTML = String(d.h).padStart(2,'0') + ':' + String(d.m).padStart(2,'0') + `<sup>${String(d.s).padStart(2,'0')}</sup>`;
   let label, cdTo, cdTxt, pFrom, pTo, next = '', live = false;
   const P0 = programAt(m), nx = PROGRAM.find(p => toMin(p.s) > m);
   if (m < toMin('09:30')) { label = 'Doors open soon'; cdTo = '09:30'; cdTxt = 'until registration'; pFrom = '08:30'; pTo = '09:30'; }
@@ -839,34 +1309,81 @@ function garden(){
   $('dayfill').style.width = nx + 'px';
   $('needle').style.left = nx + 'px';
 }
+// Moments take the stage and the rail for a few seconds (docs/PLAN.md WP4 task 6). Times and places come from
+// day.js: the 5 minute calls, with the rooms of the block and the way to them when directions are set; the
+// last 10 seconds before the Opening and before each block, counted in large numerals; then Starting Now;
+// the coffee break; lunch. An announcement from the remote takes precedence and keeps its look.
+function momentList(){
+  const op = PROGRAM.find(p => p.mode === 'opening'), choose = PROGRAM.find(p => p.mode === 'choose'), lunch = PROGRAM.find(p => p.mode === 'lunch'), out = [];
+  if (op) { const s = toMin(op.s) * 60;
+    out.push({from:s - 300, dur:25, k:'In 5 minutes', t:`${op.title} in the ${op.where}`, p:'Please take your seats.'});
+    out.push({from:s - 10, dur:10, count:true, k:`${op.title} in`});
+    out.push({from:s, dur:10, k:op.title, t:'Starting Now', p:`In the ${op.where}`, big:true}); }
+  if (choose) out.push({from:toMin(choose.s) * 60, dur:18, k:'Coffee break', t:'Pick your sessions', p:'One to one slots are booked at the registration desk.'});
+  BLOCKS.forEach(b => { const s = toMin(b.s) * 60;
+    out.push({from:s - 300, dur:25, k:'In 5 minutes', t:`The ${b.s} sessions start`, p:'Head to your room now.', rooms:b.n, way:true});
+    out.push({from:s - 10, dur:10, count:true, k:`The ${b.s} sessions start in`});
+    out.push({from:s, dur:12, k:`The ${b.s} sessions`, t:'Starting Now', p:'Find your room, the advisors are ready.', rooms:b.n, on:true, big:true}); });
+  if (lunch) out.push({from:toMin(lunch.s) * 60, dur:18, k:'Lunch is served', t:lunch.title, p:`In the ${lunch.where} until ${lunch.e}.`});
+  return out;
+}
+// The rooms of a block as cards. With directions set, each card carries the arrow to the rooms.
+function momentRooms(n, on, way){
+  const dir = way && S.way && S.way.rooms, list = ROOMS.map(r => SESSIONS.find(x => x.b === n && x.room === r)).filter(Boolean);
+  return `<div class="mr">${list.map(s => `<div class="mrc rv">${dir ? `<div class="arr leaf lf"><i style="rotate:${DEG[dir] || 0}deg">${ARROW}</i></div>` : ''}<div class="mrt"><span class="pill leaf lf ${on ? '' : 'ghost'}">${esc(s.room)}</span><strong class="tx">${esc(s.title)}</strong><span class="who">${esc(names(s.who))}</span></div></div>`).join('')}</div>`;
+}
 function moments(){
-  const list = [{at:'09:55', dur:25, k:'In 5 minutes', t:'Opening in the Main Hall', p:'Please take your seats.'}];
-  list.push({at:'10:40', dur:18, k:'Coffee break', t:'Pick your sessions', p:'One to one slots are booked at the registration desk.'});
-  BLOCKS.forEach(b => { list.push({at:fmt(toMin(b.s) - 5), dur:25, k:'In 5 minutes', t:`The ${b.s} sessions start`, p:'Head to your room now.', rooms:b.n});
-    list.push({at:b.s, dur:12, k:'Starting now', t:'Sessions are on', p:'Find your room, the advisors are ready.', rooms:b.n}); });
-  list.push({at:'14:00', dur:18, k:'Lunch is served', t:'Lunch and Networking', p:'In the Main Hall until 15:00.'});
-  const m = nowMin();
-  let act = list.find(x => m * 60 >= toMin(x.at) * 60 && m * 60 < toMin(x.at) * 60 + x.dur);
-  if (S.annUntil && Date.now() < S.annUntil) act = {at:'ann' + S.annAt, k:'Announcement', t:S.ann, p:''};
+  if (!S.started) return;
+  const sec = nowMin() * 60;
+  let act = momentList().find(x => sec >= x.from && sec < x.from + x.dur);
+  if (S.annUntil && Date.now() < S.annUntil) act = {key:'ann' + S.annAt, k:'Announcement', t:S.ann, ann:true};
   if (S.annUntil && Date.now() >= S.annUntil) S.annUntil = 0;
-  const key = act ? act.at + act.t : '';
-  if (key === S.momentKey) return; S.momentKey = key;
-  const el = $('moment');
-  if (!act) { el.animate([{opacity:1}, {opacity:0}], {duration:500, easing:'ease'}).onfinish = () => { el.classList.remove('show'); el.innerHTML = ''; }; return; }
-  const rooms = act.rooms ? `<div class="mr">${ROOMS.map(r => { const s = SESSIONS.find(x => x.b === act.rooms && x.room === r); return s ? `<div class="rv"><span class="pill leaf ${act.k === 'Starting now' ? '' : 'ghost'}">${r}</span><strong>${esc(s.title)}</strong></div>` : ''; }).join('')}</div>` : '';
-  el.innerHTML = `<div class="k rv"><span class="live-dot"></span>${esc(act.k)}</div><h1 class="rv" style="font-size:calc(var(--u)*${String(act.at).startsWith('ann') ? 7 : 10.5})">${esc(act.t)}</h1><div class="rule rv"></div>${act.p ? `<p class="rv">${esc(act.p)}</p>` : ''}${rooms}<div class="wipe"></div>`;
-  el.classList.add('show');
-  el.querySelector('.wipe').animate([{transform:'scaleX(0)', transformOrigin:'left'}, {transform:'scaleX(1)', transformOrigin:'left', offset:.45}, {transform:'scaleX(1)', transformOrigin:'right', offset:.55}, {transform:'scaleX(0)', transformOrigin:'right'}], {duration:1100, easing:'cubic-bezier(.7,0,.3,1)', fill:'forwards'});
-  el.querySelectorAll('.rv').forEach(e => e.style.opacity = 0);
-  setTimeout(() => reveal(el, true), 520);
+  const key = act ? (act.key || act.from + '|' + (act.t || act.k)) : '';
+  if (key === S.momentKey) { if (act && act.count) countTick(act, sec); return; }
+  S.momentKey = key;
+  const el = $('moment'); $('app').classList.toggle('mom', !!act);
+  // A moment comes forward over the stage while the stage recedes, and recedes itself when it ends.
+  if (!act) { const a = recede(el, M.e); a.finished.then(() => { if (!S.momentKey) { el.classList.remove('show'); el.innerHTML = ''; } a.cancel(); }, () => {}); return; }
+  el.getAnimations().forEach(a => a.cancel()); el.classList.add('show');
+  if (act.count) {
+    const h = el.clientHeight / U, fs = Math.min(44, h * .56);
+    el.innerHTML = `<div class="k"><span class="live-dot"></span><span class="tx">${esc(act.k)}</span></div><div class="cd" style="font-size:calc(var(--u)*${fs.toFixed(1)})"><m-l class="ln"><m-i class="li"></m-i></m-l></div>`;
+    el.dataset.n = '';
+    countTick(act, sec);
+  } else {
+    const size = act.ann ? 7 : (act.big ? 13 : 10.5);
+    el.innerHTML = `<div class="k"><span class="live-dot"></span><span class="tx">${esc(act.k)}</span></div><h1 class="tx" ${act.ann ? 'dir="auto"' : ''} style="font-size:calc(var(--u)*${size})">${esc(act.t)}</h1><div class="rule dr"></div>${act.p ? `<p class="tx">${esc(act.p)}</p>` : ''}${act.rooms ? momentRooms(act.rooms, act.on, act.way) : ''}`;
+  }
+  if (!still()) el.animate([{opacity:0, transform:'scale(1.06)'}, {opacity:1, transform:'none'}], {duration:M.x, easing:M.out, fill:'backwards'});
+  reveal(el, true);
   burst(6);
+}
+// The countdown numeral rolls: the last number rises out of its clip as the new one rises in, in lockstep
+// (same duration and curve, one line apart), so the two never overlap.
+function countTick(act, sec){
+  const el = $('moment'), n = Math.max(1, Math.ceil(act.from + act.dur - sec));
+  if (el.dataset.n === String(n)) return; el.dataset.n = n;
+  const ln = el.querySelector('.cd m-l'); if (!ln) return;
+  ln.querySelectorAll('m-i.old').forEach(x => x.remove()); // a roll still running on a slow machine ends here
+  const cur = ln.querySelector('m-i'), li = document.createElement('m-i');
+  li.className = 'li'; li.textContent = n; ln.classList.remove('ok');
+  if (!cur || !cur.textContent || still()) {
+    if (cur) cur.remove(); ln.appendChild(li);
+    if (!still()) li.animate([{transform:'translateY(110%)'}, {transform:'none'}], {duration:M.e, easing:M.out, fill:'backwards'});
+    return;
+  }
+  cur.classList.add('old'); ln.appendChild(li);
+  const k = [{transform:'none'}, {transform:'translateY(-100%)'}], o = {duration:M.e, easing:M.io, fill:'forwards'}, a = cur.animate(k, o), b = li.animate(k, o);
+  b.finished.then(() => { cur.remove(); a.cancel(); b.cancel(); }, () => {});
 }
 
 /* ============ Ticker ============ */
 let tkHtml = '', tkX = 0, tkW = 0, tkT = performance.now();
 function tickerItems(){
   const m = nowMin(), o = [], ph = phase(m), nb = nextBlock(m);
-  if (S.ann) o.push(`<span class="ann">${esc(S.ann)}</span>`);
+  if (S.ann) o.push(`<span class="ann" dir="auto">${esc(S.ann)}</span>`);
+  // Hellos go to the ticker when the welcome scene is not on screen: the newest six of the last 10 minutes.
+  if (!welcomeShown()) { const t = Date.now() + S.skew, names = S.hello.filter(h => Math.abs(t - h.at) < 600000).slice(0, 6).map(h => `<bdi>${esc(h.f)}</bdi>`); if (names.length) o.push(`<span>Welcome, ${names.length > 1 ? names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1] : names[0]}</span>`); }
   if (ph.kind === 'session') SESSIONS.filter(s => s.b === ph.b.n).forEach(s => o.push(`<span>On now in ${esc(s.room)}: ${esc(s.title)} with ${esc(names(s.who))}</span>`));
   if (nb && toMin(nb.s) - m <= 25) SESSIONS.filter(s => s.b === nb.n).forEach(s => o.push(`<span>${nb.s} in ${esc(s.room)}: ${esc(s.title)}</span>`));
   const op = openSlots(m); if (op.length) o.push(`<span>${op.length} one to one slots still open, next at ${op[0].s} with ${esc(adv(op[0].who).name)}. Book at the registration desk.</span>`);
@@ -917,7 +1434,7 @@ async function refresh(){ let ok = 0, tried = 0;
   for (const [k, fn] of JOBS) { const u = feedUrl(k); if (!u) continue; tried++; try { const rows = await getCSV(u); fn(rows); ok++; try { localStorage.setItem('md4_' + k, JSON.stringify(rows)); } catch(e) {} } catch(e) {} }
   S.live = tried > 0 && ok === tried;
   loop(true); }
-function restore(){ try { const v = localStorage.getItem('md4_snap'); if (v) { const x = JSON.parse(v); applySnap(x.v, x.d); } } catch(e) {} try { const v = localStorage.getItem('md4_state'); if (v) applyState(JSON.parse(v)); } catch(e) {} JOBS.forEach(([k, fn]) => { if (!feedUrl(k)) return; try { const v = localStorage.getItem('md4_' + k); if (v) fn(JSON.parse(v)); } catch(e) {} }); }
+function restore(){ try { const v = localStorage.getItem('md4_snap'); if (v) { const x = JSON.parse(v); applySnap(x.v, x.d); } } catch(e) {} try { const v = localStorage.getItem('md4_state'); if (v) applyState(JSON.parse(v), true); } catch(e) {} JOBS.forEach(([k, fn]) => { if (!feedUrl(k)) return; try { const v = localStorage.getItem('md4_' + k); if (v) fn(JSON.parse(v)); } catch(e) {} }); }
 
 /* ============ Demo ============ */
 const DEMO_WORDS = ['clients','funding','confidence','network','clarity','growth','mentors','sales','strategy','leadership','visibility','pitch','focus','partners','ideas','direction','courage','markets','branding','skills','connections','execution','feedback','vision','momentum','investors'];
@@ -928,15 +1445,17 @@ function demo(){ if (!S.demo) return; const m = nowMin();
   const n = Math.max(0, Math.min(DEMO_WORDS.length, Math.floor((m - 570) / 4))); if (!S.pollTotal) S.poll = DEMO_WORDS.slice(0, n).map((w, i) => [w, Math.max(1, Math.round(16 / (1 + i * .42)))]); }
 
 /* ============ Background: drifting network of light, like the Summit artwork ============ */
-const cv = $('bg'), cx = cv.getContext('2d'); let nodes = [], orbs = [], pulses = [], lastTotal = -1, lastFrame = 0;
+const cv = $('bg'), cx = cv.getContext('2d'); let nodes = [], orbs = [], pulses = [], lastTotal = -1, lastFrame = 0, bgN = 0;
+const particleMax = () => GOV.lite ? 30 : 80; // effect particles alive at once
 function initBg(){
   const k = Math.min(1, 1600 / innerWidth); cv.width = innerWidth * k; cv.height = innerHeight * k; cx.setTransform(k, 0, 0, k, 0, 0);
-  const n = Math.round(Math.max(10, Math.min(26, innerWidth / 160)));
-  nodes = Array.from({length:n}, () => ({x:Math.random() * innerWidth, y:Math.random() * innerHeight * .9, vx:(Math.random() - .5) * .12, vy:(Math.random() - .5) * .08, r:Math.random() * U * 2.2 + U * .8, ph:Math.random() * 6.28}));
+  bgN = Math.round(Math.max(10, Math.min(26, innerWidth / 160)));
+  nodes = Array.from({length:GOV.lite ? Math.ceil(bgN / 2) : bgN}, () => ({x:Math.random() * innerWidth, y:Math.random() * innerHeight * .9, vx:(Math.random() - .5) * .12, vy:(Math.random() - .5) * .08, r:Math.random() * U * 2.2 + U * .8, ph:Math.random() * 6.28}));
   orbs = Array.from({length:4}, (_, i) => ({x:innerWidth * (.15 + i * .25), y:innerHeight * (.2 + (i % 2) * .4), r:Math.max(innerWidth, innerHeight) * (.12 + Math.random() * .08), ph:Math.random() * 6.28}));
 }
 function bgLoop(t){
   requestAnimationFrame(bgLoop); if (t - lastFrame < 33) return; lastFrame = t;
+  if (GOV.lite && nodes.length > Math.ceil(bgN / 2)) { nodes.length = Math.ceil(bgN / 2); pulses = pulses.filter(q => q.a < nodes.length && q.b < nodes.length); }
   const W = innerWidth, H = innerHeight, s = t / 1000, dark = document.documentElement.dataset.theme === 'dark';
   cx.clearRect(0, 0, W, H);
   const lc = dark ? '120,190,215' : '255,255,255';
@@ -948,7 +1467,7 @@ function bgLoop(t){
   pulses = pulses.filter(q => q.t < 1);
   pulses.forEach(q => { q.t += .01; const a = nodes[q.a], b = nodes[q.b]; if (!a || !b) return; const x = a.x + (b.x - a.x) * q.t, y = a.y + (b.y - a.y) * q.t; const g = cx.createRadialGradient(x, y, 0, x, y, U * 2.4); g.addColorStop(0, q.c); g.addColorStop(1, 'rgba(255,255,255,0)'); cx.fillStyle = g; cx.beginPath(); cx.arc(x, y, U * 2.4, 0, 6.29); cx.fill(); });
 }
-function burst(n){ for (let i = 0; i < n && nodes.length > 2; i++) { const a = Math.floor(Math.random() * nodes.length); let b = (a + 1 + Math.floor(Math.random() * (nodes.length - 1))) % nodes.length; pulses.push({a, b, t:0, c: Math.random() < .5 ? 'rgba(223,98,54,.9)' : 'rgba(47,156,195,.9)'}); } }
+function burst(n){ for (let i = 0; i < n && nodes.length > 2 && pulses.length < particleMax(); i++) { const a = Math.floor(Math.random() * nodes.length); let b = (a + 1 + Math.floor(Math.random() * (nodes.length - 1))) % nodes.length; pulses.push({a, b, t:0, c: Math.random() < .5 ? 'rgba(223,98,54,.9)' : 'rgba(47,156,195,.9)'}); } }
 function checkSparks(){ const total = SESSIONS.reduce((a, s) => a + s.booked, 0) + SLOTS.filter(x => x.status === 'Booked').length + (S.checkedIn || 0) + (S.pollTotal || 0) + S.photos.length + S.profiles.length; if (lastTotal >= 0 && total > lastTotal) burst(1 + Math.floor((total - lastTotal) / 5)); lastTotal = total; if (Math.random() < .12) burst(1); }
 
 /* ============ Operator keys ============ */
@@ -959,8 +1478,8 @@ addEventListener('keydown', e => { const k = e.key.toLowerCase();
   if (KEYMODES[k]) { S.override = KEYMODES[k]; S.speaker = null; loop(true); toast('Held on ' + ({welcome:'welcome', opening:'opening', video:'videos', choose:'coffee break', live:'sessions', lunch:'lunch', close:'thank you'}[S.override]) + ', press 0 to follow the clock'); }
   else if (k === '0') { S.override = null; S.speaker = null; loop(true); toast('Automatic, following the clock'); }
   else if (k === 'arrowright' || k === 'arrowleft') { const m = nowMin(); let i = S.speaker; if (i === null) { i = 0; SPEAKERS.forEach((s, j) => { if (m >= toMin(s.s)) i = j; }); } S.speaker = Math.max(0, Math.min(SPEAKERS.length - 1, i + (k === 'arrowright' ? 1 : -1))); slotState.forEach(st => { if (st.id === 'speaker') showScene(st, true); }); }
-  else if (k === 'n') { slotState.forEach(st => { if (st.scenes.length > 1) { st.idx++; st.since = Date.now(); showScene(st, true); } }); }
-  else if (k === 't') { S.theme = S.theme === 'dark' ? 'light' : 'dark'; applyTheme(true); toast(S.theme === 'dark' ? 'Dark' : 'Light'); }
+  else if (k === 'n') { slotState.forEach(st => { if (st.role === 'pinned') return; const nx = nextFor(st); if (nx !== st.id) go(st, nx, 'key N'); else stay(st, 'key N'); }); }
+  else if (k === 't') { S.theme = wantedTheme() === 'dark' ? 'light' : 'dark'; S.urlTheme = null; S.sheetTheme = ''; applyTheme(true); toast(S.theme === 'dark' ? 'Dark' : 'Light'); }
   else if (k === 'a') { const t = prompt('Announcement for the screen', S.ann); if (t !== null) { S.ann = t.trim(); S.annAt = Date.now(); S.annUntil = S.ann ? Date.now() + 20000 : 0; updateTicker(); } }
   else if (k === 'k') { setOverlay(S.overlay === 'check' ? null : 'check'); }
   else if (k === 'v') stopVideo();
@@ -973,6 +1492,7 @@ addEventListener('keydown', e => { const k = e.key.toLowerCase();
 
 /* ============ Main loop ============ */
 function loop(force){
+  if (WD.frozen) return; // tests only: stands for a main loop that stopped
   demo();
   const mode = S.override || S.remoteMode || S.sheetScene || autoMode(nowMin());
   const modeChanged = mode !== S.mode; S.mode = mode;
@@ -981,11 +1501,52 @@ function loop(force){
   const dk = dataSig();
   if (!rebuilt && (force || dk !== S.dataKey)) refreshScenes(); else if (rebuilt) renderRail();
   S.dataKey = dk;
-  slotState.forEach(st => {
-    if (st.res && st.res.tick && Date.now() - st.sub > st.res.tick * 1000) { st.sub = Date.now(); if (st.res.onTick(st.el.querySelector('.sb'))) showScene(st, true); }
-    if (st.scenes.length > 1 && Date.now() - st.since > dwell(st.id) * 1000) { st.idx++; st.since = Date.now(); showScene(st, true); }
-  });
-  nowZone(); garden(); moments(); updateTicker(); checkSparks();
+  slotState.forEach(direct);
+  nowZone(); garden(); moments(); updateTicker(); checkSparks(); joinBlock();
+  reloadPending();
+  WD.tick = Date.now();
+}
+
+// One step of the director for one slot, every second.
+function direct(st){
+  const now = Date.now(), shown = now - st.since;
+  if (st.res && st.res.tick && now - st.sub > st.res.tick * 1000) { st.sub = now; if (st.res.onTick(st.el.querySelector('.sb'))) showScene(st, true); }
+  let want = null, why = '';
+  if (st.role !== 'pinned') {
+    const hold = st.role === 'secondary' ? null : holdNow();
+    if (st.role === 'primary' && hold) { if (st.id !== hold.id) { want = hold.id; why = 'clock'; } }
+    else if (st.role === 'primary' && !st.scenes.includes(st.id)) { want = nextFor(st); why = 'clock ended'; }
+    else if (content(st.id) === 'no') { want = nextFor(st); why = 'no content'; }
+    else if (st.bump && shown >= 8000) { want = nextFor(st); why = 'bump'; }
+    else if (shown >= dwellFor(st) * 1000) { want = nextFor(st); why = 'dwell'; }
+  }
+  if (want && want !== st.id) go(st, want, why); else if (want) stay(st, why);
+  if (st.res && st.tabsKey !== st.id + '|' + pagerTabs(st).join()) pagerFor(st);
+  const on = st.el.querySelector('.pager span.on'); if (on) on.style.setProperty('--p', Math.min(1, (Date.now() - st.since) / (dwellFor(st) * 1000)).toFixed(3));
+}
+
+/* ============ Keeping the wall alive all day ============ */
+// Errors go into the next heartbeat. Only script errors: a missing image is not an error of the wall.
+const ERR = {last:''};
+addEventListener('error', e => { ERR.last = String(e.message || 'Script error') + (e.lineno ? ' at line ' + e.lineno : ''); });
+addEventListener('unhandledrejection', e => { const r = e.reason; ERR.last = 'Promise: ' + String(r && r.message || r); });
+// Watchdog: the main loop marks WD.tick every second. If it has not for 20 seconds while the page is
+// visible, the page reloads. After a watchdog reload it waits 60 seconds, so a fault cannot reload in a tight loop.
+const WD = {tick:Date.now(), frozen:false};
+setInterval(() => {
+  if (document.visibilityState !== 'visible') { WD.tick = Date.now(); return; }
+  const last = +ss('md_wd') || 0, limit = Date.now() - last < 120000 ? 60000 : 20000;
+  if (Date.now() - WD.tick > limit) { ss('md_wd', Date.now()); location.reload(); }
+}, 2000);
+document.addEventListener('visibilitychange', () => { WD.tick = Date.now(); if (document.visibilityState === 'visible') wake(); });
+// Keep the screen on (Chrome on the wall computer).
+async function wake(){ try { if (navigator.wakeLock && document.visibilityState === 'visible' && !(S.wake && !S.wake.released)) S.wake = await navigator.wakeLock.request('screen'); } catch(e) {} }
+// Heartbeat for the remote's Status tab: what the wall shows and how it runs. First one soon after load.
+function beatBody(){ return {w:innerWidth, h:innerHeight, dpr:devicePixelRatio || 1, layout:(L.wide ? 'wide' : 'standard') + ' ' + L.n, mode:S.mode, scenes:slotState.map(s => s.id).filter(Boolean).slice(0, 8), lite:GOV.lite, fps:GOV.fps, err:ERR.last.slice(0, 280), at:nowMs()}; }
+async function beat(){
+  if (!location.protocol.startsWith('http')) return;
+  const b = beatBody(), sent = ERR.last;
+  try { const r = await fetch('/api/beat', {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify(b), keepalive:true}); if (r.ok && ERR.last === sent) ERR.last = ''; } catch(e) {}
 }
 function logos(){
   const h = U;
@@ -998,11 +1559,16 @@ restore(); S.mode = S.override || autoMode(nowMin()); document.documentElement.d
 resize(); S.started = true;
 addEventListener('resize', resize);
 setInterval(() => loop(false), 1000);
-setInterval(nowZone, 250);
+setInterval(() => { nowZone(); moments(); }, 250);
 initVideo(); setConn(); refresh(); setInterval(refresh, CONFIG.refreshSeconds * 1000);
-if (location.protocol.startsWith('http')) { pullState(); setInterval(pullState, CONFIG.stateSeconds * 1000); }
+if (location.protocol.startsWith('http')) { pullState(); setInterval(pullState, CONFIG.stateSeconds * 1000); setTimeout(beat, 8000); setInterval(beat, CONFIG.beatSeconds * 1000); }
 requestAnimationFrame(bgLoop); requestAnimationFrame(tickerLoop);
+wake();
 if (!P.has('quiet')) setTimeout(() => toast('Press F for full screen and H for controls'), 1200);
+// For probes and tests (scripts/probe.cjs, scripts/wall-check.cjs). Reading it changes nothing.
+window.__md = {S, slotState, GOV, RELOAD, CLOCK, WD, ERR, L:() => L, venue, nowMin, beatBody, bg:() => ({nodes:nodes.length, full:bgN, pulses:pulses.length, max:particleMax()}),
+  DIR, content, holdNow, dwellFor, liveNumbers, nextFor:i => nextFor(slotState[i]), bump,
+  force(id){ if (!R[id]) return -1; let i = slotState.findIndex(st => st.scenes.includes(id)); if (i < 0) i = 0; const st = slotState[i]; if (!st) return -1; go(st, id, 'force'); return i; }};
 })();
 </script>
 </body>

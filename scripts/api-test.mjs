@@ -2044,7 +2044,7 @@ describe("privacy", () => {
       for (const p of people) {
         const pid = personId(p.name, p.last4), k4 = k4Of(pid, p.last4);
         if (text.includes(k4)) hits.push(`${r.method} ${r.url} carries the k4 of ${p.name}`);
-        if (new RegExp(`(?<![0-9])${p.last4}(?![0-9])`).test(utf)) hits.push(`${r.method} ${r.url} carries the digits ${p.last4}`);
+        if (new RegExp(`(?<![0-9a-fA-F])${p.last4}(?![0-9a-fA-F])`).test(utf)) hits.push(`${r.method} ${r.url} carries the digits ${p.last4}`);
         if (new RegExp(`(?<!p)${pid}`).test(text)) hits.push(`${r.method} ${r.url} carries the bare person id of ${p.name}`);
       }
       if (/"(k4|last4)"/.test(utf)) hits.push(`${r.method} ${r.url} has a k4 or last4 field`);

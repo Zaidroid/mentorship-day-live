@@ -17,6 +17,7 @@
     "deploy": "netlify deploy --prod",
     "baseline": "node scripts/baseline.cjs",
     "probe": "node scripts/probe.cjs",
+    "wall-check": "node scripts/wall-check.cjs",
     "sim": "node scripts/sim.mjs",
     "load": "node scripts/sim.mjs --load"
   },

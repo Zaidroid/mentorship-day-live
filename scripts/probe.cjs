@@ -1,6 +1,7 @@
 // Probe for the wall. Opens wall URLs at three sizes in both themes and checks:
 //   errors    any page error or console error
 //   overflow  a child of .slot .sb reaches outside its .slot
+//   clip      a clipped box in a scene, the moment or the rail holds more text than it shows (lines cut off)
 //   text      visible text in #app smaller than 1.3 times --u
 //   bg        the #bg canvas is the same 2 seconds later (background stopped)
 // One line per view and check. Exit code 1 when a check fails and is not on the
@@ -8,6 +9,7 @@
 //   npm run probe                          every view (132 views, about 20 minutes with one page at a time)
 //   npm run probe -- --quick               one fake time and three scenes per size and theme
 //   npm run probe -- --only 3840x1920_dark only view names containing this text
+//   npm run probe -- --empty               the wall sees no data at all: empty state and snap, no sheet
 //   npm run probe -- --jobs 4              pages open at the same time (default 1, more is faster but can crash pages on a busy machine)
 // Local server only. Start it with npm run dev and npm run seed first.
 const { chromium } = require('playwright');
@@ -19,7 +21,15 @@ const BASE = process.env.BASE || 'http://localhost:8897';
 if (!/^http:\/\/(localhost|127\.0\.0\.1)[:/]/.test(BASE + '/')) { console.error('Refusing ' + BASE + '. The probe is for a local server only.'); process.exit(1); }
 const arg = (k, d) => { const i = process.argv.indexOf('--' + k); return i > 0 ? process.argv[i + 1] : d; };
 const flag = k => process.argv.includes('--' + k);
-const ONLY = arg('only', ''), JOBS = +arg('jobs', 1), QUICK = flag('quick');
+const ONLY = arg('only', ''), JOBS = +arg('jobs', 1), QUICK = flag('quick'), EMPTY = flag('empty');
+// With --empty: what a wall shows before anyone has done anything, with the schedule from day.js only.
+const EMPTY_STATE = () => ({ t: Date.now(), reh: false, phase: 'day', cfg: { mode: 'auto', pin: null, speaker: null, theme: 'light', overlay: null, ann: null, video: null, way: null, reloadAt: 0, photoAt: null, finale: null, links: null, flags: {}, at: 1 }, poll: null, rx: { on: false, b: [], total: 0 }, n: { here: 0, board: 0, links: 0, photos: 0, takeaways: 0, answers: 0 }, interest: {}, hello: [], snapV: '0.0', tags: [], videos: [] });
+async function emptyRoutes(ctx) {
+  await ctx.route('**/api/state', r => r.fulfill({ contentType: 'application/json', body: JSON.stringify(EMPTY_STATE()) }));
+  await ctx.route('**/api/snap**', r => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ at: 0, v: '0.0', photos: [], profiles: [], links: [], takeaways: [] }) }));
+  await ctx.route('**/api/sheet/**', r => r.fulfill({ status: 200, contentType: 'text/csv', body: '' }));
+  await ctx.route('**/api/beat', r => r.fulfill({ status: 204, body: '' }));
+}
 const BG_GAP = 2000, FACTOR = +arg('factor', 1.3); // --factor is only for checking that the text check can fail
 
 const KNOWN = JSON.parse(fs.readFileSync(path.join(__dirname, 'probe-known.json'), 'utf8')).known;
@@ -52,6 +62,26 @@ function inPage(FACTOR) {
       if (over.length) overflow.push({ key: label(ch), detail: over.join(', ') });
     });
   });
+  // clip: a box that hides what overflows it (a grid cell, a card) while some of its text lies below its
+  // visible bottom, so lines are cut off. Measured on the text itself, so a cropped or zooming photo does not
+  // count. Vertical only: some single line names end with an ellipsis on purpose. Line masks (m-l) are the
+  // motion system's clips and are left out.
+  const clip = [];
+  document.querySelectorAll('.slot .sb *, #moment *, #rail *').forEach(el => {
+    if (el.tagName === 'M-L' || el.closest('svg') || !el.textContent.trim()) return;
+    if (!/hidden|clip/.test(getComputedStyle(el).overflowY)) return;
+    const r = el.getBoundingClientRect(); if (r.width < 1 || r.height < 1) return;
+    const bottom = r.top + el.clientTop + el.clientHeight; let low = -Infinity, sample = '';
+    const tw = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    for (let t = tw.nextNode(); t; t = tw.nextNode()) {
+      if (!t.textContent.trim()) continue;
+      const rg = document.createRange(); rg.selectNodeContents(t);
+      for (const q of rg.getClientRects()) if (q.height && q.bottom > low) { low = q.bottom; sample = t.textContent.trim().slice(0, 40); }
+    }
+    // Text boxes include the font's descent; allow 12 percent of the font size below the box.
+    const slack = parseFloat(getComputedStyle(el).fontSize) * .12 + 1;
+    if (low > bottom + slack) clip.push({ key: label(el), detail: `text reaches ${Math.round(low - bottom)}px below the visible bottom, e.g. "${sample}"` });
+  });
   const small = new Map(); const app = document.getElementById('app');
   const walker = document.createTreeWalker(app, NodeFilter.SHOW_ELEMENT);
   for (let el = walker.currentNode; el; el = walker.nextNode()) {
@@ -70,7 +100,7 @@ function inPage(FACTOR) {
       e.count++; e.size = Math.min(e.size, fs); small.set(key, e);
     }
   }
-  return { u, overflow, small: [...small.values()] };
+  return { u, overflow, clip, small: [...small.values()] };
 }
 
 (async () => {
@@ -85,6 +115,7 @@ function inPage(FACTOR) {
       for (let attempt = 1; attempt <= 3 && !f; attempt++) {
         const errs = [];
         const ctx = await b.newContext({ viewport: sizeOf(v.size), deviceScaleFactor: 1 });
+        if (EMPTY) await emptyRoutes(ctx);
         try {
           const p = await ctx.newPage();
           p.on('pageerror', e => errs.push('pageerror: ' + e.message));
@@ -95,14 +126,14 @@ function inPage(FACTOR) {
           const found = await p.evaluate(inPage, FACTOR);
           await p.waitForTimeout(BG_GAP);
           const bg2 = await p.evaluate(() => document.getElementById('bg').toDataURL());
-          f = { errors: [...new Set(errs)].map(e => ({ key: e, detail: '' })), overflow: found.overflow, text: found.small.map(s => ({ key: s.key, detail: `${s.count} element(s) at ${s.size.toFixed(1)}px, limit ${(FACTOR * found.u).toFixed(1)}px, e.g. "${s.sample}"` })), bg: bg1 === bg2 ? [{ key: '#bg', detail: 'canvas did not change in ' + BG_GAP + ' ms' }] : [] };
+          f = { errors: [...new Set(errs)].map(e => ({ key: e, detail: '' })), overflow: found.overflow, clip: found.clip, text: found.small.map(s => ({ key: s.key, detail: `${s.count} element(s) at ${s.size.toFixed(1)}px, limit ${(FACTOR * found.u).toFixed(1)}px, e.g. "${s.sample}"` })), bg: bg1 === bg2 ? [{ key: '#bg', detail: 'canvas did not change in ' + BG_GAP + ' ms' }] : [] };
         } catch (e) { lastErr = e.message.split('\n')[0]; }
         await ctx.close().catch(() => {});
       }
-      if (!f) f = { errors: [{ key: 'probe could not finish this view after 3 tries: ' + lastErr, detail: '' }], overflow: [], text: [], bg: [] };
+      if (!f) f = { errors: [{ key: 'probe could not finish this view after 3 tries: ' + lastErr, detail: '' }], overflow: [], clip: [], text: [], bg: [] };
       results.push({ v, f });
       const line = (check, arr) => { const bad = arr.filter(x => !isKnown(check, x.key, v.name)), kn = arr.length - bad.length; return `${bad.length ? 'FAIL' : kn ? 'KNOWN' : 'ok  '}  ${v.name}  ${check}` + (arr.length ? `  (${bad.length} new, ${kn} known)` : ''); };
-      for (const c of ['errors', 'overflow', 'text', 'bg']) console.log(line(c, f[c]));
+      for (const c of ['errors', 'overflow', 'clip', 'text', 'bg']) console.log(line(c, f[c]));
     }
   }
   await Promise.all(Array.from({ length: JOBS }, worker));
@@ -110,7 +141,7 @@ function inPage(FACTOR) {
 
   // Summary. Group findings by check and key so a repeat across views reads as one line.
   const groups = new Map();
-  for (const { v, f } of results) for (const c of ['errors', 'overflow', 'text', 'bg']) for (const x of f[c]) {
+  for (const { v, f } of results) for (const c of ['errors', 'overflow', 'clip', 'text', 'bg']) for (const x of f[c]) {
     const g = groups.get(c + '|' + x.key) || { check: c, key: x.key, views: [], detail: x.detail, known: isKnown(c, x.key, v.name) };
     g.views.push(v.name); groups.set(c + '|' + x.key, g);
   }
