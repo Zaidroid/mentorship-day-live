@@ -29,15 +29,23 @@ async function freePort() {
   const { port } = srv.address(); srv.close(); await once(srv, "close"); return port;
 }
 const servers = [];
+// A free port can be taken by another process between the check and the listen, so a failed start is retried.
 async function startServer(now = BEFORE_DAY) {
+  for (let i = 1; ; i++) {
+    try { return await startServerOnce(now); }
+    catch (e) { if (i >= 3 || !/EADDRINUSE/.test(e.message)) throw e; }
+  }
+}
+async function startServerOnce(now) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), "md26-api-test-"));
   const port = await freePort();
   const child = spawn(process.execPath, ["server/index.mjs"], { cwd: ROOT, env: { ...process.env, REMOTE_PIN: PIN, PORT: String(port), DATA_DIR: dir, MD_TEST_FAKE_NOW: now }, stdio: ["ignore", "pipe", "pipe"] });
   let out = ""; child.stdout.on("data", d => { out += d; }); child.stderr.on("data", d => { out += d; });
   const base = `http://127.0.0.1:${port}`;
-  let up = false;
-  for (let i = 0; i < 150 && !up; i++) { try { up = (await fetch(base + "/api/state")).ok; } catch {} if (!up) await sleep(100); }
-  if (!up) { child.kill(); throw new Error("The test server did not start:\n" + out); }
+  let up = false, gone = false;
+  child.once("exit", () => { gone = true; });
+  for (let i = 0; i < 150 && !up && !gone; i++) { try { up = (await fetch(base + "/api/state")).ok; } catch {} if (!up) await sleep(100); }
+  if (!up) { child.kill(); await fs.rm(dir, { recursive: true, force: true }); throw new Error("The test server did not start:\n" + out); }
   const exited = once(child, "exit");
   let stopped = null;
   const s = { base, dir, child, out: () => out, stop() { return stopped || (stopped = (async () => { child.kill(); await exited; await fs.rm(dir, { recursive: true, force: true }); })()); } };
@@ -1192,6 +1200,115 @@ describe("reactions", () => {
     assert.match((await rxFn(new Request("http://localhost/api/rx"))).headers.get("netlify-cdn-cache-control"), /maxage=1\b/);
     await op(P.base, { action: "rx", mode: "off" });
     assert.match((await stateFn(new Request("http://localhost/api/state"))).headers.get("netlify-cdn-cache-control"), /maxage=2\b/);
+  });
+});
+
+/* ---------- meet codes and connections (plan section 5.7) ---------- */
+describe("meet", () => {
+  let P;
+  const card = { name: "x", company: "", role: "Founder", looking: ["Funding"], offer: ["Product"], linkedin: "", consent: true };
+  const meet = (dev, code) => call(P.base, "POST", "/api/meet", { body: { code }, headers: { "x-dev": dev } });
+  const onBoard = async p => {
+    const dev = newDev();
+    assert.equal((await claim(P.base, dev, { id: pubOf(p), last4: p.last4 })).status, 200);
+    assert.equal((await call(P.base, "POST", "/api/profile", { body: card, headers: { "x-dev": dev } })).json.status, "approved");
+    const m = (await me(P.base, dev)).json;
+    return { dev, pub: m.me.pub, code: m.code };
+  };
+  let A, B, C;
+  before(async () => {
+    P = await startServer(); await openDirect(P.dir);
+    await op(P.base, { action: "peopleImport", people: SAMPLE });
+    A = await onBoard(SAMPLE[0]); B = await onBoard(SAMPLE[1]); C = await onBoard(SAMPLE[2]);
+  });
+  after(async () => { await P.stop(); await openDirect(S.dir); });
+
+  test("an approved card gets its own 3 digit code, kept when the card changes", async () => {
+    for (const x of [A, B, C]) assert.ok(Number.isInteger(x.code) && x.code >= 100 && x.code <= 999, String(x.code));
+    assert.equal(new Set([A.code, B.code, C.code]).size, 3);
+    await call(P.base, "POST", "/api/profile", { body: { ...card, role: "CEO" }, headers: { "x-dev": A.dev } });
+    assert.equal((await me(P.base, A.dev)).json.code, A.code);
+    const sn = await snapOf(P.base);
+    assert.ok(!JSON.stringify(sn).includes(`"code"`), "codes are never public");
+    const s = await openDirect(P.dir);
+    assert.equal(await s.get(`code/${A.code}`), A.pub);
+  });
+
+  test("we met: both see the connection, the wall gets the link, a second time changes nothing", async () => {
+    const v0 = (await state(P.base)).json.snapV;
+    const r = await meet(A.dev, B.code);
+    assert.equal(r.status, 200, r.text);
+    assert.deepEqual(r.json, { ok: true, again: false, person: { id: B.pub, name: "Omar Saleh", company: "Freelance", role: "Founder", linkedin: "" } });
+    const st = (await state(P.base)).json;
+    assert.equal(st.n.links, 1); assert.notEqual(st.snapV, v0); assert.match(st.snapV, /\.1$/);
+    const sn = await snapOf(P.base);
+    assert.equal(sn.links.length, 1);
+    const [x, y, at] = sn.links[0];
+    assert.deepEqual([x, y], [A.pub, B.pub].sort()); assert.ok(Math.abs(at - st.t) < 60000);
+    const again = await meet(B.dev, String(A.code));
+    assert.equal(again.json.again, true); assert.equal(again.json.person.id, A.pub);
+    assert.equal((await state(P.base)).json.n.links, 1);
+    const ma = (await me(P.base, A.dev)).json.links, mb = (await me(P.base, B.dev)).json.links;
+    assert.deepEqual(ma.map(l => l.id), [B.pub]); assert.deepEqual(mb.map(l => l.id), [A.pub]);
+    assert.deepEqual(Object.keys(ma[0]).sort(), ["at", "company", "id", "linkedin", "name", "role"]);
+  });
+
+  test("a hidden card takes its links off the wall until it is back", async () => {
+    await meet(C.dev, A.code);
+    assert.equal((await state(P.base)).json.n.links, 2);
+    await op(P.base, { action: "hideProfile", id: C.pub });
+    assert.equal((await state(P.base)).json.n.links, 1);
+    assert.ok(!(await snapOf(P.base)).links.some(l => l.includes(C.pub)));
+    assert.deepEqual((await me(P.base, A.dev)).json.links.map(l => l.id), [B.pub]);
+    const r = await meet(A.dev, C.code);
+    assert.equal(r.status, 404); assert.equal(r.json.error, "That code is not on the board. Check the number.");
+    await op(P.base, { action: "approveProfile", id: C.pub });
+    assert.equal((await state(P.base)).json.n.links, 2);
+    assert.equal((await me(P.base, C.dev)).json.code, C.code, "the code comes back with the card");
+  });
+
+  test("refusals: not on the board, own code, bad code, switched off", async () => {
+    const g = newDev();
+    await call(P.base, "POST", "/api/profile", { body: { ...card, name: "Guest Person" }, headers: { "x-dev": g } });
+    const r = await meet(g, A.code);
+    assert.equal(r.status, 409); assert.equal(r.json.error, "Join the Networking Board first.");
+    const own = await meet(A.dev, A.code);
+    assert.equal(own.status, 400); assert.equal(own.json.error, "That is your own code.");
+    for (const code of ["12", "1234", "abc", "099", null]) assert.equal((await meet(A.dev, code)).status, 400, String(code));
+    assert.equal((await call(P.base, "POST", "/api/meet", { body: { code: B.code } })).status, 400, "x-dev is required");
+    await op(P.base, { action: "flags", name: "meet", on: false });
+    assert.equal((await meet(A.dev, C.code)).json.error, "Meeting codes are switched off right now.");
+    await op(P.base, { action: "flags", name: "meet", on: true });
+  });
+
+  test("5 wrong codes per phone per 10 minutes", async () => {
+    const s = await openDirect(P.dir);
+    const used = new Set((await s.list({ prefix: "code/" })).blobs.map(b => +b.key.slice(5)));
+    const free = []; for (let n = 100; free.length < 6; n++) if (!used.has(n)) free.push(n);
+    for (let i = 0; i < 5; i++) assert.equal((await meet(B.dev, free[i])).status, 404);
+    const r = await meet(B.dev, C.code);
+    assert.equal(r.status, 429); assert.equal(r.json.error, "Too many wrong codes. Try again in a few minutes.");
+    assert.equal((await meet(C.dev, B.code)).status, 200, "another phone is not blocked");
+  });
+
+  test("at most 60 connections per person", async () => {
+    const s = await openDirect(P.dir);
+    const D = await onBoard(SAMPLE[3]);
+    for (let i = 0; i < 60; i++) { const other = "g" + String(i).padStart(10, "0"); const [x, y] = [D.pub, other].sort(); await s.set(`cx/${x}~${y}~${1000 + i}`, ""); }
+    const r = await meet(D.dev, A.code);
+    assert.equal(r.status, 429); assert.equal(r.json.error, "You have made 60 connections today. That is the most.");
+    const r2 = await meet(A.dev, D.code);
+    assert.equal(r2.json.error, "This person has made 60 connections today. That is the most.");
+    assert.equal((await state(P.base)).json.n.links, 3, "A and B, A and C, B and C; links with cards that are not on the board are not counted");
+  });
+
+  test("codes stay unique when many cards are approved at once", async () => {
+    const devs = Array.from({ length: 20 }, () => newDev());
+    const pubs = await Promise.all(devs.map(async (d, i) => (await call(P.base, "POST", "/api/profile", { body: { ...card, name: "Guest Number " + i }, headers: { "x-dev": d } })).json.id));
+    const res = await Promise.all(pubs.map(id => op(P.base, { action: "approveProfile", id })));
+    for (const r of res) assert.equal(r.status, 200, r.text);
+    const codes = await Promise.all(devs.map(async d => (await me(P.base, d)).json.code));
+    assert.equal(new Set(codes).size, 20); assert.ok(codes.every(c => c >= 100 && c <= 999));
   });
 });
 

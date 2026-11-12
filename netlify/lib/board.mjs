@@ -1,13 +1,38 @@
 // The Networking Board: approving cards, and moving a guest's things to a person (docs/PLAN.md sections 5.3 and 5.9).
 // A card is pr/<pub>; q/pr/<pub> marks it waiting, ok/pr/<pub> approved; the snapshot holds the approved ones.
-import { updateSnap, putItem, dropItem, profileItem } from "./store.mjs";
+import crypto from "node:crypto";
+import { update, updateSnap, putItem, dropItem, profileItem, withLock } from "./store.mjs";
 import { BLOCKS, readStars, writeStar, pairsFrom } from "./people.mjs";
 
-// Puts an approved card on the board: the marker, then that one item in the snapshot.
+// Puts an approved card on the board: the marker, a meet code if it has none, then that one item in the snapshot.
 export async function approveCard(s, pub, p) {
   await Promise.all([s.delete(`q/pr/${pub}`), s.set(`ok/pr/${pub}`, "")]);
+  await ensureCode(s, pub, p);
   await updateSnap(s, sn => putItem(sn.profiles, profileItem(pub, p)));
   return p;
+}
+
+// Meet codes: code/<nnn> holds the pub, 100 to 999, written with onlyIfNew so no two people share one.
+// The code is also kept on the card (pr/<pub>.code) for GET /api/me. It stays with the person for the day.
+// The lock covers the self hosted server, where onlyIfNew is not atomic.
+export async function ensureCode(s, pub, p) {
+  if (p && p.code && (await s.get(`code/${p.code}`)) === pub) return p.code;
+  const code = await withLock("codes", async () => {
+    for (let i = 0; i < 60; i++) {
+      const n = 100 + crypto.randomInt(900);
+      if ((await s.set(`code/${n}`, pub, { onlyIfNew: true })).modified) return n;
+    }
+    return null;
+  });
+  if (code) { await update(s, `pr/${pub}`, v => { v.code = code; }); if (p) p.code = code; }
+  return code;
+}
+
+// Connections on the board: pairs from the cx/ key names where both cards are approved now.
+// State counts them for n.links and snapV; the snapshot lists them as [pubA, pubB, at].
+export function boardLinks(cxBlobs, snap) {
+  const on = new Set(snap.profiles.map(p => p.id));
+  return pairsFrom(cxBlobs).filter(([a, b]) => on.has(a) && on.has(b));
 }
 // Takes a card off the board (it stays stored, for the person and the team).
 export async function unlistCard(s, pub) {
