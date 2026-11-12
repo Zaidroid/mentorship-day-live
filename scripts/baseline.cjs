@@ -2,7 +2,7 @@
 //   npm run baseline                      all views to dev/shots/baseline/
 //   npm run baseline -- --out dev/shots/after   another folder, to compare later
 //   npm run baseline -- --only 3840x1920_light  only names containing this text
-//   npm run baseline -- --jobs 4          pages open at the same time (default 2)
+//   npm run baseline -- --jobs 4          pages open at the same time (default 1, more is faster but can crash pages on a busy machine)
 //   npm run baseline -- --resume          skip shots that already exist
 // Local server only. Start it with npm run dev and npm run seed first.
 // The shots depend on the data in the server, so seed the same way each time.
@@ -14,7 +14,7 @@ const { wallViews, sizeOf, openWall } = require('./wall-urls.cjs');
 const BASE = process.env.BASE || 'http://localhost:8897';
 if (!/^http:\/\/(localhost|127\.0\.0\.1)[:/]/.test(BASE + '/')) { console.error('Refusing ' + BASE + '. Baseline shots are for a local server only.'); process.exit(1); }
 const arg = (k, d) => { const i = process.argv.indexOf('--' + k); return i > 0 ? process.argv[i + 1] : d; };
-const OUT = arg('out', 'dev/shots/baseline'), ONLY = arg('only', ''), JOBS = +arg('jobs', 2), RESUME = process.argv.includes('--resume');
+const OUT = arg('out', 'dev/shots/baseline'), ONLY = arg('only', ''), JOBS = +arg('jobs', 1), RESUME = process.argv.includes('--resume');
 
 (async () => {
   fs.mkdirSync(OUT, { recursive: true });
