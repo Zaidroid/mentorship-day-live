@@ -1605,6 +1605,92 @@ describe("alerts", () => {
   });
 });
 
+/* ---------- after the event: feedback, Remove My Data, the calendar file ---------- */
+describe("feedback, forget and ics", () => {
+  let P;
+  const fb = (dev, body) => call(P.base, "POST", "/api/feedback", { body, headers: { "x-dev": dev } });
+  before(async () => { P = await startServer(); await openDirect(P.dir); await op(P.base, { action: "peopleImport", people: SAMPLE }); });
+  after(async () => { await P.stop(); await openDirect(S.dir); });
+
+  test("feedback opens after the event, one per person, never with a name in the export", async () => {
+    const d = newDev();
+    await claim(P.base, d, { id: pubOf(SAMPLE[4]), last4: SAMPLE[4].last4 });
+    const early = await fb(d, { overall: 5 });
+    assert.equal(early.status, 409); assert.equal(early.json.error, "Feedback opens after the event.");
+    await op(P.base, { action: "rehearsal", hhmm: "15:30" });
+    assert.equal((await state(P.base)).json.phase, "after");
+    assert.deepEqual((await fb(d, { overall: 4, recommend: 9, text: "More time for one to ones." })).json, { ok: true });
+    assert.equal((await fb(d, { overall: 5, recommend: 10, text: "More time for one to ones, please." })).status, 200, "a new one replaces it");
+    const m = (await me(P.base, d)).json.feedback;
+    assert.deepEqual({ ...m, at: 0 }, { overall: 5, recommend: 10, text: "More time for one to ones, please.", at: 0 });
+    for (const body of [{ overall: 0 }, { overall: 6 }, { overall: "5" }, { overall: 5, recommend: 11 }, { overall: 5, recommend: 2.5 }, { overall: 5, text: 3 }, { overall: 5, text: "x".repeat(301) }]) assert.equal((await fb(d, body)).status, 400, JSON.stringify(body));
+    assert.equal((await call(P.base, "POST", "/api/feedback", { body: { overall: 5 } })).status, 400, "x-dev is required");
+    const csv = (await call(P.base, "GET", "/api/export/feedback", { headers: { "x-pin": PIN } })).buf.toString("utf8");
+    assert.ok(csv.includes('5,10,"More time for one to ones, please.",2026-11-17 15:30'), csv);
+    assert.ok(!csv.includes("Dina"));
+    await op(P.base, { action: "rehearsal", hhmm: null });
+  });
+
+  test("Remove My Data takes card, code, links, stars, hellos, lines and name, keeps the rating", async () => {
+    const a = newDev(), a2 = newDev(), b = newDev(), layla = SAMPLE[0], pa = pubOf(layla);
+    await op(P.base, { action: "rehearsal", hhmm: "11:50" });
+    await claim(P.base, a, { id: pa, last4: layla.last4, hello: true });
+    await claim(P.base, a2, { id: pa, last4: layla.last4 });
+    await claim(P.base, b, { id: pubOf(SAMPLE[1]), last4: SAMPLE[1].last4 });
+    const card = { name: "x", role: "Founder", looking: ["Funding"], offer: ["Product"], consent: true };
+    for (const d of [a, b]) await call(P.base, "POST", "/api/profile", { body: card, headers: { "x-dev": d } });
+    const codeB = (await me(P.base, b)).json.code, codeA = (await me(P.base, a)).json.code;
+    await call(P.base, "POST", "/api/meet", { body: { code: codeB }, headers: { "x-dev": a } });
+    await call(P.base, "POST", "/api/star", { body: { b: 2, sid: "2A" }, headers: { "x-dev": a } });
+    await call(P.base, "POST", "/api/takeaway", { body: { sid: "1A", rating: 5, text: "Know your buyer.", showName: true }, headers: { "x-dev": a } });
+    let st = (await state(P.base)).json;
+    assert.equal(st.n.links, 1); assert.ok(st.hello.some(h => h.f === "Layla")); assert.equal(st.interest["2A"], 1); assert.equal(st.n.takeaways, 1);
+    const r = await call(P.base, "POST", "/api/forget", { headers: { "x-dev": a } });
+    assert.deepEqual(r.json, { ok: true });
+    st = (await state(P.base)).json;
+    assert.equal(st.n.links, 0); assert.ok(!st.hello.some(h => h.f === "Layla")); assert.equal(st.interest["2A"], undefined); assert.equal(st.n.takeaways, 0);
+    const sn = await snapOf(P.base);
+    assert.ok(!sn.profiles.some(x => x.id === pa)); assert.ok(!JSON.stringify(sn).includes("Know your buyer"));
+    for (const d of [a, a2]) { const m = (await me(P.base, d)).json; assert.equal(m.status, "none", "every phone of the person is signed out"); assert.equal(m.profile, null); }
+    assert.equal((await call(P.base, "POST", "/api/meet", { body: { code: codeA }, headers: { "x-dev": b } })).status, 404, "the code is gone");
+    const csv = (await call(P.base, "GET", "/api/export/ratings", { headers: { "x-pin": PIN } })).buf.toString("utf8");
+    assert.ok(csv.includes("1A,Pitching and Outreach to International Clients,Room A,1,5,0,0,0,0,1"), "the rating stays: " + csv);
+    const tk = (await call(P.base, "GET", "/api/export/takeaways", { headers: { "x-pin": PIN } })).buf.toString("utf8");
+    assert.ok(!tk.includes("Know your buyer") && !tk.includes("Layla"));
+    const people = (await opGet(P.base)).json;
+    assert.ok(!people.people.list.some(x => x.id === pa)); assert.ok(people.log.some(l => l.who === "A phone" && l.what === "Removed its data"));
+    assert.equal((await call(P.base, "POST", "/api/forget")).status, 400, "x-dev is required");
+    assert.equal((await call(P.base, "POST", "/api/forget", { headers: { "x-dev": newDev() } })).status, 200, "a phone with nothing to remove is fine");
+    await op(P.base, { action: "rehearsal", hhmm: null });
+  });
+
+  test("the calendar file has the chosen sessions in UTC with a 5 minute alarm", async () => {
+    const r = await call(P.base, "GET", "/api/ics?s=1A,3B,1A");
+    assert.equal(r.status, 200);
+    assert.equal(r.headers.get("content-type"), "text/calendar; charset=utf-8");
+    assert.equal(r.headers.get("content-disposition"), 'attachment; filename="mentorship-day.ics"');
+    const text = r.buf.toString("utf8");
+    assert.ok(text.startsWith("BEGIN:VCALENDAR\r\n") && text.endsWith("END:VCALENDAR\r\n"));
+    for (const line of text.split("\r\n")) assert.ok(Buffer.byteLength(line) <= 75, "folded: " + line);
+    const flat = text.replace(/\r\n /g, "");
+    assert.equal((flat.match(/BEGIN:VEVENT/g) || []).length, 2);
+    assert.ok(flat.includes("DTSTART:20261117T090000Z\r\nDTEND:20261117T094500Z"), "11:00 to 11:45 in Birzeit is 09:00 to 09:45 UTC");
+    assert.ok(flat.includes("DTSTART:20261117T110000Z\r\nDTEND:20261117T114500Z"));
+    assert.ok(flat.includes("SUMMARY:Pitching and Outreach to International Clients"));
+    assert.ok(flat.includes("LOCATION:Room A\\, Palestine TechnoPark\\, Birzeit"));
+    assert.ok(flat.includes("With Gigi Aulsebrook. The advisor joins online. Mentorship Day 2026 by Gaza Sky Geeks\\, a program of Mercy Corps"));
+    assert.equal((flat.match(/TRIGGER:-PT5M/g) || []).length, 2);
+    const day = (await call(P.base, "GET", "/api/ics")).buf.toString("utf8").replace(/\r\n /g, "");
+    assert.ok(day.includes("SUMMARY:Mentorship Day 2026") && day.includes("DTSTART:20261117T073000Z") && day.includes("DTEND:20261117T130000Z"));
+    assert.equal((await call(P.base, "GET", "/api/ics?s=1A,9Z")).status, 400);
+    assert.equal((await call(P.base, "GET", "/api/ics?s=__proto__")).status, 400);
+    await openDirect(P.dir);
+    const fn = (await import("../netlify/functions/ics.mjs")).default;
+    const h = (await fn(new Request("http://localhost/api/ics?s=2A"))).headers;
+    assert.match(h.get("netlify-cdn-cache-control"), /maxage=3600/); assert.equal(h.get("netlify-vary"), "query=s");
+  });
+});
+
 /* ---------- stars, interest and Picked for You (plan section 5.11) ---------- */
 describe("stars and picks", () => {
   let P, s, n = 0;
