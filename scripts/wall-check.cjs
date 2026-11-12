@@ -545,6 +545,63 @@ check('moment-announcement', async () => {
   } finally { await op({ action: 'ann', text: '' }).catch(() => {}); }
 });
 
+/* ---------- Task 7: Choose and Rooms ---------- */
+
+const cellFacts = () => [...document.querySelectorAll('[data-sid]')].map(c => ({ sid: c.dataset.sid, plan: (c.querySelector('.plan b') || {}).textContent || null, seats: !!c.querySelector('.seats, .bar'), bar: c.querySelector('.lbar i') ? parseFloat(c.querySelector('.lbar i').style.width) : null, tag: (c.querySelector('.top em') || {}).textContent || null }));
+
+check('choose-planning', async () => {
+  const st = await state();
+  const w = await wall('/screen/?t=10:45&quiet', '1920x1080');
+  await sleep(3500);
+  const cells = await md(w.p, cellFacts);
+  await w.close();
+  const bad = cells.filter(c => (st.interest[c.sid] || 0) > 0 ? c.plan !== String(st.interest[c.sid]) : c.plan !== null);
+  const seats = cells.filter(c => c.seats);
+  return [cells.length === 7 && !bad.length && !seats.length, `full grid at 10:45: ${cells.map(c => c.sid + '=' + (c.plan || '-')).join(' ')} (state interest ${JSON.stringify(st.interest)}); wrong: ${bad.map(c => c.sid).join(',') || 'none'}; seats shown without bookings: ${seats.length}`];
+});
+
+check('choose-focused-block', async () => {
+  const st = await state();
+  const w = await wall('/screen/?t=11:52&quiet', '3840x1920');
+  await sleep(3500);
+  const r = await md(w.p, () => ({ title: window.__md.slotState[0].el.querySelector('h2').textContent, cards: [...window.__md.slotState[0].el.querySelectorAll('[data-sid]')].map(c => ({ sid: c.dataset.sid, plan: (c.querySelector('.plan.big b') || {}).textContent || null })) }));
+  await w.close();
+  const ok = r.title === 'Choose Your 12:00 Session' && r.cards.length === 1 && r.cards[0].sid === '2A' && r.cards[0].plan === String(st.interest['2A'] || '') ;
+  return [ok, `primary at 11:52: "${r.title}", sessions ${r.cards.map(c => c.sid + ' planning ' + c.plan).join(', ')} (state says 2A: ${st.interest['2A']})`];
+});
+
+check('rooms-progress-and-wrapping', async () => {
+  const w = await wall('/screen/?t=11:20&quiet', '1920x1080');
+  await sleep(3000);
+  const a = await md(w.p, cellFacts);
+  await w.close();
+  const w2 = await wall('/screen/?t=11:41&quiet', '1920x1080');
+  await sleep(3000);
+  const b = await md(w2.p, cellFacts);
+  await w2.close();
+  const near = (v, want) => v !== null && Math.abs(v - want) < 2.5;
+  const ok = a.length === 3 && a.every(c => near(c.bar, 20.1 / 45 * 100) && c.tag === 'On now') && b.every(c => near(c.bar, 41.1 / 45 * 100) && c.tag === 'Wrapping up');
+  return [ok, `11:20: ${a.map(c => c.sid + ' ' + c.tag + ' ' + c.bar + '%').join(', ')} (want about 44.7%); 11:41: ${b.map(c => c.sid + ' ' + c.tag + ' ' + c.bar + '%').join(', ')} (want about 91.3%, Wrapping up)`];
+});
+
+check('seats-only-with-bookings', async () => {
+  // A sessions tab where one session has 7 bookings: then, and only then, seats show.
+  const csv = '"Block","Time","Room","Session topic","Advisor","Host status","Delivery","Seats","Booked","Seats left"\n"1","11:00 to 11:45","Room A","Pitching and Outreach to International Clients","Gigi Aulsebrook","Confirmed","Online","25","7","18"\n"1","11:00 to 11:45","Room B","AI Impact on Technical Jobs","Asem","Confirmed","In person","25","0","25"\n"1","11:00 to 11:45","Room C","Sales Tactics for Startups and Scaleups","Taylor Mohylsky","Confirmed","Online","25","0","25"\n';
+  const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
+  await ctx.route('**/api/sheet/sessions**', r => r.fulfill({ status: 200, contentType: 'text/csv', body: csv }));
+  const p = await ctx.newPage(); await p.goto(BASE + '/screen/?t=10:52&quiet&scene=rooms');
+  await sleep(4500);
+  const withB = await p.evaluate(() => [...document.querySelectorAll('[data-sid]')].map(c => ({ sid: c.dataset.sid, seats: (c.querySelector('.seats span') || {}).textContent || null })));
+  await ctx.close();
+  const w = await wall('/screen/?t=10:52&quiet&scene=rooms', '1920x1080');
+  await sleep(4500);
+  const without = await md(w.p, cellFacts);
+  await w.close();
+  const a = withB.find(c => c.sid === '1A');
+  const ok = a && a.seats === '18 of 25 seats left' && withB.every(c => c.seats) && without.every(c => !c.seats);
+  return [ok, `tracker with a booking: ${withB.map(c => c.sid + ' "' + c.seats + '"').join(', ')}; tracker with none: seats shown on ${without.filter(c => c.seats).length} of ${without.length} cards`];
+});
+
 (async () => {
   if (process.argv.includes('--list')) { CHECKS.forEach(c => console.log(c.name)); return; }
   browser = await chromium.launch();
