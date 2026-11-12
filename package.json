@@ -11,7 +11,8 @@
     "start": "node server/index.mjs",
     "seed": "bash scripts/seed.sh http://localhost:8897",
     "test": "node scripts/e2e.cjs",
-    "deploy": "netlify deploy --prod"
+    "deploy": "netlify deploy --prod",
+    "baseline": "node scripts/baseline.cjs"
   },
   "dependencies": {
     "@netlify/blobs": "^11.1.9"
