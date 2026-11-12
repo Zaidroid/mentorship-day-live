@@ -529,8 +529,10 @@ async function signInUI(p, person, v) {
     await p.fill('#word', 'Patience'); await p.click('[data-act=answer-word]');
     check('the answer waits and says so', await until(async () => (await text(p, '#pollMsg')).includes('sends when you are back online')), await text(p, '#pollMsg'));
     await p.click('#t-today');
-    await p.locator('.star[data-b="3"][data-s="3C"]').click();
-    check('the star shows at once while offline', (await p.getAttribute('.star[data-b="3"][data-s="3C"]', 'aria-pressed')) === 'true');
+    // a session in the 13:00 hour that is not starred yet, so the tap adds a star
+    const sid3 = await p.locator('.star[data-b="3"][aria-pressed=false]').first().getAttribute('data-s');
+    await p.locator(`.star[data-b="3"][data-s="${sid3}"]`).click();
+    check('the star shows at once while offline', (await p.getAttribute(`.star[data-b="3"][data-s="${sid3}"]`, 'aria-pressed')) === 'true');
     const q = await p.evaluate(() => JSON.parse(localStorage.getItem('md_q') || '[]').map(x => x.kind));
     check('both wait in the queue', q.includes('answer') && q.includes('star'), q.join(', '));
     await shot(p, 'offline_banner');
@@ -539,7 +541,7 @@ async function signInUI(p, person, v) {
     check('the queue is sent when the connection returns', await until(async () => (await p.evaluate(() => JSON.parse(localStorage.getItem('md_q') || '[]').length)) === 0, 9000));
     check('the banner goes away', await until(async () => !(await visible(p, '#net'))));
     const me = await api('/api/me', devs.delta);
-    check('the server has the star sent from the queue', me.d.stars['3'] && me.d.stars['3'].sid === '3C');
+    check('the server has the star sent from the queue', me.d.stars['3'] && me.d.stars['3'].sid === sid3 && me.d.stars['3'].by === 'own', JSON.stringify(me.d.stars['3']));
     check('the answer and the star went out', posts.includes('answer') && posts.includes('star'), posts.join(', '));
     await p.ctx.close();
   }
