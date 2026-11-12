@@ -2,7 +2,9 @@
 // Serves public/ and runs the same Netlify Functions, backed by a local file based Blobs store.
 // The Netlify deploy does not use this file. Use it to run on your own server or a laptop at the venue.
 //
-//   REMOTE_PIN=123456 PORT=8080 DATA_DIR=./data node server/index.mjs
+//   REMOTE_PIN=123456 PORT=8080 DATA_DIR=./data LOCAL_CDN=1 node server/index.mjs
+//
+// LOCAL_CDN=1 keeps answers for their CDN time, as Netlify does (see below). npm start and the Docker image set it.
 //
 import http from "node:http";
 import fs from "node:fs/promises";
@@ -75,6 +77,37 @@ async function serveStatic(req, res, url) {
   } catch { res.writeHead(404, { "content-type": "text/plain" }); res.end("Not found"); }
 }
 
+// LOCAL_CDN=1 (npm start and the Docker image set it) does here what the Netlify CDN does for answers that carry
+// a CDN time: the same URL gets the same answer until that time is up, counted from the moment the answer started
+// to be made, and never more than 60 seconds. State is the same for every client, so 100 phones cost about one
+// state call a second instead of 100. Requests that come while a known public URL is being made wait for it.
+// Immutable answers (photos) and team requests (x-pin) are never kept. npm run dev and the tests leave it off,
+// so a write shows at once there.
+const LOCAL_CDN = process.env.LOCAL_CDN === "1";
+const CDN_MAX_S = 60;
+const kept = new Map(); // url -> { res, start, until, pending }
+function cdnSeconds(h) {
+  const v = h["netlify-cdn-cache-control"] || h["cdn-cache-control"] || "";
+  const m = /(?:s-maxage|max-age)=(\d+)/.exec(v);
+  return m && !/immutable/.test(v) ? Math.min(+m[1], CDN_MAX_S) : 0;
+}
+function fromCdn(key, make) {
+  const e = kept.get(key), now = Date.now();
+  if (e && e.res && now < e.until) return { ...e.res, age: now - e.start };
+  // A waiter whose shared answer is already older than its time makes its own.
+  if (e && e.pending) return e.pending.then(r => (Date.now() - e.start < r.ttl * 1000 ? { ...r, age: Date.now() - e.start } : make()));
+  const start = now;
+  const p = make().then(r => {
+    if (r.ttl > 0) kept.set(key, { res: r, start, until: start + r.ttl * 1000, pending: null });
+    else kept.delete(key);
+    return r;
+  }, err => { kept.delete(key); throw err; });
+  // Only a URL that answered with a CDN time before is shared while it is made, so private answers never are.
+  if (e) { e.start = start; e.res = null; e.pending = p; }
+  if (kept.size > 500) for (const [k, x] of kept) if (!x.pending && x.until < now) kept.delete(k);
+  return p;
+}
+
 http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
   for (const r of routes) {
@@ -84,12 +117,17 @@ http.createServer(async (req, res) => {
     const chunks = []; let size = 0;
     for await (const c of req) { size += c.length; if (size > MAX_BODY) { res.writeHead(413); return res.end("Too large"); } chunks.push(c); }
     const body = ["GET", "HEAD"].includes(req.method) ? undefined : Buffer.concat(chunks);
-    try {
+    const make = async () => {
       const out = await r.handler(new Request(url, { method: req.method, headers: req.headers, body }), { params: m.groups || {} });
       // There is no Netlify CDN here, so its headers stay behind (cdn-cache-control is one of the CDN policies).
-      const headers = Object.fromEntries(out.headers); for (const k of ["netlify-cdn-cache-control", "cdn-cache-control", "netlify-vary"]) delete headers[k];
-      res.writeHead(out.status, headers);
-      res.end(Buffer.from(await out.arrayBuffer()));
+      const headers = Object.fromEntries(out.headers), ttl = out.status === 200 ? cdnSeconds(headers) : 0;
+      for (const k of ["netlify-cdn-cache-control", "cdn-cache-control", "netlify-vary"]) delete headers[k];
+      return { status: out.status, headers, body: Buffer.from(await out.arrayBuffer()), ttl };
+    };
+    try {
+      const out = LOCAL_CDN && req.method === "GET" && !req.headers["x-pin"] ? await fromCdn(url.pathname + url.search, make) : await make();
+      res.writeHead(out.status, out.age === undefined ? out.headers : { ...out.headers, age: String(Math.floor(out.age / 1000)) });
+      res.end(out.body);
     } catch (e) { console.error(e); res.writeHead(500); res.end("Server error"); }
     return;
   }

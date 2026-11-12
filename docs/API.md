@@ -237,3 +237,4 @@ From the wall every 60 seconds: `{w, h, dpr, layout, mode, scenes, lite, fps, er
 * The scripts read the address from the `BASE` environment variable.
 * A rehearsal moves every clock: `curl -X POST <base>/api/op -H 'x-pin: 123456' -H 'x-who: Test' -H 'content-type: application/json' -d '{"action":"rehearsal","hhmm":"10:55"}'`.
 * `npm run test:api` starts its own servers and needs nothing running.
+* `npm start` and the Docker image set `LOCAL_CDN=1`. The self hosted server then keeps every answer that carries a CDN time for that time, at most 60 seconds, as the Netlify CDN would: state is made about once a second however many phones poll, and callers that arrive while it is made share it. Team requests (`x-pin`) and photos are never kept. `npm run dev`, the tests and a plain `node server/index.mjs` leave it off, so a write shows at once.

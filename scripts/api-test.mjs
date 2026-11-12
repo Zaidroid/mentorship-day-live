@@ -40,7 +40,7 @@ async function startServer(now = BEFORE_DAY, env = {}) {
 async function startServerOnce(now, extraEnv) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), "md26-api-test-"));
   const port = await freePort();
-  const child = spawn(process.execPath, ["server/index.mjs"], { cwd: ROOT, env: { ...process.env, REMOTE_PIN: PIN, PORT: String(port), DATA_DIR: dir, MD_TEST_FAKE_NOW: now, ...extraEnv }, stdio: ["ignore", "pipe", "pipe"] });
+  const child = spawn(process.execPath, ["server/index.mjs"], { cwd: ROOT, env: { ...process.env, REMOTE_PIN: PIN, PORT: String(port), DATA_DIR: dir, MD_TEST_FAKE_NOW: now, LOCAL_CDN: "0", ...extraEnv }, stdio: ["ignore", "pipe", "pipe"] });
   let out = ""; child.stdout.on("data", d => { out += d; }); child.stderr.on("data", d => { out += d; });
   const base = `http://127.0.0.1:${port}`;
   let up = false, gone = false;
@@ -346,6 +346,55 @@ describe("cdn", () => {
     for (const q of ["?p=z", "?p=__proto__", "?s=0", "?s=61", "?s=x"]) assert.equal((await call(S.base, "GET", "/api/cdn-probe" + q)).status, 400, q);
     assert.equal((await call(S.base, "POST", "/api/cdn-probe", { body: {} })).status, 405);
     assert.equal((await s.list()).blobs.length, before);
+  });
+});
+
+/* ---------- the self hosted server with LOCAL_CDN=1 (npm start, Docker) ---------- */
+describe("self hosted cdn cache", () => {
+  test("keeps an answer for the CDN time it advertises and never longer, and makes it once for many callers", async () => {
+    const C = await startServer(BEFORE_DAY, { LOCAL_CDN: "1" });
+    try {
+      // The server's clock against ours, from the team answer, which is never kept.
+      const t0 = Date.now(), g1 = await opGet(C.base), skew = g1.json.t - (t0 + Date.now()) / 2;
+      const g2 = await opGet(C.base);
+      assert.notEqual(g1.json.t, g2.json.t, "team answers are made fresh every time");
+      const a = await state(C.base), b = await state(C.base);
+      assert.equal(b.text, a.text, "a second read within the time gets the same answer");
+      assert.equal(b.headers.get("x-md-cache"), "a2"); assert.equal(b.headers.get("netlify-cdn-cache-control"), null);
+      // Reads for 5 seconds: no answer is older than 2 seconds, and a change shows within 2 seconds.
+      const sent = Date.now();
+      await op(C.base, { action: "ann", text: "Cache test", secs: 20 });
+      const ages = [], made = new Set(); let shown = 0;
+      while (Date.now() - sent < 5000) {
+        const r = await state(C.base);
+        ages.push(Date.now() + skew - r.json.t); made.add(r.json.t);
+        if (!shown && r.json.cfg.ann && r.json.cfg.ann.text === "Cache test") shown = Date.now();
+        await sleep(80);
+      }
+      assert.ok(shown && shown - sent <= 2150, "the change showed within 2 seconds: " + (shown - sent));
+      assert.ok(Math.max(...ages) < 2100, "oldest answer served (ms): " + Math.round(Math.max(...ages)));
+      assert.ok(made.size >= 2 && made.size <= 4, "made about once per 2 seconds: " + made.size);
+      // 30 requests at once after the time is up: one answer made for all of them
+      await sleep(2100);
+      const many = await Promise.all(Array.from({ length: 30 }, () => state(C.base)));
+      assert.ok(new Set(many.map(r => r.json.t)).size <= 2, "made once or twice for 30 callers: " + new Set(many.map(r => r.json.t)).size);
+      // While reactions are on, state advertises 1 second and is kept 1 second.
+      await op(C.base, { action: "rx", mode: "on" });
+      await sleep(2100);
+      const ages1 = [];
+      for (let end = Date.now() + 2500; Date.now() < end; await sleep(60)) { const r = await state(C.base); assert.equal(r.headers.get("x-md-cache"), "a1"); ages1.push(Date.now() + skew - r.json.t); }
+      assert.ok(Math.max(...ages1) < 1100, "oldest answer while reactions are on (ms): " + Math.round(Math.max(...ages1)));
+      // A phone's own answer is never kept.
+      const dev = newDev(), m1 = await call(C.base, "GET", "/api/me", { headers: { "x-dev": dev } });
+      await call(C.base, "POST", "/api/guest", { body: { name: "Cache Guest", hello: false }, headers: { "x-dev": dev } });
+      const m2 = await call(C.base, "GET", "/api/me", { headers: { "x-dev": dev } });
+      assert.equal(m1.json.status, "none"); assert.equal(m2.json.status, "guest");
+    } finally { await C.stop(); }
+  });
+
+  test("without LOCAL_CDN, as in npm run dev and these tests, every read is made fresh", async () => {
+    const a = await state(S.base); await sleep(5); const b = await state(S.base);
+    assert.notEqual(a.json.t, b.json.t);
   });
 });
 

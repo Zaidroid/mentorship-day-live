@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "REMOTE_PIN=${REMOTE_PIN:-123456} DATA_DIR=dev/blobs PORT=${PORT:-8897} node server/index.mjs",
-    "start": "node server/index.mjs",
+    "start": "LOCAL_CDN=${LOCAL_CDN:-1} node server/index.mjs",
     "seed": "bash scripts/seed.sh http://localhost:8897",
     "test": "node scripts/e2e.cjs",
     "test:api": "node --test --test-reporter=spec scripts/api-test.mjs",
