@@ -419,6 +419,75 @@ check('director-dwell', async () => {
   return [r.dwell === want && r.tick >= 4 && r.tick <= 7, `${r.photos} photos: Photo Wall dwell ${r.dwell} s (rule: 4 s a photo within 20 to 45 = ${want}), big photo changes every ${r.tick.toFixed(1)} s`];
 });
 
+/* ---------- Task 5: arrival and hellos ---------- */
+
+// A wall page whose state answers carry hellos and a here count set by the check (the rest is the real state).
+async function helloWall(url, size, fake) {
+  const [width, height] = size.split('x').map(Number);
+  const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 1 });
+  await ctx.route('**/api/state', async r => { const res = await r.fetch(); const j = await res.json(); fake.t = j.t; j.hello = fake.hello.slice(0, 12); j.n.here = fake.here; await r.fulfill({ response: res, body: JSON.stringify(j) }); });
+  const p = await ctx.newPage(); const errs = [];
+  p.on('pageerror', e => errs.push('pageerror: ' + e.message));
+  await p.goto(BASE + url);
+  await p.waitForFunction(() => window.__md && window.__md.slotState.length > 0, null, { timeout: 15000 });
+  return { p, ctx, errs, close: () => ctx.close().catch(() => {}) };
+}
+
+for (const v of ['a', 'b']) check(`arrival-hellos-${v}`, async () => {
+  // A hello from two minutes ago is in the list at load, and another old one turns up later: neither is news.
+  const fake = { hello: [{ f: 'Earlier', at: Date.now() - 120000 }], here: 5, t: 0 };
+  const w = await helloWall(`/screen/?t=09:40&quiet&v=${v}`, '1920x1080', fake);
+  await sleep(1500);
+  fake.hello = [{ f: 'Stale', at: fake.t - 90000 }].concat(fake.hello);
+  await sleep(4000);
+  const early = await md(w.p, () => ({ shown: document.querySelectorAll('.slot [data-hellos] .hello').length, here: (document.querySelector('[data-here]') || {}).textContent }));
+  // Five people arrive at once, and the count goes from 5 to 10.
+  const names = ['Layla', 'Omar', 'Mariam', 'Yousef', 'Hala'];
+  fake.hello = names.map((f, i) => ({ f, at: fake.t + i })).reverse().concat(fake.hello); fake.here = 10;
+  const t0 = Date.now(), firstSeen = {}, outAt = {}, counts = new Set(); let maxLive = 0;
+  while (Date.now() - t0 < 16000) {
+    const s = await md(w.p, () => ({ live: [...document.querySelectorAll('.slot [data-hellos] .hello')].map(e => ({ t: e.textContent.replace('Welcome, ', ''), out: e.classList.contains('out') })), here: (document.querySelector('[data-here]') || {}).textContent }));
+    const now = Date.now();
+    s.live.forEach(h => { if (!firstSeen[h.t]) firstSeen[h.t] = now; if (h.out && !outAt[h.t]) outAt[h.t] = now; });
+    maxLive = Math.max(maxLive, s.live.filter(h => !h.out).length); counts.add(s.here);
+    await sleep(100);
+  }
+  await w.close();
+  const durs = names.map(n => firstSeen[n] && outAt[n] ? outAt[n] - firstSeen[n] : -1);
+  const ok = early.shown === 0 && early.here === '5' && maxLive <= 3 && names.every(n => firstSeen[n]) && durs.every(d => d >= 3700 && d <= 4500) && counts.has('10') && [...counts].some(c => +c > 5 && +c < 10);
+  return [ok, `variant ${v}: an old hello at load shown ${early.shown}, count ${early.here}; five arrive at once: most on screen at a time ${maxLive} (rule 3), all shown ${names.every(n => firstSeen[n])}, each for ${durs.map(d => (d / 1000).toFixed(1)).join(', ')} s (rule 4), count passed ${[...counts].filter(Boolean).sort((a, b) => a - b).join(' ')}`];
+});
+
+check('arrival-ticker-outside-welcome', async () => {
+  const fake = { hello: [], here: 7, t: 0 };
+  const w = await helloWall('/screen/?t=11:20&quiet', '1920x1080', fake);
+  await sleep(1500);
+  fake.hello = [{ f: 'Rana', at: fake.t }, { f: 'Karim', at: fake.t - 1000 }];
+  await sleep(4500);
+  const r = await md(w.p, () => ({ box: !!document.querySelector('.slot [data-hellos]'), ticker: document.getElementById('tkIn').textContent }));
+  await w.close();
+  const m = /Welcome, Rana and Karim/.test(r.ticker);
+  return [!r.box && m, `in Sessions mode: hello column on screen ${r.box}; ticker says "Welcome, Rana and Karim": ${m}`];
+});
+
+check('arrival-qr-line', async () => {
+  const want = [['09:40', 'Scan and find your name'], ['10:45', 'Scan to pick your 11:00 session'], ['11:50', 'Scan to pick your 12:00 session'], ['11:20', 'Scan to join'], ['14:20', 'Scan to meet your 3 people']];
+  const got = [];
+  for (const [t, line] of want) {
+    const w = await wall(`/screen/?t=${t}&quiet`, '1920x1080');
+    await sleep(2000);
+    const r = await md(w.p, () => { const q = document.querySelector('#join .qr.ping'); return { text: (document.querySelector('#join b') || {}).textContent, ring: q ? getComputedStyle(q, '::after').animationDuration : '' }; });
+    got.push([t, r.text, r.ring, r.text === line && r.ring === '20s']);
+    await w.close();
+  }
+  const w = await wall('/screen/?t=10:45&quiet', '3840x1080');
+  await sleep(2000);
+  const rail = await md(w.p, () => { const q = document.querySelector('#rail .qr.ping'); return { text: (document.querySelector('#rail .qrtxt b') || {}).textContent, ring: q ? getComputedStyle(q, '::after').animationDuration : '' }; });
+  await w.close();
+  const ok = got.every(g => g[3]) && rail.text === 'Scan to pick your 11:00 session' && rail.ring === '20s';
+  return [ok, got.map(g => `${g[0]} "${g[1]}"${g[3] ? '' : ' WRONG'}`).join('; ') + `; rail at 3840x1080 10:45 "${rail.text}"; ring every ${rail.ring}`];
+});
+
 (async () => {
   if (process.argv.includes('--list')) { CHECKS.forEach(c => console.log(c.name)); return; }
   browser = await chromium.launch();

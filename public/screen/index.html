@@ -19,10 +19,12 @@
 html,body{width:100%;height:100%;overflow:hidden;color:var(--ink);font-family:SS3,system-ui,sans-serif;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;background:linear-gradient(180deg,var(--bg1),var(--bg2));transition:color var(--t-x) var(--ease)}
 /* Masked text: each line sits in its own clip and rises from behind its lower edge. The clip reaches past
    the line box so descenders are never cut, and is lifted (.ok) once the line has arrived. */
-.ln{display:block;overflow:hidden;padding:.12em 0 .2em;margin:-.12em 0 -.2em}
-.ln.ok{overflow:visible}
-.li{display:inline-block;white-space:nowrap}
-.li.lb{display:block;white-space:inherit}
+/* Custom tags, so no rule written for spans (.join span, .qrtxt span) can reach them. */
+m-l{display:block;overflow:hidden;padding:.12em 0 .2em;margin:-.12em 0 -.2em}
+m-l.ok{overflow:visible}
+m-i{display:inline-block;white-space:nowrap}
+m-i.lb{display:block;white-space:inherit}
+m-w{display:inline}
 ::view-transition-old(root),::view-transition-new(root){animation:none;mix-blend-mode:normal}
 #bg{position:fixed;inset:0;width:100%;height:100%;display:block}
 #app{position:fixed;inset:0;display:grid;grid-template-columns:calc(var(--u)*var(--nowW)) minmax(0,1fr) calc(var(--u)*var(--railW));grid-template-rows:minmax(0,1fr) calc(var(--u)*11.5) calc(var(--u)*8.2);column-gap:calc(var(--u)*3);padding:calc(var(--u)*3.2) calc(var(--u)*3.4) 0}
@@ -149,6 +151,10 @@ html,body{width:100%;height:100%;overflow:hidden;color:var(--ink);font-family:SS
 .qrrow{display:flex;gap:calc(var(--u)*1.8);align-items:center}
 .qr{background:#fff;border-radius:10px;padding:calc(var(--u)*.9);flex:none;box-shadow:var(--shadow)}
 .qr svg{display:block;width:100%;height:100%}
+/* the QR block of the moment: a soft ring every 20 seconds */
+.qr.ping{position:relative}
+.qr.ping:after{content:"";position:absolute;inset:calc(var(--u)*-.25);border:calc(var(--u)*.3) solid var(--red);border-radius:12px;opacity:0;pointer-events:none;animation:qrping 20s var(--ease) 3s infinite}
+@keyframes qrping{0%{opacity:.8;transform:scale(1)}7%{opacity:0;transform:scale(1.16)}100%{opacity:0;transform:scale(1.16)}}
 .qrph{flex:none;border:2px dashed var(--ink3);border-radius:10px;display:grid;place-items:center;text-align:center;color:var(--ink3);font-weight:700;font-size:calc(var(--u)*1.4);line-height:1.3}
 .qrtxt b{display:block;font-weight:700;font-size:calc(var(--u)*2);line-height:1.2}
 .qrtxt span{display:block;font-size:calc(var(--u)*1.5);color:var(--ink2);margin-top:calc(var(--u)*.6);line-height:1.3}
@@ -201,6 +207,21 @@ html,body{width:100%;height:100%;overflow:hidden;color:var(--ink);font-family:SS
 .hero .feat{display:flex;gap:calc(var(--u)*3.4);margin-top:calc(var(--u)*3.4);flex-wrap:wrap}
 .hero .feat span{display:flex;align-items:center;gap:calc(var(--u)*1.1);font-size:calc(var(--u)*2.2);font-weight:600}
 .hero .feat span:before{content:"";width:calc(var(--u)*1.1);height:calc(var(--u)*1.1);border-radius:50%;background:var(--red)}
+/* welcome: people here and hellos, variants a and b */
+.wv{flex:1;min-height:0;display:grid;align-items:center;column-gap:calc(var(--u)*4)}
+.wv .hero{min-width:0}
+.herecount{display:flex;align-items:baseline;gap:calc(var(--u)*1.4);margin-top:calc(var(--u)*2.8)}
+.herecount b{font-weight:300;line-height:.82;letter-spacing:-.03em;color:var(--ink)}
+.herecount span{font-weight:700;line-height:1.1;color:var(--ink)}
+.herecount.big{margin-top:0;flex-direction:column;align-items:flex-start;gap:calc(var(--u)*1.2)}
+.hellos{position:relative;min-width:0}
+.hello{position:absolute;left:0;right:0;top:calc(var(--row)*var(--hs)*2.6)}
+.hp{display:inline-flex;align-items:baseline;gap:.28em;max-width:100%;white-space:nowrap;font-size:var(--hs);font-weight:400;line-height:1.2;color:#fff;background:var(--red);padding:.42em .9em .46em;border-radius:calc(var(--u)*.7) calc(var(--u)*3) 0 calc(var(--u)*3)}
+.hp b{font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.wv.b .wr{min-width:0;display:flex;flex-direction:column;justify-content:center}
+.wv.b .wr .rule{height:calc(var(--u)*.6);background:var(--teal);margin:calc(var(--u)*2.6) 0 calc(var(--u)*2.2);width:100%}
+.wv.b .hello{top:calc(var(--row)*var(--hs)*1.5);font-size:var(--hs);font-weight:400;line-height:1.15;color:var(--ink);white-space:nowrap}
+.wv.b .hello b{font-weight:700;color:var(--red)}
 .speaker{flex:1;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:calc(var(--u)*6)}
 .speaker .k{font-size:calc(var(--u)*3);color:var(--ink2)}
 .speaker .nm{font-weight:700;line-height:.92;letter-spacing:-.02em;color:var(--red);margin-top:calc(var(--u)*1)}
@@ -615,7 +636,7 @@ R.thanks = (c) => { const keys = wallKeys(), cols = Math.max(3, Math.min(Math.ce
   return {title:'Thank You to Our Advisors', html:`<div class="wall" style="grid-template-columns:repeat(${cols},1fr)">${keys.map((k, i) => wallItem(k, size, i)).join('')}</div>`}; };
 
 function qrSvg(text){ try { const q = qrcode(0, 'M'); q.addData(text); q.make(); const n = q.getModuleCount(); let p = ''; for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) p += `M${c},${r}h1v1h-1z`; return `<svg viewBox="0 0 ${n} ${n}" shape-rendering="crispEdges"><path d="${p}" fill="#1F2E33"/></svg>`; } catch(e) { return ''; } }
-function qrBox(link, size, label){ return link ? `<div class="qr" style="width:calc(var(--u)*${size});height:calc(var(--u)*${size})">${qrSvg(link)}</div>` : `<div class="qrph" style="width:calc(var(--u)*${size});height:calc(var(--u)*${size})">${label}</div>`; }
+function qrBox(link, size, label, cls){ return link ? `<div class="qr ${cls || ''}" style="width:calc(var(--u)*${size});height:calc(var(--u)*${size})">${qrSvg(link)}</div>` : `<div class="qrph" style="width:calc(var(--u)*${size});height:calc(var(--u)*${size})">${label}</div>`; }
 const CLOUD_COLORS = ['#DF6236','#2F9CC3','var(--ink)','#E78B3F'];
 R.poll = (c) => {
   const vertical = c.w < 80, big = c.w >= 120, choice = S.pollType === 'choice', q = S.pollQ || 'The next poll opens soon';
@@ -644,12 +665,85 @@ function layoutCloud(el){
   if (!still()) box.querySelectorAll('span.new i').forEach((w, k) => w.animate([{transform:'translateY(110%)'}, {transform:'none'}], {duration:M.e, delay:Math.min(k, M.max) * M.stag, easing:M.out, fill:'backwards'}));
 }
 
+/* Welcome, with "N people are here" and a hello for each person who arrives (docs/PLAN.md WP4 task 5).
+   Two variants for the look gate, ?v=a and ?v=b:
+     a  Greeting Pills: the title on one line in a left column; the count as a light numeral under the rule;
+        each hello is an orange leaf pill in a column beside the title, unfolding from its square corner.
+     b  Big Count: the title stacked on two lines; beside it the count is the hero numeral, and each hello
+        is a large line of type ("Welcome," and the name in orange) rising from behind its edge.
+   The number and the hellos change in place (hereTick, helloTick), so a repaint never cuts a hello short.
+   With nobody here yet the count is left out and the welcome line of version 1 shows instead. */
+const VARIANT = P.get('v') === 'a' ? 'a' : 'b'; // b is the recommendation; a stays one URL option away
+const WELCOME_P = 'A full day of practical guidance, connecting tech professionals with experienced local and international advisors.';
+const FEAT = '<div class="feat rv"><span>Focused Sessions</span><span>One to One Conversations</span><span>Networking and Lunch</span></div>';
 R.welcome = (c) => {
-  const fs = Math.min(14, c.w / 7.6);
-  return {title:'Welcome', html:`<div class="hero"><div class="k tx">Welcome to</div><h1 class="tx" style="font-size:calc(var(--u)*${fs})">Mentorship Day</h1><div class="rule dr"></div>
-    <p class="tx">A full day of practical guidance, connecting tech professionals with experienced local and international advisors.</p>
-    <div class="feat rv"><span>Focused Sessions</span><span>One to One Conversations</span><span>Networking and Lunch</span></div></div>`};
+  const here = S.n.here > 0, state = here ? 'here' : 'plain';
+  if (VARIANT === 'b') {
+    // "Mentorship" is about 4.7 em wide and the whole title 6.5 em, so at lw / 4.9 the title breaks into two lines.
+    const lw = (c.w - 4) * .5, fs = Math.min(15, lw / 5.2), nw = c.w - 4 - lw, num = Math.min(26, c.h * .34, nw * .42), hs = Math.min(5, nw / 9);
+    const right = here
+      ? `<div class="herecount big rv"><b data-here style="font-size:calc(var(--u)*${num.toFixed(2)})">0</b><span data-here-label style="font-size:calc(var(--u)*${Math.min(3.6, num * .17).toFixed(2)})"></span></div><div class="rule dr"></div><div class="hellos" data-hellos style="height:calc(var(--u)*${(hs * 1.5 * 3).toFixed(2)});--hs:calc(var(--u)*${hs.toFixed(2)})"></div>`
+      : `<p class="tx" style="margin-top:0">${WELCOME_P}</p>`;
+    return {title:'Welcome', state, html:`<div class="wv b" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr)"><div class="hero"><div class="k tx">Welcome to</div><h1 class="tx" style="font-size:calc(var(--u)*${fs.toFixed(2)})">Mentorship Day</h1><div class="rule dr"></div>${FEAT}</div><div class="wr">${right}</div></div>`};
+  }
+  // The pill size lets "Welcome, " and an 18 letter first name fit the column beside the title.
+  const lw = (c.w - 4) * (c.w > 100 ? .66 : .62), fs = Math.min(14, lw / 7.1), ps = Math.min(3, (c.w - 4 - lw) / 11.2);
+  const lower = here
+    ? `<div class="herecount rv"><b data-here style="font-size:calc(var(--u)*${Math.min(9, fs * .9).toFixed(2)})">0</b><span data-here-label style="font-size:calc(var(--u)*${Math.min(3, fs * .3).toFixed(2)})"></span></div>`
+    : `<p class="tx">${WELCOME_P}</p>`;
+  return {title:'Welcome', state, html:`<div class="wv a" style="grid-template-columns:minmax(0,${lw.toFixed(1)}fr) minmax(0,${(c.w - 4 - lw).toFixed(1)}fr)"><div class="hero"><div class="k tx">Welcome to</div><h1 class="tx" style="font-size:calc(var(--u)*${fs.toFixed(2)})">Mentorship Day</h1><div class="rule dr"></div>${lower}${FEAT}</div><div class="hellos" data-hellos style="--hs:calc(var(--u)*${ps.toFixed(2)});height:calc(var(--u)*${(ps * 2.6 * 3).toFixed(2)})"></div></div>`};
 };
+// The count: counts up from what it showed last (from 0 the first time), and words itself for one or many.
+const HERE = {shown:0};
+function hereTick(){
+  const el = document.querySelector('.slot [data-here]'); if (!el) return;
+  const to = S.n.here || 0, lab = el.parentNode.querySelector('[data-here-label]');
+  if (lab) { const t = to === 1 ? 'person is here' : 'people are here'; if (lab.textContent !== t) lab.textContent = t; }
+  if (el.dataset.to === String(to)) return;
+  const from = el.dataset.to === undefined ? (HERE.shown || 0) : +el.dataset.to; el.dataset.to = to;
+  if (still() || from === to) { el.textContent = to; HERE.shown = to; return; }
+  const t1 = performance.now(), step = t => { const f = Math.min(1, (t - t1) / M.x), e = 1 - Math.pow(1 - f, 3); el.textContent = Math.round(from + (to - from) * e); if (f < 1) requestAnimationFrame(step); else HERE.shown = to; };
+  requestAnimationFrame(step);
+}
+// Hellos: the newest 12 come with each state. New ones queue; at most three show at once, one new every
+// 0.7 seconds, each for 4 seconds, in the welcome scene while it is on screen. A hello reaches the wall within
+// seconds of being made, so one more than 30 seconds from the state's time is history, not news (after a reload,
+// a stale cached state, or a rehearsal clock that jumped). In other modes hellos go to the ticker only.
+const HELLO = {seen:new Set(), queue:[], live:[], leaving:new Set(), lastIn:0};
+function helloEvents(list, t, cached){
+  list.slice().reverse().forEach(h => { const k = h.at + '|' + h.f; if (HELLO.seen.has(k)) return; HELLO.seen.add(k); if (cached || Math.abs(t - h.at) > 30000) return; HELLO.queue.push({f:h.f, came:Date.now()}); });
+  if (HELLO.queue.length > 12) HELLO.queue.splice(0, HELLO.queue.length - 12);
+}
+const welcomeShown = () => slotState.some(st => st.id === 'welcome');
+function helloTick(){
+  const now = Date.now(), box = document.querySelector('.slot [data-hellos]');
+  HELLO.live = HELLO.live.filter(h => { if (h.el.isConnected && now - h.at < 4000) return true; if (h.el.isConnected) helloOut(h); return false; });
+  HELLO.queue = HELLO.queue.filter(h => now - h.came < 60000);
+  if (!box || S.momentKey || !HELLO.queue.length || HELLO.live.length >= 3 || now - HELLO.lastIn < 700) return; // they wait while a moment covers the stage
+  // A leaving hello keeps its row until it is gone, so a new one never lands on top of it.
+  const used = new Set(HELLO.live.map(h => h.row).concat([...HELLO.leaving])); if (used.size >= 3) return; let row = 0; while (used.has(row)) row++;
+  const h = HELLO.queue.shift(), el = document.createElement('div');
+  el.className = 'hello'; el.style.setProperty('--row', row);
+  el.innerHTML = VARIANT === 'b' ? `<m-l class="ln"><m-i class="li">Welcome, <b><bdi>${esc(h.f)}</bdi></b></m-i></m-l>` : `<span class="hp lf">Welcome, <b><bdi>${esc(h.f)}</bdi></b></span>`;
+  box.appendChild(el); HELLO.lastIn = now; HELLO.live.push({el, at:now, row, f:h.f});
+  // A long name gets smaller type rather than being cut: the line shrinks to fit its column, to 60 percent at most.
+  const t = el.firstElementChild, room = box.clientWidth;
+  if (VARIANT !== 'b') { t.style.maxWidth = 'none'; t.style.width = 'max-content'; }
+  const need = VARIANT === 'b' ? t.querySelector('.li').offsetWidth : t.offsetWidth;
+  t.style.maxWidth = t.style.width = '';
+  // Measured widths can round a few pixels short of what the text needs, so keep 3 percent headroom.
+  if (need > room * .97) t.style.fontSize = (parseFloat(getComputedStyle(t).fontSize) * Math.max(.6, room * .95 / need)).toFixed(1) + 'px';
+  if (!still()) { if (VARIANT === 'b') riseLine(el.querySelector('.li'), 0); else unfold(el.querySelector('.hp'), 0); }
+}
+function helloOut(h){
+  const el = h.el, gone = () => { el.remove(); HELLO.leaving.delete(h.row); };
+  HELLO.leaving.add(h.row); el.classList.add('out');
+  if (still()) { gone(); return; }
+  const a = VARIANT === 'b' ? el.querySelector('.li').animate([{transform:'none'}, {transform:'translateY(-110%)'}], {duration:M.s, easing:M.io, fill:'forwards'}) : recede(el, M.e);
+  if (VARIANT === 'b') el.querySelector('.ln').classList.remove('ok');
+  a.finished.then(gone, gone);
+}
+setInterval(() => { hereTick(); helloTick(); }, 250);
 R.speaker = (c) => {
   const m = nowMin(); let i = S.speaker; if (i === null) { i = 0; SPEAKERS.forEach((s, j) => { if (m >= toMin(s.s)) i = j; }); }
   const sp = SPEAKERS[Math.max(0, Math.min(SPEAKERS.length - 1, i))];
@@ -688,6 +782,7 @@ function applyState(d, cached){
   if (d.t && !cached && fakeBase === null) { const use = Math.abs(S.skew) > 15000; if (use !== CLOCK.use || (use && Math.abs(S.skew - CLOCK.skew) > 15000)) S.dataKey = ''; CLOCK.use = use; CLOCK.skew = S.skew; }
   if (d.n) S.n = Object.assign({here:0, board:0, links:0, photos:0, takeaways:0, answers:0}, d.n);
   S.interest = d.interest || {}; S.hello = d.hello || []; S.rx = d.rx || null; S.phase = d.phase || ''; S.reh = !!d.reh;
+  helloEvents(S.hello, d.t || Date.now(), cached);
   const p = d.poll;
   if (p) { S.pollId = p.id; S.pollQ = p.q; S.pollType = p.type; S.pollOpen = !!p.open; S.pollTotal = p.total || 0; S.pollOpts = p.options || [];
     if (p.type === 'choice') { const m = Object.fromEntries(p.words || []); S.poll = S.pollOpts.map(o => [o, m[o] || 0]); } else S.poll = p.words || []; }
@@ -759,7 +854,23 @@ setInterval(checkPerf, 500);
 function emptyJoin(title, text, c){ const col = c.w < 70;
   return `<div style="flex:1;display:flex;align-items:center;justify-content:center;gap:calc(var(--u)*4);${col ? 'flex-direction:column;text-align:center' : ''}"><div class="rv">${qrBox(CONFIG.join, Math.min(24, Math.max(14, c.w * .3)), '')}</div>
     <div style="max-width:calc(var(--u)*54)"><div class="tx" style="font-weight:700;font-size:calc(var(--u)*${col ? 3.6 : 4.6});line-height:1.05;color:var(--red);text-wrap:balance">${esc(title)}</div><div class="dr" style="height:calc(var(--u)*.45);background:var(--teal);width:calc(var(--u)*12);margin:calc(var(--u)*1.8) ${col ? 'auto' : '0'} 0"></div><p class="tx" style="font-size:calc(var(--u)*2.1);color:var(--ink2);line-height:1.4;margin-top:calc(var(--u)*1.8)">${esc(text)}</p></div></div>`; }
-function joinBlock(){ const el = $('join'); if (L.wide) { el.style.display = 'none'; return; } el.style.display = ''; el.innerHTML = `${qrBox(CONFIG.join, 9, '')}<div><b>Scan to join</b><span>Live poll, photo wall and the Networking Board</span></div>`; }
+// The QR block (in the now zone, or in the rail on an ultra wide wall) says one line that fits the moment:
+// find your name until the coffee break, pick your session in a break before a block, meet your 3 people at
+// lunch. Times come from the program in day.js.
+function joinLine(){
+  const m = nowMin(), choose = PROGRAM.find(p => p.mode === 'choose'), lunch = PROGRAM.find(p => p.mode === 'lunch'), nb = nextBlock(m);
+  if (choose && m < toMin(choose.s)) return {b:'Scan and find your name'};
+  if (nb && phase(m).kind !== 'session' && toMin(nb.s) - m <= 20) return {b:`Scan to pick your ${nb.s} session`};
+  if (lunch && m >= toMin(lunch.s) && m < toMin(lunch.e) && S.flags.meet !== false) return {b:'Scan to meet your 3 people'};
+  return {b:'Scan to join', s:'Live poll, photo wall and the Networking Board'};
+}
+function joinBlock(){
+  const el = $('join'); if (L.wide) { el.style.display = 'none'; el.innerHTML = ''; el.dataset.k = ''; return; }
+  el.style.display = ''; const j = joinLine(), key = j.b + '|' + (j.s || '');
+  if (el.dataset.k === key) return; el.dataset.k = key;
+  el.innerHTML = `${qrBox(CONFIG.join, 9, '', 'ping')}<div><b class="tx">${esc(j.b)}</b>${j.s ? `<span>${esc(j.s)}</span>` : ''}</div>`;
+  reveal(el, !!S.started);
+}
 
 /* Networking Board */
 function tagBalance(){ const m = {}; (S.profiles || []).forEach(p => { (p.looking || []).forEach(t => { (m[t] = m[t] || {t, lk:0, of:0}).lk++; }); (p.offer || []).forEach(t => { (m[t] = m[t] || {t, lk:0, of:0}).of++; }); }); return Object.values(m).sort((a, b) => (b.lk + b.of) - (a.lk + a.of)); }
@@ -818,7 +929,8 @@ R.way = (c) => {
 /* ============ Rail ============ */
 function renderRail(){
   if (!L.wide) return;
-  const m = nowMin(), o = openSlots(m).length, booked = SLOTS.filter(x => x.status === 'Booked').length, kp = [];
+  const m = nowMin(), o = openSlots(m).length, booked = SLOTS.filter(x => x.status === 'Booked').length, kp = [], jl = joinLine();
+  if (S.n.here) kp.push([S.n.here, 'people here']);
   if (S.checkedIn) kp.push([S.checkedIn, 'checked in']);
   kp.push([booked, 'one to ones booked']);
   if (S.pollTotal) kp.push([S.pollTotal, 'poll answers']);
@@ -828,7 +940,7 @@ function renderRail(){
   const wifi = S.wifi.name ? `<div class="mod glass"><h3>WiFi</h3><div style="font-size:calc(var(--u)*2);font-weight:700">${esc(S.wifi.name)}</div><div class="muted" style="font-size:calc(var(--u)*1.7);margin-top:calc(var(--u)*.4)">Password ${esc(S.wifi.pass)}</div></div>` : '';
   $('rail').innerHTML = `<div class="mod glass"><h3>One to Ones <em>${o}</em></h3>${chipsHtml(m, true)}<div class="foot">${o} open. Book at the registration desk.</div></div>
     <div class="mod glass"><h3>Right now</h3><div class="kpis">${kp.slice(0, 4).map(x => `<div class="kpi"><b data-count="${x[0]}">${x[0]}</b><span>${x[1]}</span></div>`).join('')}</div></div>
-    <div class="mod glass"><div class="qrrow">${qrBox(CONFIG.join, 11.5, '')}<div class="qrtxt"><b>Scan to join</b><span>Live poll, photo wall and the Networking Board</span></div></div></div>${wifi}`;
+    <div class="mod glass"><div class="qrrow">${qrBox(CONFIG.join, 11.5, '', 'ping')}<div class="qrtxt"><b>${esc(jl.b)}</b>${jl.s ? `<span>${esc(jl.s)}</span>` : ''}</div></div></div>${wifi}`;
   $('rail').querySelectorAll('.rv').forEach(e => e.classList.remove('rv'));
   countUps($('rail'));
 }
@@ -853,11 +965,11 @@ function splitLines(els){
   els.forEach(el => {
     if (el.dataset.ln) return; el.dataset.ln = '1';
     const t = el.textContent; if (!t.trim()) return;
-    if (el.children.length) { el.innerHTML = `<span class="ln"><span class="li lb">${el.innerHTML}</span></span>`; return; }
-    plain.push(el); el.innerHTML = t.trim().split(/\s+/).map(w => `<span>${esc(w)}</span>`).join(' ');
+    if (el.children.length) { el.innerHTML = `<m-l class="ln"><m-i class="li lb">${el.innerHTML}</m-i></m-l>`; return; }
+    plain.push(el); el.innerHTML = t.trim().split(/\s+/).map(w => `<m-w>${esc(w)}</m-w>`).join(' ');
   });
   const lines = plain.map(el => { const out = []; let top = null; [...el.children].forEach(w => { const y = w.offsetTop; if (top === null || y - top > 2) { out.push([]); top = y; } out[out.length - 1].push(w.textContent); }); return out; });
-  plain.forEach((el, i) => { el.innerHTML = lines[i].map(l => `<span class="ln"><span class="li">${esc(l.join(' '))}</span></span>`).join(''); });
+  plain.forEach((el, i) => { el.innerHTML = lines[i].map(l => `<m-l class="ln"><m-i class="li">${esc(l.join(' '))}</m-i></m-l>`).join(''); });
 }
 const lift = a => { const ln = a.effect.target.parentNode; a.finished.then(() => ln.classList.add('ok'), () => {}); };
 function riseLine(li, delay, dur){ const a = li.animate([{transform:'translateY(110%)'}, {transform:'none'}], {duration:dur || M.e, delay, easing:M.out, fill:'backwards'}); lift(a); return a; }
@@ -881,7 +993,7 @@ function reveal(root, animate){
 // The slot title: the old one rises out, the new one rises in from behind the same edge.
 function setTitle(h2, text, animate){
   if (h2.dataset.t === text) return; const had = h2.dataset.t !== undefined; h2.dataset.t = text;
-  const put = anim => { h2.innerHTML = `<span class="ln${anim ? '' : ' ok'}"><span class="li">${esc(text)}</span></span>`; if (anim) riseLine(h2.querySelector('.li'), 0); };
+  const put = anim => { h2.innerHTML = `<m-l class="ln${anim ? '' : ' ok'}"><m-i class="li">${esc(text)}</m-i></m-l>`; if (anim) riseLine(h2.querySelector('.li'), 0); };
   if (!animate || still() || !had) { put(animate && !still()); return; }
   const old = h2.querySelector('.li'); if (!old) { put(true); return; }
   old.parentNode.classList.remove('ok');
@@ -1148,7 +1260,9 @@ function moments(){
 let tkHtml = '', tkX = 0, tkW = 0, tkT = performance.now();
 function tickerItems(){
   const m = nowMin(), o = [], ph = phase(m), nb = nextBlock(m);
-  if (S.ann) o.push(`<span class="ann">${esc(S.ann)}</span>`);
+  if (S.ann) o.push(`<span class="ann" dir="auto">${esc(S.ann)}</span>`);
+  // Hellos go to the ticker when the welcome scene is not on screen: the newest six of the last 10 minutes.
+  if (!welcomeShown()) { const t = Date.now() + S.skew, names = S.hello.filter(h => t - h.at < 600000).slice(0, 6).map(h => `<bdi>${esc(h.f)}</bdi>`); if (names.length) o.push(`<span>Welcome, ${names.length > 1 ? names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1] : names[0]}</span>`); }
   if (ph.kind === 'session') SESSIONS.filter(s => s.b === ph.b.n).forEach(s => o.push(`<span>On now in ${esc(s.room)}: ${esc(s.title)} with ${esc(names(s.who))}</span>`));
   if (nb && toMin(nb.s) - m <= 25) SESSIONS.filter(s => s.b === nb.n).forEach(s => o.push(`<span>${nb.s} in ${esc(s.room)}: ${esc(s.title)}</span>`));
   const op = openSlots(m); if (op.length) o.push(`<span>${op.length} one to one slots still open, next at ${op[0].s} with ${esc(adv(op[0].who).name)}. Book at the registration desk.</span>`);
@@ -1267,7 +1381,7 @@ function loop(force){
   if (!rebuilt && (force || dk !== S.dataKey)) refreshScenes(); else if (rebuilt) renderRail();
   S.dataKey = dk;
   slotState.forEach(direct);
-  nowZone(); garden(); moments(); updateTicker(); checkSparks();
+  nowZone(); garden(); moments(); updateTicker(); checkSparks(); joinBlock();
   reloadPending();
   WD.tick = Date.now();
 }
