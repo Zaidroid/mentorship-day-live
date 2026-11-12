@@ -41,9 +41,71 @@ export function CDN(seconds) {
   };
 }
 
-export async function readCfg(s) { const c = await s.get("cfg", { type: "json" }); return { ...DEFAULT_CFG, ...(c || {}) }; }
-export async function writeCfg(s, cfg) { cfg.at = Date.now(); await s.setJSON("cfg", cfg); return cfg; }
-export async function readPolls(s) { return (await s.get("polls", { type: "json" })) || DEFAULT_POLLS; }
+// A refusal with an HTTP status and a plain sentence. update() passes it on and writes nothing.
+export class Refuse extends Error { constructor(status, message) { super(message); this.status = status; } }
+
+// Runs fn alone among callers in this process that use the same lock name.
+const locks = new Map();
+export async function withLock(name, fn) {
+  const prev = locks.get(name) || Promise.resolve();
+  let release; const done = new Promise(r => { release = r; });
+  const tail = prev.then(() => done);
+  locks.set(name, tail);
+  await prev;
+  try { return await fn(); }
+  finally { release(); if (locks.get(name) === tail) locks.delete(name); }
+}
+
+// Changes a shared JSON blob (cfg, snap, polls, people) without losing a change made at the same time.
+// Reads the value, applies fn, and writes only if nobody wrote in between (onlyIfMatch with the etag
+// of what was read, onlyIfNew for a key that did not exist). Otherwise reads again, up to 6 tries.
+// fn gets the current value, or a copy of init when the key is missing. It may change the value in
+// place or return a new one, and may be async. A Refuse thrown by fn is passed on, nothing written.
+// Callers in one process also queue on a lock per key. The local Blobs server checks the etag and
+// writes in separate steps, so two writes can both pass; the lock keeps the self hosted server
+// correct. On Netlify the etag check is atomic and covers separate function instances.
+export function update(s, key, fn, { init = {} } = {}) {
+  return withLock("blob:" + key, () => tryUpdate(s, key, fn, init));
+}
+let etagOnRead = true; // becomes false on a store that returns no etag with reads (the local server)
+async function readTagged(s, key) {
+  if (etagOnRead) {
+    const r = await s.getWithMetadata(key, { type: "json" });
+    if (r === null) return { data: null, etag: null };
+    if (r.etag) return { data: r.data, etag: r.etag };
+    etagOnRead = false;
+  }
+  // Take the etag from a listing first and read after it, so the etag is never newer than the data.
+  const { blobs } = await s.list({ prefix: key });
+  const b = blobs.find(x => x.key === key);
+  if (!b) return { data: null, etag: null };
+  return { data: await s.get(key, { type: "json" }), etag: b.etag };
+}
+async function tryUpdate(s, key, fn, init) {
+  for (let i = 0; i < 6; i++) {
+    const cur = await readTagged(s, key);
+    const base = cur.data == null ? structuredClone(init) : cur.data;
+    const out = await fn(base);
+    const value = out === undefined ? base : out;
+    const res = cur.etag ? await s.setJSON(key, value, { onlyIfMatch: cur.etag }) : await s.setJSON(key, value, { onlyIfNew: true });
+    if (res.modified) return value;
+    await new Promise(r => setTimeout(r, 10 + Math.random() * 30 * (i + 1)));
+  }
+  throw new Error(`Could not save ${key}: too many changes at once.`);
+}
+
+// The config with defaults filled in. A fresh copy each time, so nobody changes DEFAULT_CFG by accident.
+export function mergeCfg(c) { return { ...structuredClone(DEFAULT_CFG), ...(c || {}) }; }
+export async function readCfg(s) { return mergeCfg(await s.get("cfg", { type: "json" })); }
+// Changes the config through update(). fn changes the config in place. cfg.at always moves forward.
+export function updateCfg(s, fn) {
+  return update(s, "cfg", async c => {
+    const cfg = mergeCfg(c); const out = await fn(cfg); const next = out === undefined ? cfg : out;
+    next.at = Math.max(Date.now(), ((c && c.at) || 0) + 1); return next;
+  });
+}
+export async function readPolls(s) { return (await s.get("polls", { type: "json" })) || structuredClone(DEFAULT_POLLS); }
+export const updatePolls = (s, fn) => update(s, "polls", fn, { init: DEFAULT_POLLS });
 export async function readSnap(s) { return (await s.get("snap", { type: "json" })) || { photos: [], profiles: [] }; }
 
 export const devOk = d => /^[a-z0-9]{8,40}$/i.test(d || "");
