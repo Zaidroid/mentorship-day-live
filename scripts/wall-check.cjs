@@ -295,8 +295,10 @@ check('motion-cloud-and-moment', async () => {
   const w = await wall('/screen/?t=11:20&quiet&lite=0&scene=poll', '1920x1080');
   await w.p.waitForFunction(() => document.querySelectorAll('.cloud span.new').length > 0, null, { timeout: 6000 }).catch(() => {});
   const cloud = await md(w.p, scriptAnims);
+  // Mark the word elements; if a repaint had replaced them mid entrance, the marks would be gone.
+  await md(w.p, () => document.querySelectorAll('.cloud span').forEach(s => { s.__rose = 1; }));
   await sleep(2500);
-  const kept = await md(w.p, () => ({ words: document.querySelectorAll('.cloud span').length, stillNew: document.querySelectorAll('.cloud span.new').length }));
+  const kept = await md(w.p, () => ({ words: document.querySelectorAll('.cloud span').length, stillNew: [...document.querySelectorAll('.cloud span')].filter(s => s.__rose).length }));
   await w.close();
   const w2 = await wall('/screen/?t=10:54:58&quiet&lite=0', '1920x1080');
   await w2.p.waitForFunction(() => !!window.__md.S.momentKey, null, { timeout: 8000 });
@@ -305,7 +307,7 @@ check('motion-cloud-and-moment', async () => {
   await w2.close();
   const bad = judgeAnims(cloud.concat(mom));
   const words = cloud.filter(a => a.kind === 'I').length, lines = mom.filter(a => a.kind === 'line').length, panel = mom.filter(a => /scale\(1\.06\)/.test(a.first.transform || '') && a.kind !== 'scene' && a.kind !== 'block').length;
-  return [!bad.length && words > 0 && kept.stillNew === kept.words && lines > 0 && panel > 0, `cloud words rising: ${words}, 2.5 s later the same words are still the ones that rose (${kept.stillNew} of ${kept.words}, no repaint cut them); moment panel comes forward: ${panel > 0}; moment lines rising: ${lines}; faults: ${bad.join('; ') || 'none'}`];
+  return [!bad.length && words > 0 && kept.stillNew === kept.words && lines > 0 && panel > 0, `cloud words rising: ${words}, 2.5 s later the same word elements are still in place (${kept.stillNew} of ${kept.words}: no repaint replaced them); moment panel comes forward: ${panel > 0}; moment lines rising: ${lines}; faults: ${bad.join('; ') || 'none'}`];
 });
 
 /* ---------- Task 4: the director ---------- */
