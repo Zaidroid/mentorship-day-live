@@ -63,6 +63,8 @@ function save(name, text, raw) {
   const pv = phone.filter(x => x.name.includes(ONLY));
   for (const x of pv) {
     const ctx = await b.newContext({ ...devices['iPhone 13'], viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
+    // The first visit opens the sign in sheet, which covers the tabs. Skip it for text snaps.
+    await ctx.addInitScript(() => { try { localStorage.setItem('md_skip', '1'); } catch (e) {} });
     const p = await ctx.newPage();
     p.on('pageerror', e => problems.push(x.name + ': ' + e.message));
     await p.goto(BASE + '/?t=' + x.t); await p.waitForTimeout(1500);

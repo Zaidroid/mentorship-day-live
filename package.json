@@ -12,6 +12,8 @@
     "seed": "bash scripts/seed.sh http://localhost:8897",
     "test": "node scripts/e2e.cjs",
     "test:api": "node --test --test-reporter=spec scripts/api-test.mjs",
+    "test:phone": "node scripts/e2e-phone.cjs",
+    "test:remote": "node scripts/e2e-remote.cjs",
     "deploy": "netlify deploy --prod",
     "baseline": "node scripts/baseline.cjs",
     "probe": "node scripts/probe.cjs",
