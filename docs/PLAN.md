@@ -71,6 +71,9 @@ Verified on 12 November by running the code:
 * `rebuild()` in `netlify/lib/store.mjs` reads every profile and photo on each approval. Fine for one operator, too slow and racy once approvals are automatic.
 * Port 8899 is taken on Zaid's main server by another service. Local work uses 8897.
 * The tracker's Participants tab has headers only. The real list is the registration response sheet (69 responses on 12 November). It has name, mobile number, company, job title, LinkedIn, topics of interest and a photo consent answer. It has no room assignments.
+* Found by WP0: `theme=dark` in the wall URL is replaced by `cfg.theme` on the first state answer, so against a running server the option does nothing. `scripts/wall-urls.cjs` works around it by pressing the T key. WP4 task 1 fixes it.
+* Found by WP0: at 3840x1920 before 10:00, the Today's Advisors grid is 19 px taller than its slot. Listed in `scripts/probe-known.json`. WP4 task 1 fixes it and removes the entry.
+* Found by WP0: this machine is busy. Chromium crashes with more than one 3840 wide page open, so the baseline and the probe run one page at a time: about 12 minutes for the baseline, about 20 for the full probe.
 * Installed `@netlify/blobs` is 11.1.9. Conditional writes work (`onlyIfNew`, `onlyIfMatch`), also on the local server. One catch, tested: on the local server `getWithMetadata` returns no etag, so read the etag from `list({prefix:key})` or from the result of the last `set`.
 
 ## 3. Decisions From Zaid, 12 November
@@ -86,6 +89,9 @@ Verified on 12 November by running the code:
 | Not chosen | Screens in the session rooms. Sound on the wall |
 | Freeze | Sunday 15 November, evening |
 | Builder | A plan that Opus or Sonnet can execute. See section 1.1 |
+| Who is accepted | For now, everyone in the response sheet |
+| Sessions | Free choice. Each person starts with a session picked for them in each block, from the advisor, topic and time they asked for at registration, and can change it. See section 5.11 |
+| Poll questions and times | Approved as drafted in `DEFAULT_POLLS` and `pollPlan` |
 
 ## 4. The Experience, Moment by Moment
 
@@ -130,7 +136,8 @@ globalThis.MD_DAY = {
   speakers: [/* the three rows from the wall file */],
   videos: [{ id: "tareq", title: "Tareq Azza", src: "/videos/tareq-azza.mp4" }, { id: "kassim", title: "KassimLegal", src: "/videos/kassimlegal.mp4" }],
   pollPlan: [{ id: "p2", from: "09:00", to: "10:40" }, { id: "p1", from: "10:40", to: "12:00" }, { id: "p3", from: "12:00", to: "13:40" }, { id: "p4", from: "13:40", to: "15:00" }],
-  reactionWindows: [{ from: "10:00", to: "10:40" }, { from: "14:00", to: "15:00" }]
+  reactionWindows: [{ from: "10:00", to: "10:40" }, { from: "14:00", to: "15:00" }],
+  topicMap: { "Business development and international sales": ["1A", "1C"] /* and the rest of the table in 5.11 */ }
 };
 ```
 
@@ -149,7 +156,7 @@ Copy every value from the existing files. Do not retype titles from memory. The 
 * Not on the list: "Continue as a guest", type the name once. Guests can do everything, but their card and takeaways wait for approval.
 * If a phone made a guest card and then signs in as a person, move `pr/g...` to `pr/p...` once, best effort.
 
-What the server keeps per person, in the private blob `people`: `id, name, first, company, title, linkedin, topics, photoOk, k4, rooms, slot`. `k4` is `hmac(secret, id + ":" + last4)`. Emails and full phone numbers never reach the server: the remote reduces each row in the browser before sending (WP6).
+What the server keeps per person, in the private blob `people`: `id, name, first, company, title, linkedin, topics, advisorPref, photoOk, k4, rooms, slot`. `advisorPref` is `remote`, `local` or empty, from the registration question about preferred advisors. `k4` is `hmac(secret, id + ":" + last4)`. Emails and full phone numbers never reach the server: the remote reduces each row in the browser before sending (WP6).
 
 ### 5.4 Storage Keys
 
@@ -163,7 +170,7 @@ Existing keys stay as they are, except that profile keys move from device id to 
 | `here/<pub>` | marker, first sign in | claim, guest |
 | `hi/<time>~<pub>~<first>` | hello for the wall, only with consent | claim, guest |
 | `fail/<pid>/<dev>~<time>` | wrong last 4 digits | claim |
-| `star/<block>/<pub>/<sid>` | one starred session per block | star |
+| `star/<block>/<pub>/<sid>~<own or auto>` | one session per block. `auto` was picked for the person, `own` was chosen by them | claim, star |
 | `rx/<window>/<dev>~<c>~<h>~<b>~<rand>` | one batch of reactions. `window` is server time divided by 4000, floored | react |
 | `rxt/<minute>/<n>~<rand>` | running total helper, optional | react |
 | `code/<nnn>` | value is `pub`. 3 digit meet code, 100 to 999 | profile approval, with `onlyIfNew` |
@@ -227,11 +234,11 @@ All new phone endpoints take `x-dev`. All errors are `{error: "plain sentence"}`
 | Route | Body | Returns | Notes |
 | --- | --- | --- | --- |
 | `GET /api/who?q=` | | `{list: [{id, name}]}` | 3 letters minimum. Matches the start of any word in the name, Latin or Arabic, case and diacritics ignored. 40 searches per phone per 10 minutes |
-| `POST /api/claim` | `{id, last4, hello}` | `{ok, me}` | 401 with `{left}` on a wrong code, 423 when locked |
+| `POST /api/claim` | `{id, last4, hello}` | `{ok, me}` | 401 with `{left}` on a wrong code, 423 when locked. On a person's first sign in, writes their picked sessions, see 5.11 |
 | `POST /api/guest` | `{name, hello}` | `{ok, me}` | Name through `clean` and `isBad` |
 | `POST /api/signout` | | `{ok}` | Deletes `who/<dev>` only |
-| `GET /api/me` | | `{status, me, stars, profile, code, links, takeaways, feedback}` | `status` is `none`, `guest` or `person`. `me` has `pub, name, first, company, title, linkedin, suggest, rooms, slot, photoOk`. Replaces `GET /api/profile` on the phone |
-| `POST /api/star` | `{b, sid}` | `{ok, stars}` | `sid` null removes. One per block |
+| `GET /api/me` | | `{status, me, stars, profile, code, links, takeaways, feedback}` | `status` is `none`, `guest` or `person`. `me` has `pub, name, first, company, title, linkedin, suggest, rooms, slot, photoOk`. `stars` is `{1: {sid, by, why}}` where `by` is `own`, `auto` or `team` and `why` is the registration topic behind an automatic pick. Replaces `GET /api/profile` on the phone |
+| `POST /api/star` | `{b, sid}` | `{ok, stars}` | `sid` null removes. One per block. Always stored as `own`, and replaces an automatic pick |
 | `POST /api/react` | `{c: {clap, heart, bloom}}` | 204 | Each count capped at 12. One batch per phone per second. 409 when reactions are off |
 | `POST /api/profile` | as today | `{ok, status}` | Auto approved for a verified person when `flags.trustProfiles` is on. Assigns the meet code on approval |
 | `POST /api/meet` | `{code}` | `{ok, person}` | Both must be on the board. Not yourself. Same pair twice is fine and does nothing. 5 wrong codes per phone per 10 minutes, 60 connections per person |
@@ -273,6 +280,32 @@ New `op` actions, all logged: `peopleImport {people}`, `peopleUnlock {id}`, `reh
 
 Optional, only when `ALERT_TELEGRAM_BOT` and `ALERT_TELEGRAM_CHAT` are set. One helper `alert(kind, text)`, at most one message per kind per 3 minutes, 2.5 second timeout, never fails the request. Kinds: photos waiting, guest card or takeaway waiting, a person locked out, an error reported by the wall, 50 wrong PINs in 10 minutes. The message carries a count and the remote link, never a name.
 
+### 5.11 Picked for You
+
+Sessions are free choice, but nobody starts from an empty page. On a person's first sign in the server picks one session per block from what they asked for at registration, and stores it as an `auto` star. The person can keep it or change it with one tap.
+
+`day.js` carries the mapping as `topicMap`, keyed by the English part of each registration topic. It is a draft until Zaid approves it (section 10):
+
+| Registration topic | Sessions |
+| --- | --- |
+| Business development and international sales | 1A, 1C |
+| AI adoption and applied AI | 1B |
+| Product management and strategy | 2A |
+| Fundraising, finance, and scaling a company | 3A |
+| Career growth and remote work | 3C, 3B |
+| Engineering leadership and architecture | 3B, 1B |
+
+Rules, per block:
+
+1. Score each session: 3 points for each of the person's topics that maps to it, plus 1 point when the delivery fits their advisor preference (`remote` with Online, `local` with In person).
+2. Take the highest score above zero. Ties go to the session with fewer people planning to join, then to room order.
+3. Skip a session that already has as many people planning to join as it has seats, and take the next.
+4. No session scores above zero: no pick. The phone asks the person to choose.
+5. A room assigned by the team in the import always wins, shows as "Your seat", and is returned with `by: "team"`.
+6. Picks are made once. They are never recalculated after the first sign in, and a choice by the person is never overwritten.
+
+Words on the phone: "Picked for you", with the reason on one line ("Because you chose AI adoption and applied AI"), and two actions, "Keep" and "Change". "Keep" turns the pick into `own`. The wall counts `own` and `auto` stars together as "planning to join".
+
 ## 6. Work Packages
 
 Each task: priority, what to build, and how to know it is done.
@@ -293,7 +326,7 @@ Done when: the baseline folder exists, `npm test` and `npm run probe` pass on `m
 
 Read first: section 5, all of `netlify/`, `server/index.mjs`.
 
-1. P0. `public/assets/day.js` and `netlify/lib/day.mjs` as in 5.2 and 5.5. Adapters in the wall and phone files, old literals deleted. Screenshots must match the WP0 baseline.
+1. P0. `public/assets/day.js` and `netlify/lib/day.mjs` as in 5.2 and 5.5. Adapters in the wall and phone files, old literals deleted. Proof that nothing changed: before editing, save the visible text of `#app` (wall) and `main` (phone) for every baseline view to `dev/text-before/`; after editing, save it again and diff. The diff must be empty apart from the seconds of the clock. Pixels cannot be compared because the background moves.
 2. P0. `update()` helper as in 5.4, with a test that runs 20 concurrent updates on one key and loses none, on the local server.
 3. P0. Ids as in 5.3. Move profiles to `pub` keys. `/api/op` returns `pub` ids, and its approve, decline and remove actions take them.
 4. P0. State and snap as in 5.6. `snap` changes through `update`. Wall and phone read lists from the snap.
@@ -308,7 +341,7 @@ Done when: `npm test`, `npm run test:api` and `npm run probe` pass, and no respo
 Read first: sections 5.3 to 5.10.
 
 1. P0. `who`, `claim`, `guest`, `signout`, `me`, with limits and lockout. `peopleImport`, `peopleUnlock`.
-2. P0. `star` and `interest` in state.
+2. P0. `star` and `interest` in state. Picked sessions on first sign in as in 5.11, with an API test for each of the six rules.
 3. P0. Poll schedule as in 5.8, with `pollManual`.
 4. P0. Auto approval of verified cards, `here` and `hello`.
 5. P1. `react` and `rx` in state, with the 1 second CDN time while on.
@@ -337,7 +370,7 @@ Read first: section 4, section 7, the whole of `public/screen/index.html`, then 
 
 Keep: the three layouts, the U unit, both themes, every keyboard key, every URL option, the offline behavior.
 
-1. P0. Plumbing. `day.js`, state and snap, the clock rule, heartbeat every 30 seconds, reload when `cfg.reloadAt` is newer than page load (never during a video or a moment), `navigator.wakeLock`, `window.onerror` into the next beat, a watchdog that reloads if the main loop has not ticked for 20 seconds. Expose `window.__md = {S, slotState, force(id)}` for probes.
+1. P0. Plumbing. `day.js`, state and snap, the clock rule, heartbeat every 30 seconds, reload when `cfg.reloadAt` is newer than page load (never during a video or a moment), `navigator.wakeLock`, `window.onerror` into the next beat, a watchdog that reloads if the main loop has not ticked for 20 seconds. Expose `window.__md = {S, slotState, force(id)}` for probes. `theme=` in the URL wins over `cfg.theme`, and the T key workaround leaves `scripts/wall-urls.cjs`. Fix the Today's Advisors overflow at 3840x1920 and remove its entry from `scripts/probe-known.json`.
 2. P0. Performance governor. Measure frame time for the first 6 seconds and then on a rolling 120 frames. If the average stays over 22 ms for 3 seconds, set `data-lite` on the root: no `backdrop-filter` (glass becomes a solid fill at .86 alpha), no blur in reveals, half the background nodes, at most 30 effect particles. Never switch back in the same session. Report `lite` and fps in the beat. `?lite=1` and `?lite=0` force it. The screen check view shows fps and lite state.
 3. P0. Motion system, as in section 7.2. One set of duration and easing tokens. Scene change, title change, leaf pills, blue rules and numbers each get one treatment, used everywhere.
 4. P0. The director. Replace fixed rotation with `nextFor(slot)`:
@@ -376,8 +409,9 @@ Four tabs in a bar at the bottom, inside the safe area: My Day, Live, People, Ph
    | Phase `before` | "See you on Tuesday", date, place, doors at 09:30. Star your sessions below |
    | 09:00 to 10:00 | "Good morning, Layla". Opening at 10:00 in the Main Hall, with a countdown. Button to the first poll. Button to join the Networking Board if not on it |
    | 10:00 to 10:40 | "On stage now" with the speaker or video title. Button to Live for reactions |
-   | Break before a block, no star | "Pick your 11:00 session": the block's sessions as three large choices with "N planning to join" |
-   | Break before a block, starred | "Next: Room A at 11:00", title, advisor, countdown. "Change" link |
+   | Break before a block, automatic pick | "Picked for you: Room B at 11:00", title, advisor, the reason line, countdown. "Keep" and "Change" |
+   | Break before a block, no pick | "Pick your 11:00 session": the block's sessions as three large choices with "N planning to join" |
+   | Break before a block, own choice or kept | "Next: Room A at 11:00", title, advisor, countdown. "Change" link |
    | 5 minutes before | The same card turns orange, vibrates once, and the tab title changes |
    | In a block, starred | "You are in Room A until 11:45", title, advisor, a progress bar |
    | In a block, no star | The block's sessions, marked "On now", plus "In the Main Hall? Meet people" to the People tab |
@@ -386,7 +420,7 @@ Four tabs in a bar at the bottom, inside the safe area: My Day, Live, People, Ph
    | 14:00 to 15:00 | "Lunch and Networking". Mission progress, button to People |
    | Phase `after` | See task 9 |
 
-   Below the card: the three blocks with a star per session (one per block, tapping another moves it), One to Ones with "Book yours at the registration desk", the full agenda folded. If the import carried assigned rooms, that session is starred already and labeled "Your seat".
+   Below the card: the three blocks with a star per session (one per block, tapping another moves it), One to Ones with "Book yours at the registration desk", the full agenda folded. An automatic pick shows a small "Picked for you" tag until the person keeps or changes it. If the import carried assigned rooms, that session is starred already and labeled "Your seat".
 4. P0. Live tab. The current poll, exactly as today, with the answer field or the choices first. Numbers of the day from `n`.
 5. P1. Reactions on the Live tab and as a floating pad on My Day while `rx.on`: three large round buttons with the drawn shapes. Each tap animates on the phone at once. Taps are batched and sent every 1.2 seconds.
 6. P1. Takeaways. In the window: the session (starred, or a short picker, or "I was not in a session"), five flowers to tap for the rating, one optional line "One thing you are taking away", a switch "Show my first name", Send. Afterward the card shows "Thank you" and whether the line is on the wall or waiting.
@@ -402,7 +436,7 @@ Done when: the extended end to end test passes at 390x844 in Chromium and WebKit
 Read first: section 5.7, `public/remote/index.html`. Keep its look: it is a tool, not a showpiece.
 
 1. P0. New first tab, Status. The wall: online or not, seconds since the last beat, mode, scenes, size, lite, last error. "Running by itself": what the clock rules are doing and what comes next ("Poll changes at 12:00", "Reactions on until 10:40"). Counts from `n`. What is waiting. One row of one tap announcements: "Sessions start in 5 minutes", "Lunch is served in the Main Hall", "Group photo in the Main Hall now", "One to one slots are open at the registration desk".
-2. P0. People tab. Import: choose the CSV file downloaded from the response sheet, or paste rows copied from it. Parse in the browser (quoted cells with line breaks included), find columns by header text ("full name", "mobile number", "company", "job title", "linkedin", "which topics", "consent to photos"; and when present "status", "block 1 room", "block 2 room", "block 3 room", "one to one slot"), skip empty rows, keep the newest row per phone number, and show a preview: how many people, how many skipped and why. Only then send `{name, company, title, linkedin, topics, photoOk, last4, rooms, slot}` per person. The email and the full number never leave the browser. Below: who has signed in, who is locked with an Unlock button, guests.
+2. P0. People tab. Import: choose the CSV file downloaded from the response sheet, or paste rows copied from it. Parse in the browser (quoted cells with line breaks included), find columns by header text ("full name", "mobile number", "company", "job title", "linkedin", "which topics", "which advisors", "consent to photos"; and when present "status", "block 1 room", "block 2 room", "block 3 room", "one to one slot"), skip empty rows, keep the newest row per phone number, and show a preview: how many people, how many skipped and why. Topics are read by looking for each known topic from `topicMap` inside the cell, never by splitting on commas, because one topic contains commas itself. Every row is accepted unless a Status column says otherwise. Only then send `{name, company, title, linkedin, topics, advisorPref, photoOk, last4, rooms, slot}` per person. The email and the full number never leave the browser. Below: who has signed in, who is locked with an Unlock button, guests.
 3. P0. Tools box on Status: start a rehearsal at a chosen time and stop it, Reload the Wall, Repair Lists, feature switches from `cfg.flags`, and Wipe Test Data behind typing the phrase.
 4. P1. Approve tab: takeaways queue with approve and decline, a remove button on approved ones, the three trust switches from 5.9, and "Add team photos" (choose several, sent with the PIN, approved at once).
 5. P1. Polls tab: "Follows the schedule" or "Held by you", with "Back to the schedule". Screen tab: reactions Auto, On, Off; finale step buttons; "Group photo in 60 seconds"; survey link field.
@@ -455,7 +489,7 @@ Send him: both variants of each, at 390x844 for the phone and 3840x1920 for the 
 
 ### 8.1 Always
 
-`npm test`, `npm run test:api`, `npm run probe` before every commit that ends a task.
+`npm test` and `npm run test:api` before every commit that ends a task. For the wall, `npm run probe -- --only <view>` on the views the task touched. The full `npm run probe` (about 20 minutes on this machine, one page at a time) runs at the end of each package and at every gate. A finding goes into `scripts/probe-known.json` only when it is a version 1 fault with a planned fix, never to hide a new one.
 
 ### 8.2 Rehearsal
 
@@ -523,9 +557,9 @@ Never cut: the id fix, sign in, My Day, the poll schedule, the heartbeat, the pe
 Nothing below is invented in the build. Each stays out or stays a draft until answered.
 
 1. Print: the QR address `https://mentorship-day-live.netlify.app/` is final and can go on the day card and badges now. The tracker says print by 13 November. Suggested line for the card: "Scan, find your name, confirm with the last 4 digits of your mobile number."
-2. Is every person in the response sheet accepted? The import takes every row unless a Status column says otherwise.
-3. Rooms: assigned per person, or free choice on the day? This plan assumes free choice with stars, and shows an assigned room when the import has one.
-4. Poll questions and the four poll times in `pollPlan`.
+2. Answered 12 November: for now everyone in the response sheet is accepted. Say if that changes before the import on Tuesday morning.
+3. Answered 12 November: free choice, with a session picked for each person by advisor, topic and time. The topic to session table in section 5.11 is my draft of that. Please approve or correct it.
+4. Answered 12 November: poll questions and the four poll times are approved.
 5. Networking tags, and these suggestions from registration topics: Business development and international sales to Clients; AI adoption and applied AI to AI and Tech; Fundraising, finance, and scaling a company to Funding; Product management and strategy to Product; Career growth and remote work to Mentoring; Engineering leadership and architecture to no suggestion.
 6. Wording check against the Mercy Corps safeguarding policy for three consents: hello on the wall, connections on the wall, takeaways with a first name.
 7. Team PIN: at least 8 characters with letters, since the remote can now import people and wipe data. Do not change it after the import.
