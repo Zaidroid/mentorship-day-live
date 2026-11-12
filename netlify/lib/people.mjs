@@ -3,7 +3,7 @@
 // and public ids only, and no answer to a phone carries k4, a last 4 digits value, or a bare person id.
 import crypto from "node:crypto";
 import { DAY, toMin, fmtMin } from "./day.mjs";
-import { clean, firstWord, cleanLinkedin, readSnap, withLock, TOPIC_TAGS } from "./store.mjs";
+import { clean, firstWord, cleanLinkedin, readSnap, readCfg, withLock, TOPIC_TAGS } from "./store.mjs";
 import { personId, personPub, k4Of, normName } from "./ids.mjs";
 
 export const PEOPLE_MAX = 800;
@@ -123,6 +123,49 @@ export async function syncTeam(s, person) {
 }
 // The registration topic behind an automatic pick, or null when the pick came from the advisor preference only.
 export const whyOf = (person, sid) => (person && (person.topics || []).find(t => (DAY.topicMap[t] || []).includes(sid))) || null;
+// Stars as the phone sees them: { 1: { sid, by, why } }. A team seat from the import always wins.
+export function starsOf(person, stored) {
+  const rooms = (person && person.rooms) || {}, out = {};
+  for (const b of BLOCKS) {
+    if (rooms[b]) out[b] = { sid: rooms[b], by: "team", why: null };
+    else if (stored[b] && stored[b].by !== "team") out[b] = { sid: stored[b].sid, by: stored[b].by, why: stored[b].by === "auto" ? whyOf(person, stored[b].sid) : null };
+  }
+  return out;
+}
+
+/* ---------- Picked for You (docs/PLAN.md section 5.11) ---------- */
+
+// 3 points for each of the person's topics that maps to the session in MD_DAY.topicMap,
+// plus 1 when the delivery fits the advisor preference (remote with Online, local with In person).
+export function pickScore(person, x) {
+  const topics = (person.topics || []).filter(t => (DAY.topicMap[t] || []).includes(x.id)).length;
+  const fit = (person.advisorPref === "remote" && x.mode === "Online") || (person.advisorPref === "local" && x.mode === "In person");
+  return 3 * topics + (fit ? 1 : 0);
+}
+// One pick per block: the highest score above zero; ties go to fewer people planning to join, then room order;
+// a session as full as its seats is skipped. Blocks with a team seat or a star already get nothing.
+// counts is "planning to join" per session now. Returns { block: sid }.
+export function pickFor(person, counts, have = {}) {
+  const out = {};
+  for (const b of BLOCKS) {
+    if ((person.rooms || {})[b] || have[b]) continue;
+    const ranked = DAY.sessions.filter(x => x.b === b)
+      .map(x => ({ x, score: pickScore(person, x), n: counts[x.id] || 0, room: DAY.rooms.indexOf(x.room) }))
+      .filter(c => c.score > 0)
+      .sort((c, d) => d.score - c.score || c.n - d.n || c.room - d.room);
+    const pick = ranked.find(c => !(c.x.seats > 0) || c.n < c.x.seats);
+    if (pick) out[b] = pick.x.id;
+  }
+  return out;
+}
+// Writes the picks of a person's first sign in as auto stars. Never touches a block that has a star.
+export async function makePicks(s, person) {
+  const pub = personPub(person.id);
+  const [all, have] = await Promise.all([s.list({ prefix: "star/" }), readStars(s, pub)]);
+  const picks = pickFor(person, interestFrom(all.blobs), have);
+  await Promise.all(Object.entries(picks).map(([b, sid]) => writeStar(s, +b, pub, sid, "auto")));
+  return picks;
+}
 
 /* ---------- the answer of GET /api/me (also returned by claim and guest) ---------- */
 
@@ -157,11 +200,7 @@ export async function meBody(s, w, { people } = {}) {
   ]);
   const person = ppl ? personOf(ppl, w.pid) : null;
   const me = meOf(w, person);
-  const st = {};
-  for (const b of BLOCKS) {
-    if (me.rooms[b]) st[b] = { sid: me.rooms[b], by: "team", why: null };
-    else if (stars[b] && stars[b].by !== "team") st[b] = { sid: stars[b].sid, by: stars[b].by, why: stars[b].by === "auto" ? whyOf(person, stars[b].sid) : null };
-  }
+  const st = starsOf(person, stars);
   const board = new Map(snap.profiles.map(p => [p.id, p]));
   const links = pairsFrom(cx.blobs).filter(([a, b]) => a === pub || b === pub).map(([a, b, at]) => ({ other: a === pub ? b : a, at }))
     .filter(x => board.has(x.other)).map(({ other, at }) => { const p = board.get(other); return { id: other, name: p.name, company: p.company, role: p.role, linkedin: p.linkedin, at }; });
@@ -187,8 +226,10 @@ export async function markSigned(s, pub, kind, name) {
 }
 // What happens after a person or a guest signs in. w is the new who record, prev the one before.
 export async function afterSignIn(s, { w, prev, person }) {
+  const cfg = await readCfg(s);
   const first = await markSigned(s, w.pub, w.status, w.name);
   if (person) await syncTeam(s, person);
+  if (person && first && cfg.flags.picks) await makePicks(s, person);
   return { first };
 }
 // Called by GET /api/me for a phone that signed in earlier. Filled in by the here and hello task.

@@ -5,7 +5,7 @@
 // The server runs with a test clock (MD_TEST_FAKE_NOW), so the date guards can be tested
 // on any real day. Every response is recorded, and the last test checks that no response
 // carries a device id.
-import { test, describe, before, after } from "node:test";
+import { test, describe, before, after, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
@@ -21,6 +21,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const PIN = "test-pin-4821";
 const BEFORE_DAY = "2026-11-13T12:00:00+02:00"; // Friday 13 November at noon, venue time
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+const ALL_FLAGS = { trustProfiles: true, trustTakeaways: true, trustPhotos: false, hello: true, picks: true, meet: true, takeaways: true };
 
 /* ---------- servers ---------- */
 async function freePort() {
@@ -277,7 +278,7 @@ describe("state", () => {
     assert.deepEqual(Object.keys(d.poll).sort(), ["id", "manual", "open", "options", "q", "total", "type", "words"]);
     assert.equal(d.poll.manual, true);
     assert.ok(d.poll.words.some(([w]) => w === "clarity"));
-    assert.deepEqual(d.cfg.flags, { trustProfiles: true, trustTakeaways: true, trustPhotos: false });
+    assert.deepEqual(d.cfg.flags, ALL_FLAGS);
     assert.equal(d.reh, false); assert.equal(d.phase, "before");
     assert.ok(Math.abs(d.t - Date.parse(BEFORE_DAY)) < 10 * 60 * 1000, "t follows the server clock");
     assert.equal(d.rx.on, false); assert.equal(d.rx.total, 0); assert.equal(d.rx.b.length, 2);
@@ -631,7 +632,7 @@ describe("wipe", () => {
     assert.deepEqual(g.log.map(l => l.what), ["Wiped the test data"]);
     assert.deepEqual(g.cfg.way, { registration: "left", rooms: "up right" });
     assert.equal(g.cfg.mode, "auto"); assert.deepEqual(g.cfg.hidden, []); assert.equal(g.cfg.rehearsal, null);
-    assert.deepEqual(g.cfg.flags, { trustProfiles: true, trustTakeaways: true, trustPhotos: false });
+    assert.deepEqual(g.cfg.flags, ALL_FLAGS);
     assert.ok(g.polls.some(x => x.q === "What did you learn today?"));
     assert.equal(g.screen, null); assert.deepEqual(g.pending, { photos: [], profiles: [] });
     assert.equal((await s.get("people", { type: "json" }))[0].name, "Sample Person");
@@ -905,6 +906,128 @@ describe("sign in", () => {
     assert.equal((await call(P.base, "GET", "/api/me")).status, 400);
     const fresh = await me(P.base, newDev());
     assert.equal(fresh.json.status, "none"); assert.deepEqual(fresh.json.stars, {});
+  });
+});
+
+/* ---------- stars, interest and Picked for You (plan section 5.11) ---------- */
+describe("stars and picks", () => {
+  let P, s, n = 0;
+  // A person made for one test: a sample name with its own made up number, so every test has a fresh person.
+  const person = (name, extra = {}) => ({ name, last4: String(4000 + (++n)), company: "", title: "", topics: [], advisorPref: "", ...extra });
+  const signIn = async (p, dev = newDev()) => { const r = await claim(P.base, dev, { id: pubOf(p), last4: p.last4 }); assert.equal(r.status, 200, r.text); return { ...r.json, dev }; };
+  const load = async list => { const r = await op(P.base, { action: "peopleImport", people: list }); assert.equal(r.status, 200, r.text); };
+  const clearStars = async () => { const { blobs } = await s.list({ prefix: "star/" }); await Promise.all(blobs.map(b => s.delete(b.key))); };
+  const fill = async (sid, count) => { const b = sid[0]; for (let i = 0; i < count; i++) await s.set(`star/${b}/g${String(i).padStart(10, "0")}/${sid}~own`, ""); };
+  const star = (dev, body) => call(P.base, "POST", "/api/star", { body, headers: { "x-dev": dev } });
+  const sids = stars => Object.fromEntries(Object.entries(stars).map(([b, x]) => [b, x.sid]));
+  before(async () => { P = await startServer(); s = await openDirect(P.dir); });
+  beforeEach(async () => { if (s) await clearStars(); });
+  after(async () => { await P.stop(); await openDirect(S.dir); });
+
+  test("a star per block, own, replaced by the next, removed with null, counted in interest", async () => {
+    const d = newDev();
+    let r = await star(d, { b: 1, sid: "1A" });
+    assert.equal(r.status, 200, r.text);
+    assert.deepEqual(r.json, { ok: true, stars: { 1: { sid: "1A", by: "own", why: null } } });
+    r = await star(d, { b: 1, sid: "1B" });
+    assert.deepEqual(sids(r.json.stars), { 1: "1B" });
+    await star(d, { b: 3, sid: "3C" });
+    assert.deepEqual((await state(P.base)).json.interest, { "1B": 1, "3C": 1 });
+    r = await star(d, { b: 1, sid: null });
+    assert.deepEqual(sids(r.json.stars), { 3: "3C" });
+    assert.deepEqual((await state(P.base)).json.interest, { "3C": 1 });
+    assert.deepEqual((await me(P.base, d)).json.stars, { 3: { sid: "3C", by: "own", why: null } }, "a phone that never signed in can star");
+    for (const body of [{ b: 4, sid: "1A" }, { b: "1", sid: "1A" }, { b: 1, sid: "2A" }, { b: 1, sid: "9Z" }, { b: 1 }, { b: 2, sid: ["2A"] }]) assert.equal((await star(d, body)).status, 400, JSON.stringify(body));
+    assert.equal((await call(P.base, "POST", "/api/star", { body: { b: 1, sid: "1A" } })).status, 400, "x-dev is required");
+  });
+
+  test("rule 1: 3 points per topic, plus 1 when the delivery fits the advisor preference", async () => {
+    const a = person("Layla Khoury", { topics: ["Business development and international sales", "AI adoption and applied AI", "Engineering leadership and architecture"], advisorPref: "remote" });
+    const b = person("Omar Saleh", { topics: ["Business development and international sales", "AI adoption and applied AI"], advisorPref: "remote" });
+    const c = person("Rana Odeh", { advisorPref: "remote" });
+    await load([a, b, c]);
+    // a: 1A 3+1, 1B 3+3, 1C 3+1; 2A nothing; 3A 0+1, 3B 3
+    const ra = await signIn(a);
+    assert.deepEqual(ra.stars, { 1: { sid: "1B", by: "auto", why: "AI adoption and applied AI" }, 3: { sid: "3B", by: "auto", why: "Engineering leadership and architecture" } });
+    await clearStars();
+    // b: 1A 3+1 beats 1B 3, because of the preference point; 3A is Online, so it scores 1
+    assert.deepEqual(sids((await signIn(b)).stars), { 1: "1A", 3: "3A" });
+    await clearStars();
+    // c: the preference alone scores 1: Online sessions only, and the reason is empty
+    const rc = await signIn(c);
+    assert.deepEqual(rc.stars, { 1: { sid: "1A", by: "auto", why: null }, 3: { sid: "3A", by: "auto", why: null } });
+  });
+
+  test("rule 2: a tie goes to fewer people planning to join, then to room order", async () => {
+    const d = person("Dina Haddad", { topics: ["Business development and international sales"] });
+    const e = person("Karim Nasser", { topics: ["Business development and international sales"] });
+    await load([d, e]);
+    assert.deepEqual(sids((await signIn(d)).stars), { 1: "1A" }, "1A and 1C score 3, same interest, Room A first");
+    assert.deepEqual(sids((await signIn(e)).stars), { 1: "1C" }, "1A now has one more person planning to join");
+    assert.deepEqual((await state(P.base)).json.interest, { "1A": 1, "1C": 1 }, "automatic picks count as planning to join");
+  });
+
+  test("rule 3: a session as full as its seats is skipped for the next best", async () => {
+    const f = person("Yousef Amin", { topics: ["AI adoption and applied AI", "Business development and international sales"] });
+    const g = person("Layla Khoury", { topics: ["AI adoption and applied AI"] });
+    await load([f, g]);
+    await fill("1B", 25);
+    assert.equal((await state(P.base)).json.interest["1B"], 25);
+    assert.deepEqual(sids((await signIn(f)).stars), { 1: "1A" }, "1B is full, 1A and 1C score 3, Room A first");
+    assert.deepEqual((await signIn(g)).stars, {}, "1B is full and nothing else scores above zero");
+  });
+
+  test("rule 4: nothing scores above zero, so there is no pick", async () => {
+    const h = person("Rana Odeh");
+    const i = person("Omar Saleh", { advisorPref: "local", topics: ["Product management and strategy"] });
+    await load([h, i]);
+    const rh = await signIn(h);
+    assert.deepEqual(rh.stars, {});
+    assert.deepEqual((await me(P.base, rh.dev)).json.stars, {});
+    assert.deepEqual(sids((await signIn(i)).stars), { 1: "1B", 2: "2A", 3: "3B" }, "local preference: In person sessions score 1, 2A scores 3+1");
+  });
+
+  test("rule 5: a room assigned by the team wins, as team, and cannot be changed by the person", async () => {
+    const j = person("Karim Nasser", { topics: ["AI adoption and applied AI", "Fundraising, finance, and scaling a company"], rooms: { 1: "Room C" } });
+    await load([j]);
+    const r = await signIn(j);
+    assert.deepEqual(r.stars, { 1: { sid: "1C", by: "team", why: null }, 3: { sid: "3A", by: "auto", why: "Fundraising, finance, and scaling a company" } });
+    assert.deepEqual(r.me.rooms, { 1: "1C" });
+    const no = await star(r.dev, { b: 1, sid: "1B" });
+    assert.equal(no.status, 409); assert.equal(no.json.error, "Your seat in this block was set by the team. Ask at the registration desk to change it.");
+    assert.equal((await star(r.dev, { b: 1, sid: null })).status, 409);
+    assert.equal((await star(r.dev, { b: 3, sid: "3B" })).status, 200, "other blocks stay free");
+    assert.deepEqual((await state(P.base)).json.interest, { "1C": 1, "3B": 1 });
+    // a new import moves the seat for a person who signed in already
+    await load([{ ...j, rooms: { 1: "1A" } }]);
+    assert.deepEqual(sids((await me(P.base, r.dev)).json.stars), { 1: "1A", 3: "3B" });
+    assert.deepEqual((await state(P.base)).json.interest, { "1A": 1, "3B": 1 });
+    await load([{ ...j, rooms: {} }]);
+    assert.deepEqual(sids((await me(P.base, r.dev)).json.stars), { 3: "3B" }, "a seat taken away leaves the block empty, no new pick");
+  });
+
+  test("rule 6: picks are made once, and a choice by the person is never overwritten", async () => {
+    const k = person("Dina Haddad", { topics: ["Business development and international sales", "Career growth and remote work"] });
+    await load([k]);
+    const first = await signIn(k);
+    assert.deepEqual(sids(first.stars), { 1: "1A", 3: "3B" }, "3B and 3C tie at 3, Room B comes first");
+    // Keep turns the pick into own; another choice is own too
+    assert.deepEqual((await star(first.dev, { b: 1, sid: "1A" })).json.stars[1], { sid: "1A", by: "own", why: null });
+    assert.deepEqual((await star(first.dev, { b: 3, sid: null })).json.stars, { 1: { sid: "1A", by: "own", why: null } });
+    await fill("1A", 30);
+    await call(P.base, "POST", "/api/signout", { headers: { "x-dev": first.dev } });
+    const again = await signIn(k, first.dev);
+    assert.deepEqual(again.stars, { 1: { sid: "1A", by: "own", why: null } }, "no new picks on a later sign in, the empty block stays empty");
+    const second = await signIn(k);
+    assert.deepEqual(sids(second.stars), { 1: "1A" }, "a second phone sees the same stars and makes no picks");
+  });
+
+  test("the picks switch turns picking off", async () => {
+    const l = person("Omar Saleh", { topics: ["AI adoption and applied AI"] });
+    await load([l]);
+    await op(P.base, { action: "flags", name: "picks", on: false });
+    assert.deepEqual((await signIn(l)).stars, {});
+    await op(P.base, { action: "flags", name: "picks", on: true });
   });
 });
 

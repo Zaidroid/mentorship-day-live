@@ -48,7 +48,10 @@ export const DEFAULT_CFG = {
 };
 
 // Feature switches and their defaults (docs/PLAN.md section 5.9). The remote can only set names listed here.
-export const FLAGS = { trustProfiles: true, trustTakeaways: true, trustPhotos: false };
+// trustProfiles, trustTakeaways, trustPhotos: who skips the queue (section 5.9). The others switch a feature off
+// without a deploy: hello (welcomes on the wall), picks (sessions picked at first sign in), meet (meet codes and
+// connections), takeaways (ratings and lines after a session).
+export const FLAGS = { trustProfiles: true, trustTakeaways: true, trustPhotos: false, hello: true, picks: true, meet: true, takeaways: true };
 
 // The part of the config that /api/state shows. Everything else (hidden words, the rehearsal) stays private.
 export const PUBLIC_CFG = ["mode", "pin", "speaker", "theme", "overlay", "ann", "video", "way", "reloadAt", "photoAt", "finale", "flags", "at"];

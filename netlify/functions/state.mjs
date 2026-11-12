@@ -3,10 +3,11 @@
 // Fields of later features are present with empty values, so clients can be written against the final shape.
 import { st, readCfg, readPolls, readSnap, tallyFrom, publicCfg, snapVersion, J, CDN, TAGS, VIDEOS } from "../lib/store.mjs";
 import { nowMs, rehearsalOn, phase } from "../lib/day.mjs";
+import { interestFrom } from "../lib/people.mjs";
 
 export default async () => {
   const s = st();
-  const [cfg, polls, snap, ans] = await Promise.all([readCfg(s), readPolls(s), readSnap(s), s.list({ prefix: "ans/" })]);
+  const [cfg, polls, snap, ans, stars] = await Promise.all([readCfg(s), readPolls(s), readSnap(s), s.list({ prefix: "ans/" }), s.list({ prefix: "star/" })]);
   const t = nowMs(cfg);
   const p = cfg.poll && polls.find(x => x.id === cfg.poll.id);
   // manual is true until the poll schedule exists (WP2): the open poll is always the one the remote chose.
@@ -19,7 +20,7 @@ export default async () => {
     poll,
     rx: { on: false, b: [[w, 0, 0, 0], [w - 1, 0, 0, 0]], total: 0 },
     n: { here: 0, board: snap.profiles.length, links, photos: snap.photos.length, takeaways: snap.takeaways.length, answers: ans.blobs.length },
-    interest: {},
+    interest: interestFrom(stars.blobs),
     hello: [],
     snapV: snapVersion(snap, links),
     tags: TAGS, videos: VIDEOS
