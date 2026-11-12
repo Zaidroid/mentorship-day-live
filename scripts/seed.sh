@@ -4,7 +4,8 @@ B=${1:-http://localhost:8897}; P=${REMOTE_PIN:-123456}
 case "$B" in http://localhost*|http://127.0.0.1*) ;; *) echo "Refusing to seed $B. Test data is for a local server only."; exit 1;; esac
 op(){ curl -s -X POST $B/api/op -H "x-pin: $P" -H 'x-who: Test' -H 'content-type: application/json' -d "$1" >/dev/null; }
 i=0; for w in funding clients funding clients network funding mentors clarity markets funding sales visibility clients partners investors confidence; do i=$((i+1)); curl -s -X POST $B/api/answer -H 'content-type: application/json' -d "{\"pid\":\"p1\",\"dev\":\"device$(printf %04d $i)x\",\"text\":\"$w\"}" >/dev/null; done
-n=0; while IFS='|' read -r name co role lk of; do n=$((n+1)); curl -s -X POST $B/api/profile -H 'content-type: application/json' -d "{\"dev\":\"prof$(printf %04d $n)xx\",\"name\":\"$name\",\"company\":\"$co\",\"role\":\"$role\",\"looking\":$lk,\"offer\":$of,\"consent\":true}" >/dev/null; op "{\"action\":\"approveProfile\",\"id\":\"prof$(printf %04d $n)xx\"}"; done <<'P'
+# Profiles are approved by their public id, which the server returns. Device ids never leave the server.
+n=0; while IFS='|' read -r name co role lk of; do n=$((n+1)); id=$(curl -s -X POST $B/api/profile -H 'content-type: application/json' -H "x-dev: prof$(printf %04d $n)xx" -d "{\"name\":\"$name\",\"company\":\"$co\",\"role\":\"$role\",\"looking\":$lk,\"offer\":$of,\"consent\":true}" | python3 -c "import json,sys;print(json.load(sys.stdin)['id'])"); op "{\"action\":\"approveProfile\",\"id\":\"$id\"}"; done <<'P'
 Layla Khoury|Byte Studio|Founder|["Funding","Clients"]|["Product"]
 Omar Saleh|Freelance|Full Stack Developer|["Clients","Freelancing"]|["AI and Tech"]
 Rana Odeh|Nablus Tech|Marketing Lead|["Partnerships"]|["Marketing","Mentoring"]

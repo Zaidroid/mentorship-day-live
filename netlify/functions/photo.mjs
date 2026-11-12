@@ -1,6 +1,7 @@
 // Photo wall uploads and serving. New photos wait for operator approval.
 // Approved photos are public and cached; pending photos are only served to the remote with the PIN.
-import { st, devOk, idOk, clean, isBad, pinOk, J } from "../lib/store.mjs";
+import { st, idOk, clean, isBad, pinOk, J } from "../lib/store.mjs";
+import { devOk, pubFor } from "../lib/ids.mjs";
 
 const TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX = 4 * 1024 * 1024;
@@ -35,7 +36,8 @@ export default async (req, context) => {
   const name = clean(dec("x-name"), 40), caption = clean(dec("x-caption"), 90);
   if (isBad(name) || isBad(caption)) return J({ error: "Please change the name or caption." }, 422);
   const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-  await s.set(`ph/${id}`, buf, { metadata: { type, name, caption, dev, at: Date.now() } });
+  // The photo records who sent it by public id. The device id stays only in the byd/ count key.
+  await s.set(`ph/${id}`, buf, { metadata: { type, name, caption, pub: await pubFor(s, dev), at: Date.now() } });
   await s.set(`q/ph/${id}`, "");
   await s.set(`byd/${dev}/${id}`, "");
   return J({ ok: true, id });

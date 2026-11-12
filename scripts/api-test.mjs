@@ -56,7 +56,7 @@ async function openDirect(dir) {
   process.env.NETLIFY_BLOBS_CONTEXT = Buffer.from(JSON.stringify({ edgeURL: edge, uncachedEdgeURL: edge, siteID: "self-hosted", token })).toString("base64");
   globalThis.Netlify = { env: { get: k => (k === "REMOTE_PIN" ? PIN : process.env[k]) } };
   direct = { stop: () => bs.stop() };
-  if (!lib) lib = { store: await import("../netlify/lib/store.mjs"), day: await import("../netlify/lib/day.mjs") };
+  if (!lib) lib = { store: await import("../netlify/lib/store.mjs"), ids: await import("../netlify/lib/ids.mjs"), day: await import("../netlify/lib/day.mjs") };
   return lib.store.st();
 }
 
@@ -156,5 +156,103 @@ describe("update helper", () => {
     for (const r of res) assert.equal(r.status, 200, r.text);
     const g = await opGet(S.base);
     for (const w of words) assert.ok(g.json.cfg.hidden.includes(w), w);
+  });
+});
+
+/* ---------- ids ---------- */
+describe("ids", () => {
+  test("guest ids are keyed hashes of the device id, never the device id", async () => {
+    await openDirect(S.dir);
+    const { guestPub, pubOk } = lib.ids;
+    const a = newDev(), b = newDev();
+    assert.match(guestPub(a), /^g[a-f0-9]{10}$/);
+    assert.ok(pubOk(guestPub(a)));
+    assert.equal(guestPub(a), guestPub(a));
+    assert.notEqual(guestPub(a), guestPub(b));
+    assert.ok(!guestPub(a).includes(a));
+    const before = guestPub(a);
+    globalThis.Netlify = { env: { get: () => "another-pin" } };
+    assert.notEqual(guestPub(a), before, "the secret comes from the PIN");
+    globalThis.Netlify = { env: { get: k => (k === "REMOTE_PIN" ? PIN : process.env[k]) } };
+  });
+
+  test("person ids ignore case, spacing, accents and Arabic letter variants", async () => {
+    await openDirect(S.dir);
+    const { personId, personPub, normName, pubOk } = lib.ids;
+    assert.equal(normName("  Layla   KHOURY "), "layla khoury");
+    assert.equal(normName("Lâyla Khoúry"), "layla khoury");
+    assert.equal(normName("أحمد"), normName("احمد"));
+    assert.equal(normName("مُحَمَّد"), normName("محمد"));
+    assert.equal(normName("محـــمد"), normName("محمد"));
+    assert.equal(normName("فاطمة"), normName("فاطمه"));
+    assert.equal(personId("Layla Khoury", "1234"), personId("layla  khoury", "1234"));
+    assert.notEqual(personId("Layla Khoury", "1234"), personId("Layla Khoury", "1235"));
+    assert.ok(pubOk(personPub(personId("Layla Khoury", "1234"))));
+    assert.ok(!pubOk("x0123456789") && !pubOk("g0123") && !pubOk("gABCDEF0123"));
+  });
+});
+
+/* ---------- profiles by public id ---------- */
+describe("profiles", () => {
+  const card = { name: "Layla Khoury", company: "Byte Studio", role: "Founder", looking: ["Funding"], offer: ["Product"], linkedin: "linkedin.com/in/test-layla", consent: true };
+  let dev, pub;
+  test("a new card is stored under the public id and waits", async () => {
+    await openDirect(S.dir);
+    dev = newDev(); pub = lib.ids.guestPub(dev);
+    const r = await call(S.base, "POST", "/api/profile", { body: card, headers: { "x-dev": dev } });
+    assert.equal(r.status, 200, r.text);
+    assert.deepEqual(r.json, { ok: true, status: "pending", id: pub });
+    const g = await call(S.base, "GET", "/api/profile", { headers: { "x-dev": dev } });
+    assert.equal(g.json.status, "pending"); assert.equal(g.json.id, pub); assert.equal(g.json.profile.linkedin, "https://linkedin.com/in/test-layla");
+    const s = await openDirect(S.dir);
+    assert.ok(await s.get(`pr/${pub}`, { type: "json" }));
+    assert.equal(await s.get(`pr/${dev}`), null);
+    const o = await opGet(S.base);
+    assert.ok(o.json.pending.profiles.some(p => p.id === pub && p.name === "Layla Khoury"));
+  });
+
+  test("the body may carry the device id, as version 1 phones send it", async () => {
+    const d2 = newDev();
+    const r = await call(S.base, "POST", "/api/profile", { body: { ...card, name: "Omar Saleh", dev: d2 } });
+    assert.equal(r.status, 200, r.text); assert.equal(r.json.id, lib.ids.guestPub(d2));
+    await op(S.base, { action: "rejectProfile", id: r.json.id });
+  });
+
+  test("approve, edit, decline and remove take the public id", async () => {
+    assert.equal((await op(S.base, { action: "approveProfile", id: dev })).status, 400, "a device id is not a profile id");
+    assert.equal((await op(S.base, { action: "approveProfile", id: "gzzzz" })).status, 400);
+    const a = await op(S.base, { action: "approveProfile", id: pub });
+    assert.equal(a.status, 200, a.text);
+    let o = await opGet(S.base);
+    assert.ok(o.json.snap.profiles.some(p => p.id === pub));
+    assert.ok(!o.json.pending.profiles.some(p => p.id === pub));
+    assert.equal((await call(S.base, "GET", "/api/profile", { headers: { "x-dev": dev } })).json.status, "approved");
+    // an edit takes the card off the board until it is approved again
+    await call(S.base, "POST", "/api/profile", { body: { ...card, role: "CEO" }, headers: { "x-dev": dev } });
+    o = await opGet(S.base);
+    assert.ok(!o.json.snap.profiles.some(p => p.id === pub));
+    assert.ok(o.json.pending.profiles.some(p => p.id === pub && p.role === "CEO"));
+    await op(S.base, { action: "rejectProfile", id: pub });
+    assert.equal((await call(S.base, "GET", "/api/profile", { headers: { "x-dev": dev } })).json.status, "declined");
+    await call(S.base, "POST", "/api/profile", { body: card, headers: { "x-dev": dev } });
+    await op(S.base, { action: "approveProfile", id: pub });
+    await op(S.base, { action: "hideProfile", id: pub });
+    o = await opGet(S.base);
+    assert.ok(!o.json.snap.profiles.some(p => p.id === pub));
+  });
+
+  test("refusals", async () => {
+    const d = newDev(), post = (body, h = { "x-dev": d }) => call(S.base, "POST", "/api/profile", { body, headers: h });
+    assert.equal((await post(card, {})).status, 400);
+    assert.equal((await post(card, { "x-dev": "short" })).status, 400);
+    assert.equal((await post({ ...card, name: "L" })).json.error, "Add your name.");
+    assert.equal((await post({ ...card, consent: false })).status, 400);
+    assert.equal((await post({ ...card, linkedin: "example.com/me" })).json.error, "That LinkedIn link does not look right.");
+    assert.equal((await post({ ...card, looking: [], offer: ["Nope"] })).json.error, "Pick at least one tag.");
+    assert.equal((await post({ ...card, company: "shit corp" })).status, 422);
+    assert.equal((await call(S.base, "POST", "/api/profile", { body: "{", raw: true, headers: { "x-dev": d, "content-type": "application/json" } })).status, 400);
+    assert.deepEqual((await call(S.base, "GET", "/api/profile")).json, { status: "none" });
+    const none = await call(S.base, "GET", "/api/profile", { headers: { "x-dev": newDev() } });
+    assert.equal(none.json.status, "none"); assert.match(none.json.id, /^g[a-f0-9]{10}$/);
   });
 });

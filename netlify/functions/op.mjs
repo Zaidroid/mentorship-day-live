@@ -1,5 +1,6 @@
 // Operator remote API. Every call needs the team PIN. Every change is logged with who made it.
-import { st, readCfg, updateCfg, mergeCfg, readPolls, updatePolls, readSnap, rebuild, tally, log, readLog, pinOk, whoOf, idOk, devOk, clean, J, Refuse, VIDEOS } from "../lib/store.mjs";
+import { st, readCfg, updateCfg, mergeCfg, readPolls, updatePolls, readSnap, rebuild, tally, log, readLog, pinOk, whoOf, idOk, clean, J, Refuse, VIDEOS } from "../lib/store.mjs";
+import { pubOk } from "../lib/ids.mjs";
 
 const MODES = ["auto", "welcome", "opening", "video", "choose", "live", "lunch", "close"];
 const SCENES = ["rooms", "choose", "board", "spotlight", "advisors", "meet", "photos", "poll", "pulse", "way", "welcome", "speaker", "recap", "thanks"];
@@ -14,7 +15,7 @@ async function pendingPhotos(s) {
 async function pendingProfiles(s) {
   const ids = (await s.list({ prefix: "q/pr/" })).blobs.map(b => b.key.slice(5));
   const out = [];
-  for (const id of ids) { const p = await s.get(`pr/${id}`, { type: "json" }); if (p) out.push({ id, ...p }); }
+  for (const id of ids.filter(pubOk)) { const p = await s.get(`pr/${id}`, { type: "json" }); if (p) out.push({ ...p, id }); }
   return out.sort((a, b) => a.at - b.at);
 }
 
@@ -94,7 +95,7 @@ async function act(s, b) {
     return { approvePhoto: "Approved a photo", rejectPhoto: "Declined a photo", hidePhoto: "Removed a photo from the wall" }[a];
   }
   if (a === "approveProfile" || a === "rejectProfile" || a === "hideProfile") {
-    if (!devOk(b.id)) throw new Refuse(400, "Unknown profile.");
+    if (!pubOk(b.id)) throw new Refuse(400, "Unknown profile.");
     const p = await s.get(`pr/${b.id}`, { type: "json" });
     await s.delete(`q/pr/${b.id}`);
     if (a === "approveProfile") { await s.set(`ok/pr/${b.id}`, ""); if (p) { p.status = "approved"; await s.setJSON(`pr/${b.id}`, p); } }

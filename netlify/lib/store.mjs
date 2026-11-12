@@ -2,6 +2,8 @@
 // One site wide Blobs store, strong consistency so the screen, phones and remote agree.
 import { getStore } from "@netlify/blobs";
 import { DAY } from "./day.mjs";
+import { pubOk } from "./ids.mjs";
+export { devOk } from "./ids.mjs";
 
 export const st = () => getStore({ name: "md26", consistency: "strong" });
 
@@ -108,7 +110,6 @@ export async function readPolls(s) { return (await s.get("polls", { type: "json"
 export const updatePolls = (s, fn) => update(s, "polls", fn, { init: DEFAULT_POLLS });
 export async function readSnap(s) { return (await s.get("snap", { type: "json" })) || { photos: [], profiles: [] }; }
 
-export const devOk = d => /^[a-z0-9]{8,40}$/i.test(d || "");
 export const idOk = d => /^[a-z0-9]{6,40}$/i.test(d || "");
 export function clean(v, n) { return String(v == null ? "" : v).replace(/[\u0000-\u001f\u007f<>]/g, "").replace(/\s+/g, " ").trim().slice(0, n); }
 
@@ -151,11 +152,12 @@ export async function rebuild(s) {
     if (m) photos.push({ id, name: m.metadata.name || "", caption: m.metadata.caption || "", at: m.metadata.at || 0 });
   }
   photos.sort((a, b) => b.at - a.at);
-  const okPr = (await s.list({ prefix: "ok/pr/" })).blobs.map(b => b.key.slice(6));
+  // Profiles are keyed by public id. Anything else under ok/pr/ is ignored, so no device id can reach the snapshot.
+  const okPr = (await s.list({ prefix: "ok/pr/" })).blobs.map(b => b.key.slice(6)).filter(pubOk);
   const profiles = [];
-  for (const d of okPr) {
-    const p = await s.get(`pr/${d}`, { type: "json" });
-    if (p) profiles.push({ id: d, name: p.name, company: p.company, role: p.role, looking: p.looking, offer: p.offer, linkedin: p.linkedin, at: p.at });
+  for (const pub of okPr) {
+    const p = await s.get(`pr/${pub}`, { type: "json" });
+    if (p) profiles.push({ id: pub, name: p.name, company: p.company, role: p.role, looking: p.looking, offer: p.offer, linkedin: p.linkedin, at: p.at });
   }
   profiles.sort((a, b) => b.at - a.at);
   const snap = { photos: photos.slice(0, 80), profiles, at: Date.now() };
