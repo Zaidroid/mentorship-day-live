@@ -65,11 +65,37 @@ export async function readBody(req, max, bad = "Send the request as JSON.") {
 //   browser    how long a browser may keep it without asking (default 0: ask every time)
 //   vary       a Netlify-Vary value, for example "query=v"
 //   immutable  the answer never changes (approved photos)
-export function CDN(seconds, { browser = 0, vary = "", immutable = false } = {}) {
-  const h = immutable
-    ? { "cache-control": `public, max-age=${seconds}, immutable`, "netlify-cdn-cache-control": `public, durable, max-age=${seconds}, immutable` }
-    : { "cache-control": browser ? `public, max-age=${browser}` : "public, max-age=0, must-revalidate", "netlify-cdn-cache-control": `public, durable, s-maxage=${seconds}, stale-while-revalidate=${seconds * 5}` };
+//   policy     one of CDN_POLICIES, only for /api/cdn-probe. Everything else uses CDN_POLICY.
+// Every answer also says x-md-cache: <policy><seconds>, so scripts/cdn-check.sh shows which policy answered.
+//
+// The candidates, in the order to try them on a deploy (version 1 used "a" and its durable layer said fwd=bypass):
+//   a  Netlify-CDN-Cache-Control: public, durable, s-maxage=N, stale-while-revalidate=5N   (version 1)
+//   b  as a, with max-age in place of s-maxage, as in the Netlify docs example
+//   c  as b, and the browser header without must-revalidate
+//   d  the form @netlify/cache writes: s-maxage=N,stale-while-revalidate=5N,durable (no public)
+//   e  CDN-Cache-Control in place of Netlify-CDN-Cache-Control
+// To try one on state and snap, change CDN_POLICY (and CDN_FLOOR for a longer time) and deploy.
+export const CDN_POLICY = "a";
+export const CDN_FLOOR = 0; // seconds; when above 0, no CDN time is shorter than this
+const REVALIDATE = "public, max-age=0, must-revalidate";
+export const CDN_POLICIES = {
+  a: n => ({ "netlify-cdn-cache-control": `public, durable, s-maxage=${n}, stale-while-revalidate=${n * 5}` }),
+  b: n => ({ "netlify-cdn-cache-control": `public, durable, max-age=${n}, stale-while-revalidate=${n * 5}` }),
+  c: n => ({ "netlify-cdn-cache-control": `public, durable, max-age=${n}, stale-while-revalidate=${n * 5}`, browser: "public, max-age=0" }),
+  d: n => ({ "netlify-cdn-cache-control": `s-maxage=${n},stale-while-revalidate=${n * 5},durable` }),
+  e: n => ({ "cdn-cache-control": `public, durable, s-maxage=${n}, stale-while-revalidate=${n * 5}` })
+};
+export function CDN(seconds, { browser = 0, vary = "", immutable = false, policy = CDN_POLICY } = {}) {
+  const name = Object.hasOwn(CDN_POLICIES, policy) ? policy : "a";
+  let h;
+  if (immutable) h = { "cache-control": `public, max-age=${seconds}, immutable`, "netlify-cdn-cache-control": `public, durable, max-age=${seconds}, immutable` };
+  else {
+    const n = Math.max(seconds, CDN_FLOOR);
+    const { browser: plain = REVALIDATE, ...cdn } = CDN_POLICIES[name](n);
+    h = { "cache-control": browser ? `public, max-age=${browser}` : plain, ...cdn };
+  }
   if (vary) h["netlify-vary"] = vary;
+  h["x-md-cache"] = immutable ? "immutable" : name + Math.max(seconds, CDN_FLOOR);
   return h;
 }
 

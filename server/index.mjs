@@ -86,7 +86,8 @@ http.createServer(async (req, res) => {
     const body = ["GET", "HEAD"].includes(req.method) ? undefined : Buffer.concat(chunks);
     try {
       const out = await r.handler(new Request(url, { method: req.method, headers: req.headers, body }), { params: m.groups || {} });
-      const headers = Object.fromEntries(out.headers); delete headers["netlify-cdn-cache-control"]; delete headers["netlify-vary"];
+      // There is no Netlify CDN here, so its headers stay behind (cdn-cache-control is one of the CDN policies).
+      const headers = Object.fromEntries(out.headers); for (const k of ["netlify-cdn-cache-control", "cdn-cache-control", "netlify-vary"]) delete headers[k];
       res.writeHead(out.status, headers);
       res.end(Buffer.from(await out.arrayBuffer()));
     } catch (e) { console.error(e); res.writeHead(500); res.end("Server error"); }

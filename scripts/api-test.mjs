@@ -299,6 +299,40 @@ describe("state", () => {
     const fn = (await import("../netlify/functions/state.mjs")).default;
     const r = await fn(new Request("http://localhost/api/state"));
     assert.match(r.headers.get("netlify-cdn-cache-control"), /s-maxage=2\b/);
+    assert.equal(r.headers.get("x-md-cache"), lib.store.CDN_POLICY + "2");
+  });
+});
+
+/* ---------- the CDN policy and its probe (plan section 5.12) ---------- */
+describe("cdn", () => {
+  test("every candidate policy has its own headers, chosen in one place", async () => {
+    await openDirect(S.dir);
+    const { CDN, CDN_POLICIES } = lib.store;
+    assert.deepEqual(Object.keys(CDN_POLICIES), ["a", "b", "c", "d", "e"]);
+    assert.deepEqual(CDN(2, { policy: "a" }), { "cache-control": "public, max-age=0, must-revalidate", "netlify-cdn-cache-control": "public, durable, s-maxage=2, stale-while-revalidate=10", "x-md-cache": "a2" });
+    assert.equal(CDN(5, { policy: "b" })["netlify-cdn-cache-control"], "public, durable, max-age=5, stale-while-revalidate=25");
+    assert.equal(CDN(5, { policy: "c" })["cache-control"], "public, max-age=0");
+    assert.equal(CDN(5, { policy: "d" })["netlify-cdn-cache-control"], "s-maxage=5,stale-while-revalidate=25,durable");
+    const e = CDN(5, { policy: "e" });
+    assert.equal(e["cdn-cache-control"], "public, durable, s-maxage=5, stale-while-revalidate=25"); assert.equal(e["netlify-cdn-cache-control"], undefined);
+    assert.equal(CDN(3600, { browser: 3600, vary: "query=v", policy: "b" })["cache-control"], "public, max-age=3600");
+    assert.equal(CDN(9, { policy: "nope" })["x-md-cache"], "a9");
+    assert.match(CDN(60, { immutable: true })["cache-control"], /immutable/);
+  });
+
+  test("the probe answers each policy, writes nothing, and refuses the rest", async () => {
+    const s = await openDirect(S.dir);
+    const before = (await s.list()).blobs.length;
+    const r = await call(S.base, "GET", "/api/cdn-probe?p=b&s=5");
+    assert.equal(r.status, 200); assert.equal(r.json.p, "b"); assert.equal(r.json.s, 5);
+    assert.equal(r.headers.get("x-md-cache"), "b5");
+    assert.equal(r.headers.get("netlify-cdn-cache-control"), null, "the self hosted server strips the CDN headers");
+    const fn = (await import("../netlify/functions/cdn-probe.mjs")).default;
+    const d = await fn(new Request("http://localhost/api/cdn-probe?p=e&s=3"));
+    assert.equal(d.headers.get("cdn-cache-control"), "public, durable, s-maxage=3, stale-while-revalidate=15");
+    for (const q of ["?p=z", "?p=__proto__", "?s=0", "?s=61", "?s=x"]) assert.equal((await call(S.base, "GET", "/api/cdn-probe" + q)).status, 400, q);
+    assert.equal((await call(S.base, "POST", "/api/cdn-probe", { body: {} })).status, 405);
+    assert.equal((await s.list()).blobs.length, before);
   });
 });
 
