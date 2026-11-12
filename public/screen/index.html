@@ -11,12 +11,16 @@
 @font-face{font-family:SS3;font-weight:600;src:url(/assets/ss3-600.woff2) format('woff2')}
 @font-face{font-family:SS3;font-weight:700;src:url(/assets/ss3-700.woff2) format('woff2')}
 @font-face{font-family:SS3;font-weight:900;src:url(/assets/ss3-900.woff2) format('woff2')}
+/* Noto Sans Arabic 400 and 700 (SIL Open Font License, /assets/noto-ar-OFL.txt), copied from @fontsource/noto-sans-arabic 5.3.0.
+   After SS3 in every stack: it loads only when Arabic text shows (unicode-range), for names and answers typed in Arabic. */
+@font-face{font-family:NotoAr;font-weight:400;font-display:swap;src:url(/assets/noto-ar-400.woff2) format('woff2');unicode-range:U+0600-06FF,U+0750-077F,U+0870-088E,U+0890-0891,U+0897-08E1,U+08E3-08FF,U+200C-200E,U+2010-2011,U+204F,U+2E41,U+FB50-FDFF,U+FE70-FE74,U+FE76-FEFC}
+@font-face{font-family:NotoAr;font-weight:700;font-display:swap;src:url(/assets/noto-ar-700.woff2) format('woff2');unicode-range:U+0600-06FF,U+0750-077F,U+0870-088E,U+0890-0891,U+0897-08E1,U+08E3-08FF,U+200C-200E,U+2010-2011,U+204F,U+2E41,U+FB50-FDFF,U+FE70-FE74,U+FE76-FEFC}
 /* Motion tokens (docs/PLAN.md 7.2). The same values live in M in the script. */
 :root{--red:#DF6236;--teal:#2F9CC3;--navy:#1F2E33;--orange:#E78B3F;--u:10px;--ease:cubic-bezier(.2,.8,.2,1);--ease-io:cubic-bezier(.65,0,.25,1);--t-s:240ms;--t-e:520ms;--t-x:900ms}
 [data-theme=light]{--glass-solid:rgba(250,250,250,.86);--bg1:#E3E3E3;--bg2:#F7F7F7;--ink:#1F2E33;--ink2:rgba(31,46,51,.70);--ink3:rgba(31,46,51,.44);--line:rgba(31,46,51,.14);--glass:rgba(255,255,255,.64);--glassline:rgba(255,255,255,.95);--shadow:0 calc(var(--u)*.6) calc(var(--u)*2.6) rgba(31,46,51,.07);--soft2:rgba(31,46,51,.08);--chip:transparent;--redsoft:rgba(223,98,54,.12)}
 [data-theme=dark]{--glass-solid:rgba(41,55,60,.86);--bg1:#1F2E33;--bg2:#162226;--ink:#FFFFFF;--ink2:rgba(255,255,255,.72);--ink3:rgba(255,255,255,.44);--line:rgba(255,255,255,.14);--glass:rgba(255,255,255,.06);--glassline:rgba(255,255,255,.10);--shadow:none;--soft2:rgba(255,255,255,.10);--chip:#FFFFFF;--redsoft:rgba(223,98,54,.22)}
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{width:100%;height:100%;overflow:hidden;color:var(--ink);font-family:SS3,system-ui,sans-serif;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;background:linear-gradient(180deg,var(--bg1),var(--bg2));transition:color var(--t-x) var(--ease)}
+html,body{width:100%;height:100%;overflow:hidden;color:var(--ink);font-family:SS3,NotoAr,system-ui,sans-serif;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;background:linear-gradient(180deg,var(--bg1),var(--bg2));transition:color var(--t-x) var(--ease)}
 /* Masked text: each line sits in its own clip and rises from behind its lower edge. The clip reaches past
    the line box so descenders are never cut, and is lifted (.ok) once the line has arrived. */
 /* Custom tags, so no rule written for spans (.join span, .qrtxt span) can reach them. */
@@ -697,10 +701,14 @@ R.thanks = (c) => { const keys = wallKeys(), cols = Math.max(3, Math.min(Math.ce
 function qrSvg(text){ try { const q = qrcode(0, 'M'); q.addData(text); q.make(); const n = q.getModuleCount(); let p = ''; for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) p += `M${c},${r}h1v1h-1z`; return `<svg viewBox="0 0 ${n} ${n}" shape-rendering="crispEdges"><path d="${p}" fill="#1F2E33"/></svg>`; } catch(e) { return ''; } }
 function qrBox(link, size, label, cls){ return link ? `<div class="qr ${cls || ''}" style="width:calc(var(--u)*${size});height:calc(var(--u)*${size})">${qrSvg(link)}</div>` : `<div class="qrph" style="width:calc(var(--u)*${size});height:calc(var(--u)*${size})">${label}</div>`; }
 const CLOUD_COLORS = ['#DF6236','#2F9CC3','var(--ink)','#E78B3F'];
+// Arabic text (names and answers typed in Arabic) uses Noto Sans Arabic, after SS3 in every font stack.
+const AR = /[؀-ۿݐ-ݿࡰ-ࣿﭐ-﷿ﹰ-ﻼ]/;
+const arReady = () => { try { return document.fonts.check('700 20px NotoAr', 'ع') && document.fonts.check('400 20px NotoAr', 'ع'); } catch(e) { return true; } };
+function loadAr(then){ if (loadAr.busy) return; loadAr.busy = true; Promise.all([document.fonts.load('700 20px NotoAr', 'ع'), document.fonts.load('400 20px NotoAr', 'ع')]).then(() => { loadAr.busy = false; if (then) then(); }, () => { loadAr.busy = false; }); }
 R.poll = (c) => {
   const vertical = c.w < 80, big = c.w >= 120, choice = S.pollType === 'choice', q = S.pollQ || 'The next poll opens soon';
   const left = `<div class="rv" style="display:flex;flex-direction:${vertical ? 'row' : 'column'};gap:calc(var(--u)*2);align-items:${vertical ? 'center' : 'flex-start'};justify-content:center;max-width:calc(var(--u)*${vertical ? 64 : (big ? 46 : 34)})">${qrBox(CONFIG.join, vertical ? 12 : (big ? 22 : 17), '')}<div class="qrtxt"><b class="tx" dir="auto" style="${big ? 'font-size:calc(var(--u)*3.2)' : ''}">${esc(q)}</b><span>${S.pollOpen ? 'Scan, answer, and watch your answer appear.' : 'This poll is closed. Thank you for answering.'}</span>${S.pollTotal ? `<span style="margin-top:calc(var(--u)*1.6);color:var(--ink)"><b style="font-weight:300;font-size:calc(var(--u)*4);display:inline">${S.pollTotal}</b> ${S.pollTotal === 1 ? 'answer' : 'answers'}</span>` : ''}</div></div>`;
-  const right = choice ? `<div class="pbars rv">${S.poll.map(([o, n]) => { const f = S.pollTotal ? n / S.pollTotal : 0; return `<div class="r"><b>${esc(o)}<span>${Math.round(f * 100)}%</span></b><div class="bar"><i style="width:${(f * 100).toFixed(1)}%"></i></div></div>`; }).join('')}</div>`
+  const right = choice ? `<div class="pbars rv">${S.poll.map(([o, n]) => { const f = S.pollTotal ? n / S.pollTotal : 0; return `<div class="r"><b><bdi>${esc(o)}</bdi><span>${Math.round(f * 100)}%</span></b><div class="bar"><i style="width:${(f * 100).toFixed(1)}%"></i></div></div>`; }).join('')}</div>`
     : `<div class="cloud rv" data-cloud>${S.poll.length ? '' : '<div class="empty" style="position:absolute;inset:0">The first answers will appear here.</div>'}</div>`;
   const html = `<div class="poll" style="grid-template-${vertical ? 'rows:auto minmax(0,1fr)' : 'columns:auto minmax(0,1fr)'}">${left}${right}</div>`;
   return {title:'Live Poll', html, key: choice ? html : html + JSON.stringify(S.poll.slice(0, 40)), after: choice ? null : layoutCloud};
@@ -708,10 +716,12 @@ R.poll = (c) => {
 function layoutCloud(el){
   const box = el.querySelector('[data-cloud]'); if (!box || !S.poll.length) return;
   const W = box.clientWidth, H = box.clientHeight; if (!W || !H) return;
+  // The canvas measures with loaded fonts only: with an Arabic word, load Noto Sans Arabic, then lay out again.
+  if (S.poll.some(([t]) => AR.test(t)) && !arReady()) loadAr(() => { slotState.forEach(st => { if (st.id === 'poll') st.key = ''; }); refreshScenes(); });
   const words = S.poll.slice(0, 40), max = words[0][1], cv = document.createElement('canvas').getContext('2d'), placed = [];
   const scale = Math.min(1, Math.sqrt(W * H) / (U * 60)); let html = '';
   words.forEach(([t, n], i) => {
-    const fs = U * (1.8 + 5.2 * Math.sqrt(n / max)) * scale; cv.font = `700 ${fs}px SS3`;
+    const fs = U * (1.8 + 5.2 * Math.sqrt(n / max)) * scale; cv.font = `700 ${fs}px SS3, NotoAr`;
     const w = cv.measureText(t).width + fs * .3, h = fs * 1.05; let x = W / 2, y = H / 2, ok = false;
     for (let k = 0; k < 1400 && !ok; k++) { const a = k * .35, r = k * .9 * (U / 10); x = W / 2 + r * Math.cos(a) * 1.5; y = H / 2 + r * Math.sin(a) * .85;
       if (x - w / 2 < 0 || x + w / 2 > W || y - h / 2 < 0 || y + h / 2 > H) continue;
@@ -771,6 +781,7 @@ function hereTick(){
 // a stale cached state, or a rehearsal clock that jumped). In other modes hellos go to the ticker only.
 const HELLO = {seen:new Set(), queue:[], live:[], leaving:new Set(), lastIn:0};
 function helloEvents(list, t, cached){
+  if (list.some(h => AR.test(h.f)) && !arReady()) loadAr(); // so an Arabic name is measured in its own font
   list.slice().reverse().forEach(h => { const k = h.at + '|' + h.f; if (HELLO.seen.has(k)) return; HELLO.seen.add(k); if (cached || Math.abs(t - h.at) > 30000) return; HELLO.queue.push({f:h.f, came:Date.now()}); });
   if (HELLO.queue.length > 12) HELLO.queue.splice(0, HELLO.queue.length - 12);
 }
@@ -940,14 +951,14 @@ R.meet = (c) => {
   const list = S.profiles || [];
   if (!list.length) return {title:'Networking Board', state:'join', html:emptyJoin('Join the Networking Board', 'Add your name, company and what you are looking for. Your card appears here and helps the right people find you.', c)};
   const p = list[meetI % list.length], mt = matchesFor(p), wide = c.w >= 76, bal = tagBalance().slice(0, wide ? 7 : 4), mx = Math.max(1, ...bal.map(x => Math.max(x.lk, x.of)));
-  const card = `<div class="card glass rv"><div style="display:flex;align-items:center;gap:calc(var(--u)*2)"><div class="ini">${esc(initials(p.name))}</div><div style="min-width:0"><div class="nm">${esc(p.name)}</div><div class="co">${esc([p.role, p.company].filter(Boolean).join(', '))}</div></div></div>
+  const card = `<div class="card glass rv"><div style="display:flex;align-items:center;gap:calc(var(--u)*2)"><div class="ini">${esc(initials(p.name))}</div><div style="min-width:0"><div class="nm" dir="auto">${esc(p.name)}</div><div class="co" dir="auto">${esc([p.role, p.company].filter(Boolean).join(', '))}</div></div></div>
     ${(p.looking || []).length ? `<div class="tagrow"><em>Looking for</em>${p.looking.map(t => `<span class="tg lk">${esc(t)}</span>`).join('')}</div>` : ''}
     ${(p.offer || []).length ? `<div class="tagrow"><em>Can help with</em>${p.offer.map(t => `<span class="tg of">${esc(t)}</span>`).join('')}</div>` : ''}
-    <div class="match">${mt.length ? `Good people to meet: ${mt.map(x => `<b>${esc(x.q.name)}</b>`).join(', ')}` : 'Scan the code to add yourself and find your matches.'}</div></div>`;
+    <div class="match">${mt.length ? `Good people to meet: ${mt.map(x => `<b><bdi>${esc(x.q.name)}</bdi></b>`).join(', ')}` : 'Scan the code to add yourself and find your matches.'}</div></div>`;
   const balH = `<div class="bal rv"><h4>Who is looking for what</h4>${bal.map(x => `<div class="r"><b>${esc(x.t)}</b><div class="bars"><i class="lk" style="width:${(x.lk / mx * 100).toFixed(0)}%"></i><i class="of" style="width:${(x.of / mx * 100).toFixed(0)}%"></i></div></div>`).join('')}
     <div class="legend" style="margin-top:calc(var(--u)*.8)"><span><i class="n"></i>Looking for</span><span><i style="background:var(--teal);border-color:var(--teal)"></i>Can help</span></div></div>`;
   const others = list.filter(x => x.id !== p.id).slice(0, wide ? 12 : 5);
-  const names = `<div class="names rv"><b>${list.length} ${list.length === 1 ? 'person' : 'people'} on the board</b>${others.map(x => `<span>${esc(x.name)}</span>`).join('')}</div>`;
+  const names = `<div class="names rv"><b>${list.length} ${list.length === 1 ? 'person' : 'people'} on the board</b>${others.map(x => `<span dir="auto">${esc(x.name)}</span>`).join('')}</div>`;
   return {title:'Networking Board', html: wide
     ? `<div class="meet" style="grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);grid-template-rows:auto auto;align-content:center">${card}${balH}<div style="grid-column:1/-1">${names}</div></div>`
     : `<div class="meet" style="grid-template-rows:auto minmax(0,1fr)">${card}${balH}</div>`, tick:7, onTick:() => { meetI++; return list.length > 1; }};
@@ -956,7 +967,7 @@ R.meet = (c) => {
 /* Photo Wall */
 let photoI = 0;
 const phUrl = id => '/api/photo/' + encodeURIComponent(id);
-function phCap(x){ if (!x.caption && !x.name) return ''; return `<div class="cap">${x.caption ? `<b>${esc(x.caption)}</b>` : ''}${x.name ? `<span>${x.caption ? 'Shared by ' : 'Shared by '}${esc(x.name)}</span>` : ''}</div>`; }
+function phCap(x){ if (!x.caption && !x.name) return ''; return `<div class="cap">${x.caption ? `<b dir="auto">${esc(x.caption)}</b>` : ''}${x.name ? `<span>Shared by <bdi>${esc(x.name)}</bdi></span>` : ''}</div>`; }
 R.photos = (c) => {
   const list = S.photos || [];
   if (!list.length) return {title:'Photo Wall', state:'join', html:emptyJoin('Share your photos of the day', 'Scan the code, take a photo and send it. The team approves every photo before it appears here.', c)};
@@ -965,7 +976,7 @@ R.photos = (c) => {
   if (c.w < 76 || list.length < 3) return {title:'Photo Wall', html:`<div class="pw"><div class="ph big rv"><img src="${phUrl(f.id)}" alt="">${phCap(f)}</div></div>`, ...tick};
   const n = Math.min(4, list.length - 1), others = []; for (let i = 1; i <= n; i++) others.push(list[(photoI + i) % list.length]);
   const cols = n >= 3 ? '2fr 1fr 1fr' : '2fr 1fr';
-  return {title:'Photo Wall', html:`<div class="pw" style="grid-template-columns:${cols};grid-template-rows:1fr 1fr"><div class="ph big rv" style="grid-row:1/3"><img src="${phUrl(f.id)}" alt="">${phCap(f)}</div>${others.map(x => `<div class="ph rv"><img src="${phUrl(x.id)}" alt="">${x.name ? `<div class="cap sm"><span>${esc(x.name)}</span></div>` : ''}</div>`).join('')}</div>`, ...tick};
+  return {title:'Photo Wall', html:`<div class="pw" style="grid-template-columns:${cols};grid-template-rows:1fr 1fr"><div class="ph big rv" style="grid-row:1/3"><img src="${phUrl(f.id)}" alt="">${phCap(f)}</div>${others.map(x => `<div class="ph rv"><img src="${phUrl(x.id)}" alt="">${x.name ? `<div class="cap sm"><span dir="auto">${esc(x.name)}</span></div>` : ''}</div>`).join('')}</div>`, ...tick};
 };
 
 /* Live Numbers */

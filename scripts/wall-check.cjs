@@ -602,6 +602,52 @@ check('seats-only-with-bookings', async () => {
   return [ok, `tracker with a booking: ${withB.map(c => c.sid + ' "' + c.seats + '"').join(', ')}; tracker with none: seats shown on ${without.filter(c => c.seats).length} of ${without.length} cards`];
 });
 
+/* ---------- Task 8: Arabic text ---------- */
+
+// Real state and snap with Arabic put in: poll words, a hello, a board card and a photo caption.
+async function arabicWall(url, size) {
+  const [width, height] = size.split('x').map(Number);
+  const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 1 });
+  await ctx.route('**/api/state', async r => { const res = await r.fetch(); const j = await res.json(); if (j.poll) { j.poll.type = 'words'; j.poll.words = [['تمويل', 6], ['funding', 4], ['عملاء', 3], ['clients', 3], ['تسويق', 2]]; j.poll.total = 18; } j.hello = [{ f: 'ليلى', at: j.t }]; j.n.here = 9; j.snapV = j.snapV + 'ar'; await r.fulfill({ response: res, body: JSON.stringify(j) }); });
+  await ctx.route('**/api/snap**', async r => { const res = await r.fetch(); const j = await res.json(); if (j.profiles[0]) { j.profiles[0].name = 'ليلى حداد'; j.profiles[0].company = 'شركة بايت'; } if (j.photos[0]) { j.photos[0].caption = 'استراحة القهوة'; j.photos[0].name = 'عمر صالح'; } await r.fulfill({ response: res, body: JSON.stringify(j) }); });
+  const p = await ctx.newPage(); const errs = [];
+  p.on('pageerror', e => errs.push(e.message));
+  await p.goto(BASE + url);
+  await p.waitForFunction(() => window.__md && window.__md.slotState.length > 0, null, { timeout: 15000 });
+  return { p, errs, close: () => ctx.close().catch(() => {}) };
+}
+
+check('arabic-text', async () => {
+  const out = [];
+  const a = await arabicWall('/screen/?t=11:20&quiet&scene=poll', '1920x1080');
+  await a.p.waitForFunction(() => [...document.querySelectorAll('.cloud span')].some(s => /[؀-ۿ]/.test(s.textContent)), null, { timeout: 10000 }).catch(() => {});
+  await sleep(2500);
+  const cloud = await md(a.p, () => {
+    const cv = document.createElement('canvas').getContext('2d');
+    const ar = [...document.querySelectorAll('.cloud span')].filter(s => /[؀-ۿ]/.test(s.textContent)).map(s => { const fs = parseFloat(s.style.fontSize); cv.font = `700 ${fs}px SS3, NotoAr`; return { t: s.textContent, dir: s.getAttribute('dir'), ratio: +(s.querySelector('i').offsetWidth / cv.measureText(s.textContent).width).toFixed(2) }; });
+    return { ar, font: document.fonts.check('700 20px NotoAr', 'ع'), faces: [...document.fonts].filter(f => f.family === 'NotoAr').map(f => f.weight + ' ' + f.status) };
+  });
+  await a.close();
+  out.push(`cloud: ${cloud.ar.map(w => w.t + ' dir ' + w.dir + ' width ratio ' + w.ratio).join(', ')}; Noto Sans Arabic ${cloud.faces.join(', ')}`);
+  const b = await arabicWall('/screen/?t=11:20&quiet&scene=meet', '1920x1080');
+  await sleep(4500);
+  const meet = await md(b.p, () => ({ nm: [...document.querySelectorAll('.card .nm')].map(e => e.textContent + '|' + e.getAttribute('dir')), co: [...document.querySelectorAll('.card .co')].map(e => e.getAttribute('dir')) }));
+  await b.close();
+  const c = await arabicWall('/screen/?t=11:20&quiet&scene=photos', '1920x1080');
+  await sleep(4500);
+  const ph = await md(c.p, () => ({ cap: [...document.querySelectorAll('.ph .cap b')].map(e => e.textContent + '|' + e.getAttribute('dir')), by: [...document.querySelectorAll('.ph .cap bdi')].map(e => e.textContent) }));
+  await c.close();
+  const d = await arabicWall('/screen/?t=09:40&quiet&v=b', '1920x1080');
+  await d.p.waitForFunction(() => document.querySelector('.slot [data-hellos] .hello'), null, { timeout: 10000 }).catch(() => {});
+  const hello = await md(d.p, () => [...document.querySelectorAll('.slot [data-hellos] bdi')].map(e => e.textContent));
+  await d.close();
+  out.push(`board card: ${meet.nm.join(', ')}, company dir ${meet.co.join(',')}; photo caption ${ph.cap.join(', ')}, by ${ph.by.join(', ')}; hello ${hello.join(', ')}`);
+  const ok = cloud.ar.length === 3 && cloud.ar.every(w => w.dir === 'auto' && w.ratio > .9 && w.ratio < 1.15) && cloud.font
+    && meet.nm.some(x => x.startsWith('ليلى حداد|auto')) && meet.co.every(x => x === 'auto')
+    && ph.cap.some(x => x === 'استراحة القهوة|auto') && ph.by.includes('عمر صالح') && hello.includes('ليلى');
+  return [ok, out.join('; ')];
+});
+
 (async () => {
   if (process.argv.includes('--list')) { CHECKS.forEach(c => console.log(c.name)); return; }
   browser = await chromium.launch();
