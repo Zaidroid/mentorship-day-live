@@ -75,7 +75,8 @@ const tsv = rows => rows.map(r => r.map(c => /[\t\n"]/.test(c) ? '"' + c.replace
   const errs = [], opBodies = [];
   page.on('pageerror', e => errs.push('pageerror: ' + e.message));
   page.on('console', m => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
-  page.on('request', r => { if (r.method() === 'POST' && r.url().endsWith('/api/op')) opBodies.push(r.postData() || ''); });
+  let stateCalls = 0;
+  page.on('request', r => { if (r.method() === 'POST' && r.url().endsWith('/api/op')) opBodies.push(r.postData() || ''); if (r.url().includes('/api/state')) stateCalls++; });
   const shot = async name => page.screenshot({ path: path.join(SHOTS, name + '.png'), fullPage: true });
   const noScroll = async what => { const [sw, iw] = await page.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth]); check(sw <= iw, `no sideways scroll on ${what} (${sw} of ${iw} px)`); };
   const tab = async t => { await page.click(`nav button[data-t=${t}]`); await page.waitForSelector(`#${t}:not([hidden])`); };
@@ -312,6 +313,10 @@ const tsv = rows => rows.map(r => r.map(c => /[\t\n"]/.test(c) ? '"' + c.replace
   await shot('12-wipe');
   const sBefore = await state();
   check(sBefore.n.here > 0 && sBefore.n.photos > 0, 'there is data to wipe (here ' + sBefore.n.here + ', photos ' + sBefore.n.photos + ')');
+  await refresh();
+  const oB = (await api('GET', '/api/op', { pin: true })).data;
+  const tiles = Object.fromEntries(await page.$$eval('#tiles .tile', els => els.map(e => [e.querySelector('small').textContent, e.querySelector('b').textContent])));
+  check(!!oB.n && tiles.Here === String(oB.n.here) && tiles.Photos === String(oB.n.photos) && tiles.Answers === String(oB.n.answers) && tiles.Reactions === String(oB.rx.total), 'the Status counts are the ones in the op answer (' + JSON.stringify(tiles) + ')');
   await page.click('#wipeGo');
   check(/cannot be undone/.test(await page.textContent('#askB')), 'Wipe confirms once more and says it cannot be undone');
   await yes();
@@ -322,6 +327,7 @@ const tsv = rows => rows.map(r => r.map(c => /[\t\n"]/.test(c) ? '"' + c.replace
   check(o2.people.count === 5 && o2.people.signedIn === 0, 'Wipe kept the people list and cleared the sign ins');
   await tab('status'); await sleep(400); await shot('13-status-after-wipe');
 
+  check(stateCalls === 0, 'the remote never asks /api/state: its counts come with the op answer (' + stateCalls + ' calls)');
   check(errs.length === 0, 'no page errors or console errors' + (errs.length ? ': ' + errs.join(' | ') : ''));
   await browser.close();
   console.log(fails.length ? `\n${fails.length} checks failed.` : '\nAll checks passed.');

@@ -1,10 +1,11 @@
 // Operator remote API. Every call needs the team PIN. Every change is logged with who made it.
-import { st, update, readCfg, updateCfg, mergeCfg, readPolls, updatePolls, readSnap, updateSnap, putItem, dropItem, photoItem, tally, log, readLog, pinOk, whoOf, idOk, clean, J, Refuse, readBody, countPinFail, pinFails, VIDEOS, FLAGS, FINALE_STEPS, rebuild, wipeAll, readBeat } from "../lib/store.mjs";
+import { st, update, readCfg, updateCfg, mergeCfg, readPolls, updatePolls, readSnap, updateSnap, putItem, dropItem, photoItem, tallyFrom, log, readLog, pinOk, whoOf, idOk, clean, J, Refuse, readBody, countPinFail, pinFails, VIDEOS, FLAGS, FINALE_STEPS, rebuild, wipeAll, readBeat } from "../lib/store.mjs";
 import { pubOk, personPub } from "../lib/ids.mjs";
 import { nowMs, realNow, rehearsalOn, rehearsalFor, isEventDay, localMin } from "../lib/day.mjs";
 import { readPeople, personFrom, personOf, syncTeam, PEOPLE_MAX } from "../lib/people.mjs";
-import { pollNow, autoNow } from "../lib/rules.mjs";
-import { approveCard, unlistCard } from "../lib/board.mjs";
+import { pollNow, autoNow, rxOn } from "../lib/rules.mjs";
+import { approveCard, unlistCard, countsOf } from "../lib/board.mjs";
+import { rxTop, rxRead } from "../lib/rx.mjs";
 import { placeTakeaway, takeawayPub } from "../lib/tk.mjs";
 import { takeawayId } from "../lib/ids.mjs";
 import { SESSIONS } from "../lib/people.mjs";
@@ -21,9 +22,9 @@ async function pendingPhotos(s) {
   return out.sort((a, b) => a.at - b.at);
 }
 // People for the remote: how many, who signed in (people and guests), who is locked out.
-// Names only: no number, no k4, no device id. Guest names come from their sig/ record.
-async function peopleInfo(s) {
-  const [people, sig, here, fail] = await Promise.all([readPeople(s), s.list({ prefix: "sig/" }), s.list({ prefix: "here/" }), s.list({ prefix: "fail/" })]);
+// Names only: no number, no k4, no device id. Guest names come from their sig/ record. here is the here/ listing.
+async function peopleInfo(s, here) {
+  const [people, sig, fail] = await Promise.all([readPeople(s), s.list({ prefix: "sig/" }), s.list({ prefix: "fail/" })]);
   const hereSet = new Set(here.blobs.map(b => b.key.slice(5)));
   const pubs = sig.blobs.map(b => b.key.slice(4)).filter(pubOk);
   const list = (await mapLimit(pubs, 16, async pub => {
@@ -72,10 +73,13 @@ export default async (req, context) => {
   const s = st(), who = whoOf(req);
 
   if (req.method === "GET") {
-    const [cfg, polls, snap, photos, profiles, takeaways, logl, screen, people] = await Promise.all([readCfg(s), readPolls(s), readSnap(s), pendingPhotos(s), pendingProfiles(s), pendingTakeaways(s), readLog(s), readBeat(s), peopleInfo(s)]);
-    const t = nowMs(cfg), cur = pollNow(cfg, polls, t);
-    const poll = cur ? { ...cur.p, open: cur.open, ...(await tally(s, cur.p.id, [])), manual: cur.manual } : null;
-    return J({ cfg, polls, poll, snap, pending: { photos, profiles, takeaways }, log: logl, videos: VIDEOS, t, reh: rehearsalOn(cfg), screen, pinFails: await pinFails(s), people, auto: autoNow(cfg, polls, t) });
+    const here = s.list({ prefix: "here/" });
+    const [cfg, polls, snap, photos, profiles, takeaways, logl, screen, people, ans, cx, top, fails, hereL] = await Promise.all([readCfg(s), readPolls(s), readSnap(s), pendingPhotos(s), pendingProfiles(s), pendingTakeaways(s), readLog(s), readBeat(s), here.then(h => peopleInfo(s, h)), s.list({ prefix: "ans/" }), s.list({ prefix: "cx/" }), rxTop(s), pinFails(s), here]);
+    const real = realNow(), t = nowMs(cfg, real), cur = pollNow(cfg, polls, t);
+    const poll = cur ? { ...cur.p, open: cur.open, ...tallyFrom(ans.blobs, cur.p.id, []), manual: cur.manual } : null;
+    // n and rx are the same as in /api/state, so the remote shows its counts from this one answer.
+    const rx = await rxRead(s, top, t, rxOn(cfg, t), real);
+    return J({ cfg, polls, poll, snap, pending: { photos, profiles, takeaways }, log: logl, videos: VIDEOS, t, reh: rehearsalOn(cfg), screen, pinFails: fails, people, auto: autoNow(cfg, polls, t), n: countsOf(snap, ans, hereL, cx), rx: { on: rx.on, total: rx.total } });
   }
 
   // 256 KB leaves room for the people import in WP2.

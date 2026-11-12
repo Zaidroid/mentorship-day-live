@@ -554,6 +554,14 @@ describe("event day guards", () => {
 
 /* ---------- reload, flags, repair, beat ---------- */
 describe("operator tools", () => {
+  test("GET /api/op carries the counts and the reaction total of state, so the remote needs one request", async () => {
+    const g = (await opGet(S.base)).json, st = (await state(S.base)).json;
+    assert.deepEqual(Object.keys(g.n).sort(), ["answers", "board", "here", "links", "photos", "takeaways"]);
+    assert.deepEqual(g.n, st.n);
+    assert.deepEqual(g.rx, { on: st.rx.on, total: st.rx.total });
+    assert.ok(g.n.answers > 0, "the counts are real");
+  });
+
   test("reload grows reloadAt every time", async () => {
     const r0 = (await state(S.base)).json.cfg.reloadAt;
     await op(S.base, { action: "reload" });
@@ -1143,6 +1151,7 @@ describe("reactions", () => {
     assert.equal(st.rx.total, t0 + 33, "heart is capped at 30, a negative count is 0");
     assert.deepEqual(Object.keys(x).sort(), ["b", "on", "t", "total"]);
     assert.equal(x.total, st.rx.total); assert.equal(x.on, true);
+    assert.deepEqual((await opGet(P.base)).json.rx, { on: true, total: st.rx.total }, "the remote sees the same total");
     const both = st.rx.b[0].slice(1).map((v, i) => v + st.rx.b[1][i + 1]);
     assert.deepEqual(both, [3, 30, 0]);
     assert.equal(st.rx.b[0][0], Math.floor(st.t / 4000));

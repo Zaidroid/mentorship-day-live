@@ -184,6 +184,7 @@ Everything version 1 returned, plus:
 {"cfg":{"poll":{"id":"p1","open":true,"manual":true},"rx":"auto","rehearsal":null,"hidden":[],"links":null},
  "pending":{"photos":[],"profiles":[],"takeaways":[]},
  "t":1794502747182,"reh":false,"screen":null,"pinFails":0,
+ "n":{"here":4,"board":13,"links":2,"photos":15,"takeaways":3,"answers":19},"rx":{"on":false,"total":0},
  "people":{"count":6,"signedIn":4,"guests":0,"here":4,"locked":[],"list":[{"id":"p67fea19f22","name":"Layla Khoury","kind":"person","here":true}]},
  "auto":{"now":"18:59","date":"2026-11-12","phase":"before",
    "poll":{"id":"p1","open":true,"manual":true,"until":null,"next":{"id":"p2","at":"09:00"}},
@@ -191,6 +192,7 @@ Everything version 1 returned, plus:
    "program":{"now":null,"next":{"title":"Registration and Coffee","s":"09:30"}},"takeaways":[]}}
 ```
 
+* `n` is the same object as in `/api/state`, and `rx` is `state.rx` without `b`, so the remote shows its counts without a state request.
 * `screen` is the wall's last heartbeat plus `age` in seconds, or null.
 * `cfg.rehearsal` is `{shift, until, hhmm, at}` or null.
 * A pending takeaway is `{id, sid, text, rating, first, showName, guest, at}`.

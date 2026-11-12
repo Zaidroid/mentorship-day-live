@@ -36,6 +36,10 @@ export function boardLinks(cxBlobs, snap) {
   const on = new Set(snap.profiles.map(p => p.id));
   return pairsFrom(cxBlobs).filter(([a, b]) => on.has(a) && on.has(b));
 }
+// The counts that /api/state and GET /api/op both show, from the snapshot and the ans/, here/ and cx/ listings.
+export function countsOf(snap, ans, here, cx) {
+  return { here: here.blobs.length, board: snap.profiles.length, links: boardLinks(cx.blobs, snap).length, photos: snap.photos.length, takeaways: snap.takeaways.length, answers: ans.blobs.length };
+}
 // Takes a card off the board (it stays stored, for the person and the team).
 export async function unlistCard(s, pub) {
   await s.delete(`ok/pr/${pub}`);

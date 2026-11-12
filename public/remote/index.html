@@ -295,7 +295,7 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const ls = { get(k){ try { return localStorage.getItem(k) || ''; } catch(e) { return ''; } }, set(k, v){ try { localStorage.setItem(k, v); } catch(e) {} }, del(k){ try { localStorage.removeItem(k); } catch(e) {} } };
 const DAYX = window.MD_DAY || null;
-let PIN = ls.get('md_pin'), WHO = ls.get('md_who'), D = null, ST = null, busy = false, lastOk = 0, TAB = 'status', tick = 0, refreshing = false, seq = 0;
+let PIN = ls.get('md_pin'), WHO = ls.get('md_who'), D = null, busy = false, lastOk = 0, TAB = 'status', refreshing = false, seq = 0;
 
 const MODES = [['auto','Automatic'],['welcome','Welcome'],['opening','Opening'],['video','Video Messages'],['choose','Coffee Break'],['live','Lounge and Sessions'],['lunch','Lunch'],['close','Thank You']];
 const SCENES = [['rooms','Rooms now'],['choose','Next Up'],['board','One to Ones'],['meet','Networking Board'],['photos','Photo Wall'],['poll','Live Poll'],['pulse','Live Numbers'],['way','This Way'],['spotlight','Advisor Spotlight'],['advisors',"Today's Advisors"]];
@@ -387,7 +387,6 @@ function showTab(t){
   document.querySelectorAll('nav button').forEach(x => { const on = x.dataset.t === t; x.setAttribute('aria-selected', String(on)); if (on) { try { x.scrollIntoView({inline:'nearest', block:'nearest'}); } catch(e) {} } });
   TABS.forEach(n => $(n).hidden = n !== t);
   if (D) render();
-  if (t === 'status') loadState();
 }
 document.querySelectorAll('nav button').forEach(b => b.onclick = () => { showTab(b.dataset.t); window.scrollTo(0, 0); });
 
@@ -475,8 +474,8 @@ function renderStatus(){
   // by itself
   $('autoNow').textContent = A.now ? `Clock ${A.now}${D.reh ? ', rehearsal' : ''}` : '';
   setHtml($('autoList'), autoLines().map(l => `<li>${esc(l)}</li>`).join(''));
-  // counts
-  const n = (ST && ST.n) || {};
+  // counts, from the same answer as everything else
+  const n = D.n || {};
   const tiles = [
     [n.here != null ? n.here : (p.here || 0), 'Here'],
     [`${p.signedIn || 0}/${p.count || 0}`, 'Signed in'],
@@ -485,7 +484,7 @@ function renderStatus(){
     [n.photos != null ? n.photos : (D.snap.photos || []).length, 'Photos'],
     [n.takeaways != null ? n.takeaways : (D.snap.takeaways || []).length, 'Takeaways'],
     [n.answers != null ? n.answers : (D.poll ? D.poll.total : 0), 'Answers'],
-    [ST && ST.rx ? ST.rx.total : '-', 'Reactions']
+    [D.rx ? D.rx.total : '-', 'Reactions']
   ];
   setHtml($('tiles'), tiles.map(([v, l]) => `<div class="tile"><b>${esc(v)}</b><small>${l}</small></div>`).join(''));
   // waiting
@@ -505,9 +504,6 @@ function renderStatus(){
     $('rhChips').dataset.ready = 1;
   }
   setHtml($('flags'), FLAGS.map(([k, name, desc]) => { const v = !!(c.flags && c.flags[k]); return `<div class="sw"><div><b>${esc(name)}</b><span class="muted">${esc(desc)}</span></div><button class="b ${v ? 'go' : ''}" data-flag="${k}" data-do="flag" aria-pressed="${v}">${v ? 'On' : 'Off'}</button></div>`; }).join(''));
-}
-async function loadState(){
-  try { const r = await fetch('/api/state', {cache:'no-store'}); if (r.ok) { ST = await r.json(); if (D && TAB === 'status') renderStatus(); } } catch(e) {}
 }
 
 /* ---------- people import ---------- */
@@ -602,7 +598,7 @@ function previewHtml(r){
   const consent = r.people.filter(p => p.photoOk === true).length, remote = r.people.filter(p => p.advisorPref === 'remote').length, local = r.people.filter(p => p.advisorPref === 'local').length;
   return `<div class="pv ${r.people.length ? '' : 'bad'}"><b id="impCount">${plural(r.people.length, 'person', 'people')} ready</b> <span class="muted">from ${plural(r.total, 'row', 'rows')}</span>
     ${lines.length ? '<ul>' + lines.map(l => `<li>${esc(l)}</li>`).join('') + '</ul>' : ''}
-    ${r.people.length ? `<p class="muted" style="margin-top:8px">First names on the list: ${names}${r.people.length > 5 ? ', and ' + (r.people.length - 5) + ' more' : ''}.<br>Photos allowed: ${consent}. Advisors: ${remote} remote, ${local} local.</p>` : ''}</div>`;
+    ${r.people.length ? `<p class="muted" style="margin-top:8px">First on the list: ${names}${r.people.length > 5 ? ', and ' + (r.people.length - 5) + ' more' : ''}.<br>Photos allowed: ${consent}. Advisors: ${remote} remote, ${local} local.</p>` : ''}</div>`;
 }
 function readImport(text){
   IMP = parsePeople(text);
@@ -791,7 +787,7 @@ document.addEventListener('click', e => {
 $('npType').onchange = () => { $('npOptsBox').hidden = $('npType').value !== 'choice'; };
 $('wipePhrase').addEventListener('input', () => { $('wipeGo').disabled = $('wipePhrase').value.trim() !== 'RESET MD26'; });
 $('svLink').addEventListener('input', () => { $('svLink').dataset.touched = 1; });
-$('refreshNow').onclick = () => { refresh(true); if (TAB === 'status') loadState(); toast('Refreshed'); };
+$('refreshNow').onclick = () => { refresh(true); toast('Refreshed'); };
 
 async function download(what){
   try {
@@ -836,7 +832,6 @@ async function refresh(force){
   try {
     const d = await get(); if (my < seq) return;
     D = d; lastOk = Date.now(); render(); showConn();
-    if (TAB === 'status' && (!ST || ++tick % 2 === 0)) loadState();
   } catch(e) { if (PIN) showConn(); }
   finally { refreshing = false; }
 }
@@ -853,9 +848,8 @@ function start(){
   clearInterval(timer);
   // every 8 seconds, only while the page is visible
   timer = setInterval(() => { if (!document.hidden && !busy) refresh(); else if (!document.hidden) showConn(); }, 8000);
-  loadState();
 }
-document.addEventListener('visibilitychange', () => { if (!document.hidden && PIN && !$('app').hidden) { refresh(true); if (TAB === 'status') loadState(); } });
+document.addEventListener('visibilitychange', () => { if (!document.hidden && PIN && !$('app').hidden) refresh(true); });
 if (PIN && WHO) { get().then(d => { D = d; lastOk = Date.now(); start(); }).catch(() => { if (!$('gErr').textContent) logout(''); }); } else { $('gate').hidden = false; }
 })();
 </script>

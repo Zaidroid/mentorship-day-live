@@ -6,7 +6,7 @@ import { nowMs, realNow, rehearsalOn, phase } from "../lib/day.mjs";
 import { interestFrom } from "../lib/people.mjs";
 import { pollNow, rxOn } from "../lib/rules.mjs";
 import { rxTop, rxRead } from "../lib/rx.mjs";
-import { boardLinks } from "../lib/board.mjs";
+import { countsOf } from "../lib/board.mjs";
 
 // The newest 12 hellos: hi/<t>~<pub>~<first name>. Only the first name and the time leave the server.
 function hellos(blobs) {
@@ -23,16 +23,16 @@ export default async () => {
   // The poll follows the schedule unless the remote holds one (plan section 5.8).
   const cur = pollNow(cfg, polls, t), p = cur && cur.p;
   const poll = p ? { id: p.id, q: p.q, type: p.type, options: p.options || [], open: cur.open, ...tallyFrom(ans.blobs, p.id, cfg.hidden), manual: cur.manual } : null;
-  const links = boardLinks(cx.blobs, snap).length;
+  const n = countsOf(snap, ans, here, cx);
   return J({
     t, reh: rehearsalOn(cfg), phase: phase(t),
     cfg: publicCfg(cfg),
     poll,
     rx,
-    n: { here: here.blobs.length, board: snap.profiles.length, links, photos: snap.photos.length, takeaways: snap.takeaways.length, answers: ans.blobs.length },
+    n,
     interest: interestFrom(stars.blobs),
     hello: cfg.flags.hello ? hellos(hi.blobs) : [],
-    snapV: snapVersion(snap, links),
+    snapV: snapVersion(snap, n.links),
     tags: TAGS, videos: VIDEOS
   }, 200, CDN(rx.on ? 1 : 2));
 };
