@@ -36,6 +36,8 @@ CDN 2 seconds, 1 second while `rx.on`.
 * `poll` is null before the first row of the poll schedule. `poll.manual` is true while the remote holds a poll.
 * `cfg.photoAt` is `{at, secs}` for the group photo countdown, or null. `cfg.finale` is `{step, at}` or null. `cfg.links` is `{survey}` or null.
 * `rx.b` holds the current and the previous 4 second window as `[window, clap, heart, bloom]`. Counts in a window only grow. Remember what was shown per window and animate the difference.
+* `rx.total` is every reaction accepted since the last wipe, and it only grows, also across a rehearsal that moves or repeats the clock. A batch counts from the first answer after it is stored, also when its request was slow.
+* A state call makes 9 storage calls, up to 11 while reactions flow, and 1 list and 1 write more when a minute is summed, about once a minute.
 * `n.here` counts people first seen on the event day, not sign ins made before it.
 * `interest` counts people planning to join each session, own choices and automatic picks together.
 * `hello` is the newest 12 greetings, first name only, only with consent.

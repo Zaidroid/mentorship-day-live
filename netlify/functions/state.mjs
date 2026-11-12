@@ -2,10 +2,10 @@
 // Lists (photos, profiles, connections, takeaways) are not here: they are in /api/snap, fetched when snapV changes.
 // Fields of later features are present with empty values, so clients can be written against the final shape.
 import { st, readCfg, readPolls, readSnap, tallyFrom, publicCfg, snapVersion, J, CDN, TAGS, VIDEOS } from "../lib/store.mjs";
-import { nowMs, rehearsalOn, phase } from "../lib/day.mjs";
+import { nowMs, realNow, rehearsalOn, phase } from "../lib/day.mjs";
 import { interestFrom } from "../lib/people.mjs";
 import { pollNow, rxOn } from "../lib/rules.mjs";
-import { rxLists, rxRead } from "../lib/rx.mjs";
+import { rxTop, rxRead } from "../lib/rx.mjs";
 import { boardLinks } from "../lib/board.mjs";
 
 // The newest 12 hellos: hi/<t>~<pub>~<first name>. Only the first name and the time leave the server.
@@ -16,10 +16,10 @@ function hellos(blobs) {
 
 export default async () => {
   const s = st();
-  // One round of reads and lists, all in parallel; a second round only for reactions in the last two minutes.
-  const [cfg, polls, snap, ans, stars, here, hi, cx, rxl] = await Promise.all([readCfg(s), readPolls(s), readSnap(s), s.list({ prefix: "ans/" }), s.list({ prefix: "star/" }), s.list({ prefix: "here/" }), s.list({ prefix: "hi/" }), s.list({ prefix: "cx/" }), rxLists(s)]);
-  const t = nowMs(cfg);
-  const rx = await rxRead(s, rxl, t, rxOn(cfg, t));
+  // One round of reads and lists, all in parallel; a second round only once reactions were stored (lib/rx.mjs).
+  const [cfg, polls, snap, ans, stars, here, hi, cx, rxl] = await Promise.all([readCfg(s), readPolls(s), readSnap(s), s.list({ prefix: "ans/" }), s.list({ prefix: "star/" }), s.list({ prefix: "here/" }), s.list({ prefix: "hi/" }), s.list({ prefix: "cx/" }), rxTop(s)]);
+  const real = realNow(), t = nowMs(cfg, real);
+  const rx = await rxRead(s, rxl, t, rxOn(cfg, t), real);
   // The poll follows the schedule unless the remote holds one (plan section 5.8).
   const cur = pollNow(cfg, polls, t), p = cur && cur.p;
   const poll = p ? { id: p.id, q: p.q, type: p.type, options: p.options || [], open: cur.open, ...tallyFrom(ans.blobs, p.id, cfg.hidden), manual: cur.manual } : null;

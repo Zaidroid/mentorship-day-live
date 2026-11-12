@@ -1162,12 +1162,13 @@ describe("reactions", () => {
     const tired = newDev();
     await s.setJSON(`rxd/${tired}`, { at: 0, n: 150 });
     assert.equal((await react(tired, { clap: 1 })).json.error, "That is all the reactions for today. Thank you!");
-    const { winOf, minOf } = lib.rx || (lib.rx = await import("../netlify/lib/rx.mjs"));
-    const w = winOf((await rx()).t);
-    for (const ww of [w, w + 1]) await Promise.all(Array.from({ length: 400 }, (_, i) => s.set(`rx/${minOf(ww)}/${ww}/flood${i}~1~0~0~aa`, "")));
+    const { winPrefix } = lib.rx || (lib.rx = await import("../netlify/lib/rx.mjs"));
+    // No rehearsal runs here, so t is the server's real time too. Fill this window and the next.
+    const t = (await rx()).t, pres = [winPrefix(t, t), winPrefix(t + 4000, t + 4000)];
+    for (const pre of pres) await Promise.all(Array.from({ length: 400 }, (_, i) => s.set(`${pre}flood${i}~1~0~0~aa`, "")));
     const full = await react(newDev(), { clap: 1 });
     assert.equal(full.status, 429); assert.equal(full.json.error, "Too many reactions at once. Try again in a moment.");
-    for (const ww of [w, w + 1]) { const { blobs } = await s.list({ prefix: `rx/${minOf(ww)}/${ww}/flood` }); await Promise.all(blobs.map(b => s.delete(b.key))); }
+    for (const pre of pres) { const { blobs } = await s.list({ prefix: `${pre}flood` }); await Promise.all(blobs.map(b => s.delete(b.key))); }
   });
 
   test("refusals", async () => {
@@ -1182,18 +1183,19 @@ describe("reactions", () => {
   });
 
   test("closed minutes are summed once, so the total stays and costs a few lists", async () => {
-    const s = await openDirect(P.dir), { minOf } = lib.rx;
-    const x0 = await rx(), m = minOf(Math.floor(x0.t / 4000));
-    // batches in a minute long past, and in a minute ahead (left by a rehearsal that stopped)
+    const s = await openDirect(P.dir), { realMin } = lib.rx;
+    const x0 = await rx(), m = realMin(x0.t); // no rehearsal runs here, so t is the server's real time
+    // batches in a minute long past, and in a minute ahead (only a server with another clock writes there)
     for (const [mm, i] of [[m - 30, 0], [m - 30, 1], [m + 500, 2]]) await s.set(`rx/${mm}/${mm * 15 + 3}/old${i}~2~1~1~bb`, "");
     const results = await Promise.all(Array.from({ length: 5 }, () => rx()));
-    for (const r of results) assert.equal(r.total, x0.total + 12, "every reader sees the same total");
-    const sums = (await s.list({ prefix: "rxm/" })).blobs.map(b => b.key);
-    assert.deepEqual(sums.filter(k => k.startsWith(`rxm/${m - 30}~`)), [`rxm/${m - 30}~4~2~2`], "summed once, under one name");
-    assert.ok(sums.includes(`rxm/${m + 500}~2~1~1`));
+    for (const r of results) assert.equal(r.total, x0.total + 8, "every reader sees the same total");
+    const sums = (await s.list({ prefix: "rx/", directories: true })).blobs.map(b => b.key);
+    assert.deepEqual(sums.filter(k => k.startsWith(`rx/s${m - 30}~`)), [`rx/s${m - 30}~2~4~2~2`], "summed once, under one name");
+    assert.ok(!sums.some(k => k.startsWith(`rx/s${m + 500}~`)), "a minute ahead of the clock waits until its time, unsummed");
     // the summed batches can even go; the sum keeps the total
     for (const k of (await s.list({ prefix: `rx/${m - 30}/` })).blobs) await s.delete(k.key);
-    assert.equal((await rx()).total, x0.total + 12);
+    assert.equal((await rx()).total, x0.total + 8);
+    await s.delete(`rx/${m + 500}/${(m + 500) * 15 + 3}/old2~2~1~1~bb`);
   });
 
   test("on Netlify state is cached 1 second while reactions are on, 2 when off; /api/rx 1 second", async () => {
@@ -1203,6 +1205,151 @@ describe("reactions", () => {
     assert.match((await rxFn(new Request("http://localhost/api/rx"))).headers.get("netlify-cdn-cache-control"), /maxage=1\b/);
     await op(P.base, { action: "rx", mode: "off" });
     assert.match((await stateFn(new Request("http://localhost/api/state"))).headers.get("netlify-cdn-cache-control"), /maxage=2\b/);
+  });
+});
+
+/* ---------- reaction totals, with a clock the test moves (plan sections 5.6 and 5.12) ---------- */
+// The functions run in this process on the data folder of their own server, with the real clock replaced
+// (globalThis.__mdTestClock, as MD_TEST_FAKE_NOW does in the server), so minutes pass in milliseconds.
+// Responses are recorded for the scans at the end. Totals stay under 1000, so no total looks like 4 digits.
+describe("reaction totals", () => {
+  let P, fn, clock = Date.parse("2026-11-13T12:00:50+02:00"), sent = 0, last = 0;
+  const costs = []; // [storage operations, writes] of each state read
+  async function inproc(f, method, url, { body, headers = {} } = {}) {
+    const h = { ...headers }; if (body !== undefined) h["content-type"] = "application/json";
+    const r = await f(new Request("http://localhost" + url, { method, headers: h, body: body === undefined ? undefined : JSON.stringify(body) }), {});
+    const text = r.status === 204 ? "" : await r.text();
+    seen.push({ method, url, status: r.status, headers: [...r.headers].map(x => x.join(": ")).join("\n"), text });
+    let json = null; try { json = JSON.parse(text); } catch {}
+    return { status: r.status, json };
+  }
+  // Counts the storage calls made while fn runs.
+  async function counted(fn) {
+    const proto = Object.getPrototypeOf(lib.store.st()), names = ["get", "getWithMetadata", "getMetadata", "list", "set", "setJSON", "delete"];
+    const orig = Object.fromEntries(names.map(k => [k, proto[k]])), n = { ops: 0, writes: 0 };
+    for (const k of names) proto[k] = function (...a) { n.ops++; if (k === "set" || k === "setJSON") n.writes++; return orig[k].apply(this, a); };
+    try { return { out: await fn(), ...n }; } finally { Object.assign(proto, orig); }
+  }
+  // Holds the next batch write until release(), as a slow request would.
+  function hold() {
+    const proto = Object.getPrototypeOf(lib.store.st()), orig = proto.set;
+    let release, held; const waiting = new Promise(r => { held = r; });
+    proto.set = function (key, ...rest) {
+      if (!/^rx\/\d+\//.test(key)) return orig.call(this, key, ...rest);
+      proto.set = orig; held();
+      return new Promise(r => { release = r; }).then(() => orig.call(this, key, ...rest));
+    };
+    return { waiting, release: () => release() };
+  }
+  const devs = Array.from({ length: 12 }, () => newDev()); let turn = 0;
+  // One batch from the next phone in turn. sent grows by its size once the server accepts it.
+  async function react(c = { clap: 1, heart: 1 }) {
+    const r = await inproc(fn.react, "POST", "/api/react", { body: { c }, headers: { "x-dev": devs[turn++ % devs.length] } });
+    if (r.status === 204) sent += (c.clap || 0) + (c.heart || 0) + (c.bloom || 0);
+    return r.status;
+  }
+  const read = async () => (await inproc(fn.state, "GET", "/api/state")).json;
+  // Reads state, checks the total never went down, and keeps what the read cost.
+  async function total() {
+    const { out, ops, writes } = await counted(read);
+    costs.push([ops, writes]);
+    assert.ok(out.rx.total >= last, `the total went down from ${last} to ${out.rx.total}`);
+    return (last = out.rx.total);
+  }
+  const opIn = body => inproc(fn.op, "POST", "/api/op", { body, headers: opHeaders() });
+  before(async () => {
+    P = await startServer(); await openDirect(P.dir);
+    fn = { state: (await import("../netlify/functions/state.mjs")).default, react: (await import("../netlify/functions/react.mjs")).default, op: (await import("../netlify/functions/op.mjs")).default };
+    lib.rx ||= await import("../netlify/lib/rx.mjs");
+    globalThis.__mdTestClock = () => clock;
+    await opIn({ action: "rx", mode: "on" });
+  });
+  after(async () => { delete globalThis.__mdTestClock; await P.stop(); await openDirect(S.dir); });
+
+  test("the total is every accepted batch, at every read across minute boundaries", async () => {
+    assert.equal(await total(), 0);
+    for (let i = 0; i < 30; i++) {
+      for (let k = 0; k < 2; k++) assert.equal(await react(), 204);
+      clock += 7000;
+      assert.equal(await total(), sent, `step ${i}`);
+    }
+    clock += 3 * 60000;
+    assert.equal(await total(), sent, "and once those minutes are summed");
+  });
+
+  test("a rehearsal clock that jumps a minute at a time, run twice over the same times, keeps every batch", async () => {
+    for (const pass of [1, 2]) {
+      for (let m = 0; m < 8; m++) {
+        clock += 1500;
+        assert.equal((await opIn({ action: "rehearsal", hhmm: `10:0${m}` })).status, 200);
+        for (let k = 0; k < 2; k++) assert.equal(await react(), 204);
+        assert.equal(await total(), sent, `pass ${pass} at 10:0${m}`);
+      }
+      await opIn({ action: "rehearsal", hhmm: null });
+      clock += 1500;
+      assert.equal(await total(), sent, `pass ${pass}, after the rehearsal`);
+    }
+    clock += 3 * 60000;
+    assert.equal(await total(), sent, "and once those minutes are summed");
+  });
+
+  test("a batch sent just before a minute ends counts, also when it lands after the minute turned", async () => {
+    clock = (Math.floor(clock / 60000) + 2) * 60000 - 100;
+    assert.equal(await react(), 204);
+    const h = hold(), p = react(); await h.waiting;
+    clock += 200;
+    assert.equal(await total(), sent);
+    h.release(); assert.equal(await p, 204);
+    assert.equal(await total(), sent, "counted in the minute it was sent in");
+    clock += 150000;
+    assert.equal(await total(), sent, "and in that minute's sum");
+  });
+
+  test("a batch that lands after its minute was summed marks the minute and counts at the next read", async () => {
+    clock += 5000;
+    const m = lib.rx.realMin(clock), top = async () => (await lib.store.st().list({ prefix: "rx/", directories: true })).blobs.map(b => b.key);
+    assert.equal(await react(), 204); // a batch that lands, so the minute is summed
+    assert.deepEqual((await top()).filter(k => k.startsWith("rx/l")), [], "a batch on time leaves no mark");
+    const h = hold(), p = react({ bloom: 2 }); await h.waiting;
+    clock += 3 * 60000;
+    assert.equal(await total(), sent, "its minute is summed without it");
+    assert.deepEqual((await top()).filter(k => k.startsWith(`rx/s${m}~`)), [`rx/s${m}~1~1~1~0`]);
+    h.release(); assert.equal(await p, 204);
+    assert.equal((await top()).filter(k => k.startsWith(`rx/l${m}~`)).length, 1, "the late batch marked its minute");
+    assert.equal(await total(), sent, "counted at the next read");
+    const after = await top();
+    assert.ok(after.includes(`rx/s${m}~2~1~1~2`) && !after.some(k => k.startsWith("rx/l")), "summed again, and the mark is gone");
+    for (let i = 0; i < 3; i++) { clock += 1000; assert.equal(await total(), sent, "and it stays counted"); }
+  });
+
+  test("the total never goes down while batches arrive, whatever the rehearsal clock does", async () => {
+    for (const hhmm of ["10:30", "10:05", null, "14:10", "10:05", null]) {
+      clock += 2000;
+      await opIn({ action: "rehearsal", hhmm });
+      for (let i = 0; i < 5; i++) {
+        const out = await Promise.all([react(), read(), react(), react()]);
+        assert.deepEqual([out[0], out[2], out[3]], [204, 204, 204]);
+        clock += 9000;
+        await total();
+      }
+    }
+    clock += 3 * 60000;
+    assert.equal(await total(), sent);
+    assert.ok(sent > 200 && sent < 1000, "enough batches, and no total with 4 digits: " + sent);
+  });
+
+  test("a state call costs 9 storage operations without reactions, 11 while they flow, at most 13 when a minute is summed", async t => {
+    const fresh = await startServer();
+    try {
+      await openDirect(fresh.dir);
+      assert.equal((await counted(read)).ops, 9);
+    } finally { await fresh.stop(); await openDirect(P.dir); }
+    const steady = costs.filter(([, w]) => w === 0).map(([n]) => n), all = costs.map(([n]) => n);
+    assert.ok(steady.length > 50, "most reads write nothing: " + steady.length);
+    assert.ok(Math.max(...steady) <= 11, "steady reads: " + steady.join(" "));
+    assert.ok(Math.max(...all) <= 13, "all reads: " + all.join(" "));
+    const hist = {}; for (const n of all) hist[n] = (hist[n] || 0) + 1;
+    t.diagnostic("storage operations per state read: " + Object.entries(hist).map(([n, c]) => `${n} ops x${c}`).join(", "));
   });
 });
 

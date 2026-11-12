@@ -35,7 +35,8 @@ export function rehearsalOn(cfg, real = realNow()) {
   const r = cfg && cfg.rehearsal;
   return !!(r && typeof r.shift === "number" && r.until > real && !isEventDay(real));
 }
-export function nowMs(cfg) { const real = realNow(); return rehearsalOn(cfg, real) ? real + cfg.rehearsal.shift : real; }
+// real may be passed in, so one reading of the clock gives both times.
+export function nowMs(cfg, real = realNow()) { return rehearsalOn(cfg, real) ? real + cfg.rehearsal.shift : real; }
 export function rehearsalFor(hhmm, real = realNow()) {
   return { shift: localToMs(DAY.date, hhmm) - real, until: real + REHEARSAL_MS, hhmm, at: real };
 }

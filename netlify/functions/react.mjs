@@ -5,7 +5,7 @@ import { st, readBody, readCfg, J, randHex } from "../lib/store.mjs";
 import { devOk } from "../lib/ids.mjs";
 import { nowMs, realNow } from "../lib/day.mjs";
 import { rxOn } from "../lib/rules.mjs";
-import { winOf, minOf, RX_KINDS } from "../lib/rx.mjs";
+import { winPrefix, markIfLate, RX_KINDS } from "../lib/rx.mjs";
 
 const CAP = 30, GAP_MS = 2500, PER_PHONE = 150, PER_WINDOW = 400;
 
@@ -18,17 +18,18 @@ export default async (req) => {
   if (!(v[0] + v[1] + v[2])) return J({ error: "Nothing to send." }, 400);
   const s = st();
   const [cfg, mine] = await Promise.all([readCfg(s), s.get(`rxd/${dev}`, { type: "json" })]);
-  const t = nowMs(cfg);
+  const real = realNow(), t = nowMs(cfg, real);
   if (!rxOn(cfg, t)) return J({ error: "Reactions are closed right now." }, 409);
-  const real = realNow();
   if (mine && real - mine.at < GAP_MS) return J({ error: "One moment, then send again." }, 429);
   if (mine && mine.n >= PER_PHONE) return J({ error: "That is all the reactions for today. Thank you!" }, 429);
-  const w = winOf(t), pre = `rx/${minOf(w)}/${w}/`;
+  // The window cap counts the window within this real minute, so a window that spans two minutes may hold twice as many.
+  const pre = winPrefix(real, t);
   if ((await s.list({ prefix: pre })).blobs.length >= PER_WINDOW) return J({ error: "Too many reactions at once. Try again in a moment." }, 429);
   await Promise.all([
     s.set(`${pre}${dev}~${v[0]}~${v[1]}~${v[2]}~${randHex(3)}`, ""),
     s.setJSON(`rxd/${dev}`, { at: real, n: ((mine && mine.n) || 0) + 1 })
   ]);
+  await markIfLate(s, real);
   return new Response(null, { status: 204, headers: { "cache-control": "no-store" } });
 };
 
