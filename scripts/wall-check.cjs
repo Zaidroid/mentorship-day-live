@@ -235,6 +235,67 @@ check('screen-check-shows-perf', async () => {
   return [t.shown && /\d+ fps/.test(t.fps) && /Lite mode (on|off)/.test(t.lite), `screen check: "${t.fps}", "${t.lite}"`];
 });
 
+/* ---------- Task 3: motion system ---------- */
+
+// Every animation the script made (not CSS loops), with what it animates.
+const scriptAnims = () => document.getAnimations().filter(a => !(a instanceof CSSAnimation) && !(a instanceof CSSTransition)).map(a => {
+  const e = a.effect, t = e.getTiming(), k = e.getKeyframes(), el = e.target;
+  const props = [...new Set(k.flatMap(f => Object.keys(f).filter(x => !['offset', 'easing', 'composite', 'computedOffset'].includes(x))))];
+  return { dur: t.duration, ease: t.easing, props, kind: el.classList.contains('li') ? 'line' : el.classList.contains('lf') ? 'leaf' : el.classList.contains('dr') || el.classList.contains('shrule') ? 'rule' : el.classList.contains('sb') ? 'scene' : el.classList.contains('rv') ? 'block' : (el.className || el.tagName).toString().slice(0, 20), first: k[0] };
+});
+const TOKENS = { durations: [240, 420, 520, 900], eases: ['cubic-bezier(0.2, 0.8, 0.2, 1)', 'cubic-bezier(0.65, 0, 0.25, 1)'] };
+function judgeAnims(list) {
+  const bad = [];
+  for (const a of list) {
+    if (!TOKENS.durations.includes(a.dur)) bad.push(`${a.kind} lasts ${a.dur} ms`);
+    if (!TOKENS.eases.includes(a.ease.replace(/\s+/g, ' ').replace(/,(\S)/g, ', $1'))) bad.push(`${a.kind} eases ${a.ease}`);
+    const m = /cubic-bezier\(([^)]+)\)/.exec(a.ease); if (m) { const [, y1, , y2] = m[1].split(',').map(Number); if (y1 < 0 || y1 > 1 || y2 < 0 || y2 > 1) bad.push(`${a.kind} overshoots (${a.ease})`); }
+    if (a.kind === 'line' && a.props.includes('opacity')) bad.push('a text line fades');
+    if (a.kind === 'line' && !/translateY\(110%\)/.test(a.first.transform || '') && !/translateY\(-110%\)/.test(a.first.transform || '') && a.first.transform !== 'none') bad.push('a text line moves another way: ' + a.first.transform);
+    if (a.kind === 'leaf' && !/circle\(0%/.test(a.first.clipPath || '')) bad.push('a leaf does not unfold from its corner');
+    if (a.kind === 'rule' && !/scaleX\(0\)/.test(a.first.transform || '')) bad.push('a rule does not draw from the left');
+    if (a.props.includes('left') || a.props.includes('top') || a.props.includes('width')) bad.push(`${a.kind} animates layout (${a.props.join(',')})`);
+  }
+  return [...new Set(bad)];
+}
+
+check('motion-one-system', async () => {
+  const w = await wall('/screen/?t=11:20&quiet&lite=0', '1920x1080');
+  await sleep(4500);
+  await w.p.evaluate(() => window.__md.force('spotlight'));
+  await sleep(150);
+  const exit = await md(w.p, scriptAnims);
+  // The exit lasts 420 ms; on a slow machine it ends a few frames later. Sample once the new scene enters.
+  await w.p.waitForFunction(() => document.getAnimations().some(a => a.effect && a.effect.target && a.effect.target.classList.contains('sb') && /scale\(1\.06\)/.test(a.effect.getKeyframes()[0].transform || '')), null, { timeout: 4000 }).catch(() => {});
+  await sleep(60);
+  const enter = await md(w.p, scriptAnims);
+  const structure = await md(w.p, () => ({ lines: document.querySelectorAll('.slot .sb .tx .ln').length, plainText: [...document.querySelectorAll('.slot .sb .tx')].filter(e => e.textContent.trim() && !e.querySelector('.ln')).length }));
+  await w.close();
+  const all = exit.concat(enter), bad = judgeAnims(all);
+  const kinds = {}; enter.forEach(a => { kinds[a.kind] = (kinds[a.kind] || 0) + 1; });
+  const exitOk = exit.some(a => a.kind === 'scene' && a.first.transform === 'none' && a.dur === 420);
+  const enterOk = enter.some(a => a.kind === 'scene' && /scale\(1\.06\)/.test(a.first.transform || '') && a.dur === 900);
+  const ok = !bad.length && exitOk && enterOk && (kinds.line || 0) > 0 && (kinds.leaf || 0) > 0 && (kinds.rule || 0) > 0 && structure.lines > 0 && structure.plainText === 0;
+  return [ok, `Advisor Spotlight forced: scene leaves by receding: ${exitOk}; comes forward from 1.06: ${enterOk}; entering now: ${JSON.stringify(kinds)}; masked lines ${structure.lines}, text left unsplit ${structure.plainText}; faults: ${bad.join('; ') || 'none'}`];
+});
+
+check('motion-cloud-and-moment', async () => {
+  const w = await wall('/screen/?t=11:20&quiet&lite=0&scene=poll', '1920x1080');
+  await w.p.waitForFunction(() => document.querySelectorAll('.cloud span.new').length > 0, null, { timeout: 6000 }).catch(() => {});
+  const cloud = await md(w.p, scriptAnims);
+  await sleep(2500);
+  const kept = await md(w.p, () => ({ words: document.querySelectorAll('.cloud span').length, stillNew: document.querySelectorAll('.cloud span.new').length }));
+  await w.close();
+  const w2 = await wall('/screen/?t=10:54:58&quiet&lite=0', '1920x1080');
+  await w2.p.waitForFunction(() => !!window.__md.S.momentKey, null, { timeout: 8000 });
+  await sleep(120);
+  const mom = await md(w2.p, scriptAnims);
+  await w2.close();
+  const bad = judgeAnims(cloud.concat(mom));
+  const words = cloud.filter(a => a.kind === 'I').length, lines = mom.filter(a => a.kind === 'line').length, panel = mom.filter(a => /scale\(1\.06\)/.test(a.first.transform || '') && a.kind !== 'scene' && a.kind !== 'block').length;
+  return [!bad.length && words > 0 && kept.stillNew === kept.words && lines > 0 && panel > 0, `cloud words rising: ${words}, 2.5 s later the same words are still the ones that rose (${kept.stillNew} of ${kept.words}, no repaint cut them); moment panel comes forward: ${panel > 0}; moment lines rising: ${lines}; faults: ${bad.join('; ') || 'none'}`];
+});
+
 (async () => {
   if (process.argv.includes('--list')) { CHECKS.forEach(c => console.log(c.name)); return; }
   browser = await chromium.launch();
