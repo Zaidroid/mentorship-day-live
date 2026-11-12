@@ -721,6 +721,193 @@ describe("operator actions", () => {
   });
 });
 
+/* ---------- people and sign in (plan section 5.3) ---------- */
+// The six sample people of scripts/seed.sh, with made up last 4 digits. Test data only.
+const SAMPLE = [
+  { name: "Layla Khoury", last4: "7391", company: "Byte Studio", title: "Founder", linkedin: "linkedin.com/in/test-layla", topics: ["AI adoption and applied AI"], advisorPref: "remote", photoOk: true },
+  { name: "Omar Saleh", last4: "0458", company: "Freelance", title: "Full Stack Developer", topics: ["Business development and international sales", "Not a topic"], advisorPref: "", photoOk: false },
+  { name: "Rana Odeh", last4: "6620", company: "Nablus Tech", title: "Marketing Lead", topics: ["Career growth and remote work"], advisorPref: "local", rooms: { 1: "Room C", 3: "3B", 2: "Room Z" } },
+  { name: "Yousef Amin", last4: "3187", company: "CloudBridge", title: "CTO", topics: ["Engineering leadership and architecture", "AI adoption and applied AI"], advisorPref: "local" },
+  { name: "Dina Haddad", last4: "9045", company: "Student Hub", title: "Product Manager", topics: [], advisorPref: "nonsense" },
+  { name: "Karim Nasser", last4: "5512", company: "Olive Labs", title: "CEO", topics: ["Fundraising, finance, and scaling a company"], advisorPref: "remote", slot: { who: "iyas", s: "13:15" } }
+];
+const ARABIC = { name: "ليلى خوري", last4: "2864", company: "", title: "" }; // Layla Khoury in Arabic script, test only
+const LAST4S = [...SAMPLE, ARABIC].map(p => p.last4);
+const pubOf = p => { const { personId } = lib.ids; return "p" + personId(p.name, p.last4); };
+const claim = (base, dev, body) => call(base, "POST", "/api/claim", { body, headers: { "x-dev": dev } });
+const me = (base, dev) => call(base, "GET", "/api/me", { headers: { "x-dev": dev } });
+const who = (base, dev, q) => call(base, "GET", "/api/who?q=" + encodeURIComponent(q), { headers: { "x-dev": dev } });
+
+describe("sign in", () => {
+  let P;
+  before(async () => { P = await startServer(); await openDirect(P.dir); });
+  after(async () => { await P.stop(); await openDirect(S.dir); });
+
+  test("the import keeps people with a name and 4 digits, and stores no number", async () => {
+    const rows = [...SAMPLE, ARABIC, { name: "No Number" }, { name: "", last4: "1111" }, "nonsense", { ...SAMPLE[0], company: "Byte Studio Two" }, { name: "Bad Digits", last4: "12a4" }];
+    const r = await op(P.base, { action: "peopleImport", people: rows });
+    assert.equal(r.status, 200, r.text);
+    assert.equal(r.json.count, 7); assert.equal(r.json.replaced, 1);
+    assert.deepEqual(r.json.skipped, [{ row: 8, why: "no last 4 digits" }, { row: 9, why: "no name" }, { row: 10, why: "not a row" }, { row: 12, why: "no last 4 digits" }]);
+    const s = await openDirect(P.dir);
+    const people = await s.get("people", { type: "json" });
+    assert.equal(people.length, 7);
+    const layla = people.find(p => p.name === "Layla Khoury");
+    assert.equal(layla.company, "Byte Studio Two", "a later row with the same name and number wins");
+    assert.equal(layla.linkedin, "https://linkedin.com/in/test-layla"); assert.equal(layla.first, "Layla");
+    assert.equal(layla.k4, lib.ids.k4Of(layla.id, "7391")); assert.equal("last4" in layla, false);
+    assert.equal(JSON.stringify(people).includes("7391"), false, "no last 4 digits are stored");
+    const omar = people.find(p => p.name === "Omar Saleh");
+    assert.deepEqual(omar.topics, ["Business development and international sales"]);
+    const rana = people.find(p => p.name === "Rana Odeh");
+    assert.deepEqual(rana.rooms, { 1: "1C", 3: "3B" });
+    assert.equal(people.find(p => p.name === "Dina Haddad").advisorPref, "");
+    assert.deepEqual(people.find(p => p.name === "Karim Nasser").slot, { who: "iyas", s: "13:15", e: "13:30", room: "Small Room 3" });
+    assert.equal(people.find(p => p.name === ARABIC.name).first, "ليلى");
+  });
+
+  test("import refusals", async () => {
+    assert.equal((await op(P.base, { action: "peopleImport", people: "x" })).status, 400);
+    assert.equal((await op(P.base, { action: "peopleImport", people: [{ name: "Only Name" }] })).status, 400);
+    assert.equal((await op(P.base, { action: "peopleImport", people: Array.from({ length: 801 }, () => ({})) })).status, 413);
+    assert.equal((await op(P.base, { action: "peopleImport", people: SAMPLE }, "wrong")).status, 401);
+    assert.equal((await opGet(P.base)).json.people.count, 7, "a refused import changes nothing");
+  });
+
+  test("search finds the start of any word, ignores case, accents and Arabic variants, names only", async () => {
+    const d = newDev();
+    const names = async q => { const r = await who(P.base, d, q); assert.equal(r.status, 200, q + " " + r.text); return r.json.list.map(x => x.name); };
+    assert.deepEqual(await names("lay"), ["Layla Khoury"]);
+    assert.deepEqual(await names("KHOU"), ["Layla Khoury"]);
+    assert.deepEqual(await names("layla kh"), ["Layla Khoury"]);
+    assert.deepEqual(await names("Lâyla"), ["Layla Khoury"]);
+    assert.deepEqual(await names("ليل"), [ARABIC.name]);
+    assert.deepEqual(await names("خور"), [ARABIC.name]);
+    assert.deepEqual(await names("aye"), [], "the middle of a word does not match");
+    const r = await who(P.base, d, "oma");
+    assert.deepEqual(Object.keys(r.json.list[0]).sort(), ["id", "name"]);
+    assert.equal(r.json.list[0].id, pubOf(SAMPLE[1]));
+    assert.equal((await who(P.base, d, "la")).status, 400);
+    assert.equal((await who(P.base, d, " l a ")).status, 400);
+    assert.equal((await who(P.base, d, "x".repeat(61))).status, 400);
+    assert.equal((await call(P.base, "GET", "/api/who?q=layla")).status, 400, "x-dev is required");
+  });
+
+  test("at most 5 answers, and 40 searches per phone per 10 minutes", async () => {
+    const s = await openDirect(P.dir);
+    const many = Array.from({ length: 8 }, (_, i) => ({ name: `Test Person${i}`, last4: String(1000 + i), k4: "", id: String(i).padStart(10, "a") }));
+    const people = await s.get("people", { type: "json" });
+    await s.setJSON("people", people.concat(many));
+    const d = newDev();
+    const r = await who(P.base, d, "test");
+    assert.equal(r.json.list.length, 5);
+    for (let i = 1; i < 40; i++) assert.equal((await who(P.base, d, "omar")).status, 200);
+    const over = await who(P.base, d, "omar");
+    assert.equal(over.status, 429); assert.equal(over.json.error, "Too many searches. Wait a few minutes and try again.");
+    assert.equal((await who(P.base, newDev(), "omar")).status, 200, "another phone still searches");
+    await s.setJSON("people", people);
+  });
+
+  test("a right number signs in and answers like GET /api/me", async () => {
+    const d = newDev(), layla = SAMPLE[0];
+    const r = await claim(P.base, d, { id: pubOf(layla), last4: layla.last4, hello: true });
+    assert.equal(r.status, 200, r.text);
+    assert.equal(r.json.ok, true); assert.equal(r.json.status, "person");
+    assert.deepEqual(r.json.me, { pub: pubOf(layla), name: "Layla Khoury", first: "Layla", company: "Byte Studio Two", title: "Founder", linkedin: "https://linkedin.com/in/test-layla", suggest: ["AI and Tech"], rooms: {}, slot: null, photoOk: true });
+    const m = await me(P.base, d);
+    assert.deepEqual(Object.keys(m.json).sort(), ["code", "feedback", "links", "me", "profile", "stars", "status", "takeaways"]);
+    assert.equal(m.json.status, "person"); assert.deepEqual(m.json.me, r.json.me);
+    assert.equal(m.json.profile, null); assert.equal(m.json.code, null); assert.deepEqual(m.json.links, []); assert.deepEqual(m.json.takeaways, []); assert.equal(m.json.feedback, null);
+    const karim = await claim(P.base, newDev(), { id: pubOf(SAMPLE[5]), last4: SAMPLE[5].last4 });
+    assert.deepEqual(karim.json.me.slot, { who: "iyas", s: "13:15", e: "13:30", room: "Small Room 3" });
+    assert.deepEqual(karim.json.me.suggest, ["Funding"]);
+  });
+
+  test("claim refusals", async () => {
+    const d = newDev(), omar = SAMPLE[1];
+    assert.equal((await claim(P.base, d, { id: "0123456789", last4: "1234" })).status, 400);
+    assert.equal((await claim(P.base, d, { id: pubOf(omar), last4: "123" })).status, 400);
+    assert.equal((await claim(P.base, d, { id: pubOf(omar), last4: 458 })).status, 400);
+    assert.equal((await claim(P.base, d, { id: "p0000000000", last4: "1234" })).status, 404);
+    assert.equal((await call(P.base, "POST", "/api/claim", { body: { id: pubOf(omar), last4: omar.last4 } })).status, 400, "x-dev is required");
+    assert.equal((await call(P.base, "POST", "/api/claim", { body: "{", raw: true, headers: { "x-dev": d, "content-type": "application/json" } })).status, 400);
+    assert.equal((await call(P.base, "GET", "/api/claim", { headers: { "x-dev": d } })).status, 405);
+  });
+
+  test("5 wrong tries lock one phone, 10 lock the person on every phone, Unlock opens it", async () => {
+    const yousef = SAMPLE[3], id = pubOf(yousef), a = newDev();
+    const lefts = [];
+    for (let i = 0; i < 5; i++) { const r = await claim(P.base, a, { id, last4: "0000" }); assert.equal(r.status, 401); lefts.push(r.json.left); }
+    assert.deepEqual(lefts, [4, 3, 2, 1, 0]);
+    const locked = await claim(P.base, a, { id, last4: yousef.last4 });
+    assert.equal(locked.status, 423, "the right number does not help a locked phone");
+    assert.equal(locked.json.error, "Too many tries. Ask the team at the registration desk.");
+    const b = newDev();
+    const r6 = await claim(P.base, b, { id, last4: "1111" });
+    assert.equal(r6.status, 401); assert.equal(r6.json.left, 4, "another phone has its own 5, within the 10");
+    for (let i = 0; i < 3; i++) await claim(P.base, b, { id, last4: "2222" });
+    const c = newDev();
+    const r10 = await claim(P.base, c, { id, last4: "3333" });
+    assert.equal(r10.status, 401); assert.equal(r10.json.left, 0);
+    assert.equal(r10.json.error, "Too many tries. Ask the team at the registration desk.");
+    assert.equal((await claim(P.base, newDev(), { id, last4: yousef.last4 })).status, 423, "a new device id does not reset the person");
+    const g = (await opGet(P.base)).json.people;
+    assert.deepEqual(g.locked, [{ id, name: "Yousef Amin", tries: 10, all: true }]);
+    assert.equal((await op(P.base, { action: "peopleUnlock", id: "nope" })).status, 400);
+    assert.equal((await op(P.base, { action: "peopleUnlock", id })).status, 200);
+    assert.deepEqual((await opGet(P.base)).json.people.locked, []);
+    assert.equal((await claim(P.base, a, { id, last4: yousef.last4 })).status, 200);
+    assert.ok((await opGet(P.base)).json.log.some(l => l.what === "Unlocked Yousef Amin"));
+  });
+
+  test("wrong tries sent at the same moment still stop at 10", async () => {
+    const dina = SAMPLE[4], id = pubOf(dina);
+    const res = await Promise.all(Array.from({ length: 16 }, (_, i) => claim(P.base, newDev(), { id, last4: String(1000 + i) })));
+    const wrong = res.filter(r => r.status === 401).length, refused = res.filter(r => r.status === 423).length;
+    assert.ok(wrong <= 10, `at most 10 numbers were checked, got ${wrong}`);
+    assert.equal(wrong + refused, 16);
+    // A refused try is not counted, so the person locks after exactly 10 checked numbers in all.
+    let more = 0;
+    for (let i = 0; i < 12; i++) { const r = await claim(P.base, newDev(), { id, last4: "9999" }); if (r.status === 423) break; assert.equal(r.status, 401); more++; }
+    assert.equal(wrong + more, 10);
+    assert.equal((await claim(P.base, newDev(), { id, last4: dina.last4 })).status, 423);
+    await op(P.base, { action: "peopleUnlock", id });
+  });
+
+  test("at most 3 phones per person", async () => {
+    const omar = SAMPLE[1], id = pubOf(omar), devs = [newDev(), newDev(), newDev()];
+    for (const d of devs) assert.equal((await claim(P.base, d, { id, last4: omar.last4 })).status, 200);
+    assert.equal((await claim(P.base, devs[0], { id, last4: omar.last4 })).status, 200, "the same phone again is fine");
+    const fourth = await claim(P.base, newDev(), { id, last4: omar.last4 });
+    assert.equal(fourth.status, 409); assert.equal(fourth.json.error, "This name is signed in on 3 phones already. Ask the team at the registration desk.");
+    await op(P.base, { action: "peopleUnlock", id });
+    assert.equal((await claim(P.base, newDev(), { id, last4: omar.last4 })).status, 200, "Unlock also frees the phone count");
+  });
+
+  test("guests, sign out, and a phone that never signed in", async () => {
+    const d = newDev(), post = body => call(P.base, "POST", "/api/guest", { body, headers: { "x-dev": d } });
+    assert.equal((await post({ name: "J" })).status, 400);
+    assert.equal((await post({ name: "12345" })).status, 400);
+    assert.equal((await post({ name: "Big Shit" })).status, 422);
+    assert.equal((await call(P.base, "POST", "/api/guest", { body: { name: "Sami Guest" } })).status, 400, "x-dev is required");
+    const g = await post({ name: "  Sami   Guest <b> ", hello: true });
+    assert.equal(g.status, 200, g.text);
+    assert.equal(g.json.status, "guest");
+    assert.deepEqual(g.json.me, { pub: lib.ids.guestPub(d), name: "Sami Guest b", first: "Sami", company: "", title: "", linkedin: "", suggest: [], rooms: {}, slot: null, photoOk: null });
+    const people = (await opGet(P.base)).json.people;
+    assert.ok(people.list.some(x => x.kind === "guest" && x.name === "Sami Guest b" && x.id === lib.ids.guestPub(d)));
+    assert.ok(people.list.some(x => x.kind === "person" && x.name === "Layla Khoury"));
+    assert.equal(people.guests, 1); assert.ok(people.signedIn >= 3);
+    assert.equal((await call(P.base, "POST", "/api/signout", { headers: { "x-dev": d } })).status, 200);
+    const m = await me(P.base, d);
+    assert.equal(m.json.status, "none"); assert.equal(m.json.me.pub, lib.ids.guestPub(d)); assert.equal(m.json.me.name, "");
+    assert.equal((await call(P.base, "POST", "/api/signout")).status, 400);
+    assert.equal((await call(P.base, "GET", "/api/me")).status, 400);
+    const fresh = await me(P.base, newDev());
+    assert.equal(fresh.json.status, "none"); assert.deepEqual(fresh.json.stars, {});
+  });
+});
+
 /* ---------- privacy ---------- */
 describe("privacy", () => {
   test("every public route, read by a stranger after all of the above", async () => {

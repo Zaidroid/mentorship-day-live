@@ -28,6 +28,14 @@ export const personId = (name, last4) => mac(normName(name) + "|" + last4).slice
 export const personPub = pid => "p" + pid;
 export const k4Of = (pid, last4) => mac(pid + ":" + last4);
 
-// The public id of the phone that sent dev. Version 2 foundation: every phone is a guest.
-// WP2 adds the signed in case (who/<dev>) here, so callers already await it.
-export async function pubFor(s, dev) { return guestPub(dev); }
+// Who the phone that sent dev is. who/<dev> is written by claim and guest, deleted by signout.
+//   status  "person" (signed in from the people list), "guest", or "none" (never signed in)
+//   pub     the public id; a phone that never signed in uses its guest id
+//   pid     the person id, or null; name as signed in; hello is the consent given at sign in
+export async function whoFor(s, dev) {
+  const w = devOk(dev) ? await s.get(`who/${dev}`, { type: "json" }) : null;
+  if (w && pubOk(w.pub)) return { status: w.pid ? "person" : "guest", pub: w.pub, pid: w.pid || null, name: w.name || "", hello: !!w.hello };
+  return { status: "none", pub: guestPub(dev), pid: null, name: "", hello: false };
+}
+// The public id of the phone that sent dev.
+export async function pubFor(s, dev) { return (await whoFor(s, dev)).pub; }

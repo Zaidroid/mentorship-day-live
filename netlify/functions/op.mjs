@@ -1,7 +1,8 @@
 // Operator remote API. Every call needs the team PIN. Every change is logged with who made it.
 import { st, update, readCfg, updateCfg, mergeCfg, readPolls, updatePolls, readSnap, updateSnap, putItem, dropItem, photoItem, profileItem, tally, log, readLog, pinOk, whoOf, idOk, clean, J, Refuse, readBody, countPinFail, pinFails, VIDEOS, FLAGS, rebuild, wipeAll, readBeat } from "../lib/store.mjs";
-import { pubOk } from "../lib/ids.mjs";
+import { pubOk, personPub } from "../lib/ids.mjs";
 import { nowMs, realNow, rehearsalOn, rehearsalFor, isEventDay, localMin } from "../lib/day.mjs";
+import { readPeople, personFrom, personOf, syncTeam, PEOPLE_MAX } from "../lib/people.mjs";
 
 const MODES = ["auto", "welcome", "opening", "video", "choose", "live", "lunch", "close"];
 const SCENES = ["rooms", "choose", "board", "spotlight", "advisors", "meet", "photos", "poll", "pulse", "way", "welcome", "speaker", "recap", "thanks"];
@@ -13,6 +14,32 @@ async function pendingPhotos(s) {
   for (const id of ids) { const m = await s.getMetadata(`ph/${id}`); if (m) out.push({ id, name: m.metadata.name, caption: m.metadata.caption, at: m.metadata.at }); }
   return out.sort((a, b) => a.at - b.at);
 }
+// People for the remote: how many, who signed in (people and guests), who is locked out.
+// Names only: no number, no k4, no device id. Guest names come from their sig/ record.
+async function peopleInfo(s) {
+  const [people, sig, here, fail] = await Promise.all([readPeople(s), s.list({ prefix: "sig/" }), s.list({ prefix: "here/" }), s.list({ prefix: "fail/" })]);
+  const hereSet = new Set(here.blobs.map(b => b.key.slice(5)));
+  const pubs = sig.blobs.map(b => b.key.slice(4)).filter(pubOk);
+  const list = (await mapLimit(pubs, 16, async pub => {
+    if (pub[0] === "p") { const p = personOf(people, pub.slice(1)); return { id: pub, name: p ? p.name : "", kind: "person", here: hereSet.has(pub) }; }
+    const g = await s.get(`sig/${pub}`, { type: "json" });
+    return { id: pub, name: (g && g.name) || "", kind: "guest", here: hereSet.has(pub) };
+  })).sort((a, b) => a.name.localeCompare(b.name));
+  const tries = new Map();
+  for (const b of fail.blobs) {
+    const m = /^fail\/([a-f0-9]{10})\/([a-z0-9]+)~/i.exec(b.key); if (!m) continue;
+    const t = tries.get(m[1]) || { all: 0, dev: new Map() };
+    t.all++; t.dev.set(m[2], (t.dev.get(m[2]) || 0) + 1); tries.set(m[1], t);
+  }
+  const locked = [];
+  for (const [pid, t] of tries) {
+    const most = Math.max(...t.dev.values());
+    if (t.all >= 10 || most >= 5) { const p = personOf(people, pid); locked.push({ id: personPub(pid), name: p ? p.name : "", tries: t.all, all: t.all >= 10 }); }
+  }
+  return { count: people.length, signedIn: list.filter(x => x.kind === "person").length, guests: list.filter(x => x.kind === "guest").length, here: hereSet.size, locked, list };
+}
+async function mapLimit(items, n, fn) { const out = []; for (let i = 0; i < items.length; i += n) out.push(...await Promise.all(items.slice(i, i + n).map(fn))); return out; }
+
 async function pendingProfiles(s) {
   const ids = (await s.list({ prefix: "q/pr/" })).blobs.map(b => b.key.slice(5));
   const out = [];
@@ -25,10 +52,10 @@ export default async (req) => {
   const s = st(), who = whoOf(req);
 
   if (req.method === "GET") {
-    const [cfg, polls, snap, photos, profiles, logl, screen] = await Promise.all([readCfg(s), readPolls(s), readSnap(s), pendingPhotos(s), pendingProfiles(s), readLog(s), readBeat(s)]);
+    const [cfg, polls, snap, photos, profiles, logl, screen, people] = await Promise.all([readCfg(s), readPolls(s), readSnap(s), pendingPhotos(s), pendingProfiles(s), readLog(s), readBeat(s), peopleInfo(s)]);
     const p = cfg.poll && polls.find(x => x.id === cfg.poll.id);
     const poll = p ? { ...p, open: !!cfg.poll.open, ...(await tally(s, p.id, [])), manual: true } : null;
-    return J({ cfg, polls, poll, snap, pending: { photos, profiles }, log: logl, videos: VIDEOS, t: nowMs(cfg), reh: rehearsalOn(cfg), screen, pinFails: await pinFails(s) });
+    return J({ cfg, polls, poll, snap, pending: { photos, profiles }, log: logl, videos: VIDEOS, t: nowMs(cfg), reh: rehearsalOn(cfg), screen, pinFails: await pinFails(s), people });
   }
 
   // 256 KB leaves room for the people import in WP2.
@@ -188,6 +215,33 @@ async function act(s, b) {
   if (a === "repair") {
     const snap = await rebuild(s);
     return { note: "Repaired the lists", extra: { photos: snap.photos.length, profiles: snap.profiles.length } };
+  }
+  if (a === "peopleImport") {
+    // Rows come reduced from the remote (WP6): no email, no full number. last4 is turned into k4 here and dropped.
+    if (!Array.isArray(b.people)) throw new Refuse(400, "Send the people as a list.");
+    if (b.people.length > PEOPLE_MAX) throw new Refuse(413, `That list is too long. The most is ${PEOPLE_MAX} people.`);
+    const out = new Map(), skipped = []; let replaced = 0;
+    b.people.forEach((row, i) => {
+      const r = personFrom(row);
+      if (r.why) { skipped.push({ row: i + 1, why: r.why }); return; }
+      if (out.has(r.person.id)) replaced++;
+      out.set(r.person.id, r.person);
+    });
+    if (!out.size) throw new Refuse(400, "No row had a name and the last 4 digits of a mobile number.");
+    const people = [...out.values()];
+    await update(s, "people", () => people, { init: [] });
+    // Team seats change for people who signed in already.
+    const signed = new Set((await s.list({ prefix: "sig/p" })).blobs.map(k => k.key.slice(5)));
+    await mapLimit(people.filter(p => signed.has(p.id)), 8, p => syncTeam(s, p));
+    return { note: `Imported ${people.length} people`, extra: { count: people.length, skipped, replaced } };
+  }
+  if (a === "peopleUnlock") {
+    const pid = typeof b.id === "string" && /^p?[a-f0-9]{10}$/.test(b.id) ? b.id.replace(/^p/, "") : null;
+    if (!pid) throw new Refuse(400, "Unknown person.");
+    const [fails, phones, people] = await Promise.all([s.list({ prefix: `fail/${pid}/` }), s.list({ prefix: `dv/p${pid}/` }), readPeople(s)]);
+    await mapLimit(fails.blobs.concat(phones.blobs).map(k => k.key), 20, k => s.delete(k));
+    const p = personOf(people, pid);
+    return `Unlocked ${p ? p.name : "a person"}`;
   }
   throw new Refuse(400, "Unknown action.");
 }

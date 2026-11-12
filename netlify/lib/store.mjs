@@ -9,6 +9,15 @@ export { devOk } from "./ids.mjs";
 export const st = () => getStore({ name: "md26", consistency: "strong" });
 
 export const TAGS = ["Funding", "Clients", "Partnerships", "Hiring", "A New Job", "Mentoring", "Marketing", "Product", "AI and Tech", "Freelancing"];
+// Tags suggested on a verified person's card from their registration topics (the keys of MD_DAY.topicMap).
+// A draft for Zaid to approve (docs/PLAN.md section 10, item 5). A topic without a tag suggests nothing.
+export const TOPIC_TAGS = {
+  "Business development and international sales": "Clients",
+  "AI adoption and applied AI": "AI and Tech",
+  "Fundraising, finance, and scaling a company": "Funding",
+  "Product management and strategy": "Product",
+  "Career growth and remote work": "Mentoring"
+};
 
 export const VIDEOS = DAY.videos;
 
@@ -185,6 +194,25 @@ export function dropItem(list, id) { const i = list.findIndex(x => x.id === id);
 
 export const idOk = d => /^[a-z0-9]{6,40}$/i.test(d || "");
 export function clean(v, n) { return String(v == null ? "" : v).replace(/[\u0000-\u001f\u007f<>]/g, "").replace(/\s+/g, " ").trim().slice(0, n); }
+// The first word of a name, as written (Arabic stays Arabic). Used for hellos and takeaways.
+export const firstWord = name => clean(name, 80).split(" ")[0].slice(0, 30);
+// A LinkedIn link, cleaned. { ok: true, value } with https:// added when missing, or { ok: false }.
+const LINKEDIN = /^(https?:\/\/)?([a-z]{2,3}\.)?linkedin\.com\/\S+$/i;
+export function cleanLinkedin(v) {
+  let l = clean(v, 120);
+  if (!l) return { ok: true, value: "" };
+  if (!LINKEDIN.test(l)) return { ok: false, value: "" };
+  if (!/^https?:\/\//i.test(l)) l = "https://" + l;
+  return { ok: true, value: l };
+}
+export const randHex = (n = 4) => crypto.randomBytes(n).toString("hex");
+
+// Rate limits in fixed time buckets: one marker per counted event under lim/<name>/<bucket>/<id>/.
+// Counting is one list. Callers count first and only add a marker while under their limit, so a bucket
+// never holds more markers than the limit. id is a device id or a person id; keys never leave the server.
+const limPrefix = (name, id, ms) => `lim/${name}/${Math.floor(realNow() / ms)}/${id}/`;
+export async function limitCount(s, name, id, ms) { return (await s.list({ prefix: limPrefix(name, id, ms) })).blobs.length; }
+export async function limitHit(s, name, id, ms) { await s.set(limPrefix(name, id, ms) + Date.now().toString(36) + randHex(), ""); }
 
 // Small word filter for text that reaches the big screen without approval (poll words).
 const BAD = ["fuck", "shit", "bitch", "cunt", "dick", "pussy", "asshole", "bastard", "slut", "whore", "nigger", "faggot", "porn", "sex", "kos", "kuss", "sharmout", "sharmoota", "manyak", "khara", "zeb", "zib", "kalb", "حمار", "كلب", "شرموط", "منيك", "خرا", "زب", "كس", "عرص", "قحبة", "سكس"];
@@ -234,7 +262,7 @@ export function rebuild(s) {
 
 // Wipe Test Data: deletes everything people and the remote made, keeps the people list, the polls
 // and the This Way directions. The snapshot is rebuilt last. Returns how many keys were deleted.
-const WIPE_PREFIXES = ["who/", "dv/", "here/", "hi/", "fail/", "star/", "rx/", "rxt/", "code/", "cx/", "tk/", "fb/", "pinfail/", "ans/", "ph/", "pr/", "q/", "ok/", "byd/", "log/"];
+const WIPE_PREFIXES = ["who/", "dv/", "sig/", "here/", "hi/", "fail/", "star/", "rx/", "rxm/", "rxd/", "rxt/", "code/", "cx/", "tk/", "fb/", "lim/", "alert/", "pinfail/", "ans/", "ph/", "pr/", "q/", "ok/", "byd/", "log/"];
 export async function wipeAll(s) {
   const lists = await Promise.all(WIPE_PREFIXES.map(prefix => s.list({ prefix })));
   const keys = lists.flatMap(l => l.blobs.map(b => b.key));
