@@ -10,39 +10,61 @@
 @font-face{font-family:SS3;font-weight:400;src:url(/assets/ss3-400.woff2) format('woff2')}
 @font-face{font-family:SS3;font-weight:600;src:url(/assets/ss3-600.woff2) format('woff2')}
 @font-face{font-family:SS3;font-weight:700;src:url(/assets/ss3-700.woff2) format('woff2')}
-:root{--red:#DF6236;--teal:#2F9CC3;--ink:#1F2E33;--ink2:rgba(31,46,51,.68);--line:rgba(31,46,51,.13);--bg:#EEEEEE}
+:root{--red:#DF6236;--teal:#2F9CC3;--ink:#1F2E33;--ink2:rgba(31,46,51,.68);--line:rgba(31,46,51,.13);--bg:#EEEEEE;--ok:#2E8B57;--warn:#C9501F;--warnbg:#FBEBE4;--okbg:#E6F3EB;--infobg:#E4F1F7}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:SS3,system-ui,sans-serif;color:var(--ink);background:var(--bg);line-height:1.35;-webkit-font-smoothing:antialiased;min-height:100vh}
+html{-webkit-text-size-adjust:100%}
+body{font-family:SS3,system-ui,sans-serif;color:var(--ink);background:var(--bg);line-height:1.35;-webkit-font-smoothing:antialiased;min-height:100vh;overflow-x:hidden}
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:3px solid var(--teal);outline-offset:2px}
 .wrap{max-width:720px;margin:0 auto;padding:0 14px}
 header{position:sticky;top:0;z-index:5;background:var(--ink);color:#fff;padding-top:env(safe-area-inset-top)}
-.hd{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0 8px}
+.hd{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0 4px}
 .hd b{font-size:19px}
-.hd span{font-size:13px;opacity:.75;text-align:right}
-.st{font-size:14px;padding:0 0 8px;color:#fff;opacity:.92}
+.hd span{font-size:13px;opacity:.75;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stl{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 0 8px}
+.st{font-size:14px;color:#fff;opacity:.92;min-width:0}
 .st i{display:inline-block;width:8px;height:8px;border-radius:50%;background:#7bd389;margin-right:6px}
+.st.off{color:#FFD9A8;opacity:1}
 .st.off i{background:#E78B3F}
-nav{display:flex;gap:4px;padding-bottom:10px}
-nav button{flex:1;border:0;background:rgba(255,255,255,.08);color:#fff;padding:9px 6px;border-radius:6px;font-weight:700;font-size:14px;position:relative}
+#refreshNow{flex:none;border:1px solid rgba(255,255,255,.35);background:transparent;color:#fff;border-radius:6px;padding:5px 10px;font-size:13px;font-weight:700}
+#rehBanner{background:var(--teal);color:#fff;padding:9px 0}
+#rehBanner .wrap{display:flex;gap:10px;align-items:center}
+#rehBanner p{flex:1;font-size:14px;font-weight:600}
+#rehBanner button{flex:none;border:1.5px solid #fff;background:transparent;color:#fff;border-radius:6px;padding:7px 12px;font-weight:700;font-size:14px;min-height:40px}
+nav{display:flex;gap:3px;padding-bottom:10px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+nav::-webkit-scrollbar{display:none}
+nav button{flex:1 0 auto;border:0;background:rgba(255,255,255,.08);color:#fff;padding:9px 7px;border-radius:6px;font-weight:700;font-size:13.5px;position:relative;min-height:40px;white-space:nowrap}
 nav button[aria-selected=true]{background:var(--red)}
-nav em{font-style:normal;background:var(--teal);color:#fff;border-radius:9px;padding:0 6px;font-size:12px;margin-left:4px}
-main{padding:14px 0 60px}
+nav em{font-style:normal;background:var(--teal);color:#fff;border-radius:9px;padding:0 5px;font-size:12px;margin-left:3px}
+nav em.hot{background:#fff;color:var(--warn)}
+main{padding:14px 0 70px}
 section[hidden]{display:none}
 .box{background:#fff;border-radius:10px;padding:14px;margin-bottom:12px;box-shadow:0 2px 10px rgba(31,46,51,.06)}
+.box.ok{border-left:6px solid var(--ok)}
+.box.warn{border-left:6px solid var(--red);background:var(--warnbg)}
+.box.info{border-left:6px solid var(--teal)}
+.box.hold{border-left:6px solid #E78B3F}
 h2{font-size:16px;font-weight:700;margin-bottom:10px;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
-h2 small{font-weight:400;font-size:13px;color:var(--ink2)}
+h2 small{font-weight:400;font-size:13px;color:var(--ink2);text-align:right}
+h3{font-size:15px;margin:14px 0 6px}
+.big{font-size:20px;font-weight:700;line-height:1.2}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
-.b{border:1.5px solid var(--line);background:#fff;border-radius:8px;padding:11px 10px;font-weight:700;font-size:15px;min-height:46px;text-align:center}
+.grid1{display:grid;grid-template-columns:1fr;gap:8px}
+.b{border:1.5px solid var(--line);background:#fff;border-radius:8px;padding:11px 10px;font-weight:700;font-size:15px;min-height:48px;text-align:center}
 .b.on{background:var(--red);border-color:var(--red);color:#fff}
 .b.blue.on{background:var(--teal);border-color:var(--teal)}
 .b.go{background:var(--teal);border-color:var(--teal);color:#fff}
 .b.warn{color:#b8432a;border-color:rgba(184,67,42,.35)}
-.b:disabled{opacity:.45}
+.b.danger{background:#b8432a;border-color:#b8432a;color:#fff}
+.b.left{text-align:left}
+.b:disabled{opacity:.45;cursor:default}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .row>*{flex:1}
-textarea,input[type=text],input[type=password],select{width:100%;border:1.5px solid var(--line);border-radius:8px;padding:10px 12px;font-size:16px;background:#fff}
+.row>.nogrow{flex:none}
+textarea,input[type=text],input[type=password],input[type=time],input[type=url],select{width:100%;border:1.5px solid var(--line);border-radius:8px;padding:10px 12px;font-size:16px;background:#fff;min-height:46px}
+textarea{resize:vertical}
+input[type=file]{width:100%;font-size:15px;padding:8px 0}
 label{display:block;font-weight:700;font-size:14px;margin:10px 0 5px}
 .muted{color:var(--ink2);font-size:14px}
 .now{font-size:15px}
@@ -52,20 +74,21 @@ label{display:block;font-weight:700;font-size:14px;margin:10px 0 5px}
 .ph img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;background:#ddd}
 .ph figcaption{padding:8px;font-size:13px}
 .ph .row{padding:0 8px 8px}
-.ph .b{padding:7px 4px;min-height:38px;font-size:14px}
+.ph .b{padding:7px 4px;min-height:44px;font-size:14px}
 .pr{border-top:1px solid var(--line);padding:10px 0}
 .pr:first-of-type{border-top:0}
 .pr b{font-size:16px}
 .tg{display:inline-block;font-weight:700;font-size:12px;padding:2px 8px;border-radius:4px 12px 0 12px;margin:3px 3px 0 0;background:rgba(223,98,54,.12);color:var(--red)}
 .tg.of{background:rgba(47,156,195,.14);color:var(--teal)}
+.tg.gu{background:#eee;color:var(--ink2)}
 .words{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.words button{border:1.5px solid var(--line);background:#fff;border-radius:6px;padding:4px 8px;font-size:14px;font-weight:700}
+.words button{border:1.5px solid var(--line);background:#fff;border-radius:6px;padding:6px 10px;font-size:14px;font-weight:700;min-height:38px}
 .words button i{font-style:normal;font-weight:400;color:var(--ink2);margin-left:5px}
 .words button.hid{text-decoration:line-through;opacity:.55}
 .poll{border-top:1px solid var(--line);padding:10px 0;display:flex;gap:10px;align-items:center}
 .poll:first-of-type{border-top:0}
 .poll div{flex:1}
-.poll .b{flex:none;min-height:38px;padding:7px 12px}
+.poll .b{flex:none;min-height:44px;padding:7px 12px}
 .log div{display:grid;grid-template-columns:52px 1fr;gap:8px;padding:7px 0;border-top:1px solid var(--line);font-size:14px}
 .log div:first-child{border-top:0}
 .log b{font-weight:700}
@@ -73,8 +96,55 @@ label{display:block;font-weight:700;font-size:14px;margin:10px 0 5px}
 #gate h1{font-size:28px;color:var(--red);line-height:1.05}
 #gate p{margin-top:8px}
 .err{color:#b8432a;font-weight:700;font-size:14px;margin-top:10px}
-#toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:8px;font-weight:600;font-size:14px;opacity:0;transition:opacity .3s;pointer-events:none;max-width:90vw}
+#toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:8px;font-weight:600;font-size:14px;opacity:0;transition:opacity .3s;pointer-events:none;max-width:90vw;z-index:30;text-align:center}
 #toast.show{opacity:1}
+#toast.bad{background:#b8432a}
+/* status */
+.need{display:flex;gap:10px;align-items:center;padding:9px 0;border-top:1px solid rgba(201,80,31,.25)}
+.need:first-of-type{border-top:0}
+.need span{flex:1;font-weight:600}
+.need .b{flex:none;min-height:44px;padding:7px 14px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:15px}
+.kv dt{color:var(--ink2)}
+.kv dd{font-weight:600;min-width:0;overflow-wrap:anywhere}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;background:#aaa}
+.dot.on{background:var(--ok)}.dot.bad{background:var(--red)}
+.list{list-style:none}
+.list li{padding:7px 0;border-top:1px solid var(--line);font-size:15px}
+.list li:first-child{border-top:0}
+.list li.held{display:flex;gap:10px;align-items:center}
+.list li.held span{flex:1;font-weight:600}
+.list li.held .b{flex:none;min-height:44px;padding:7px 12px;font-size:14px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.tile{background:#F4F4F4;border-radius:8px;padding:9px 6px;text-align:center}
+.tile b{display:block;font-size:22px;line-height:1.1}
+.tile small{display:block;font-size:12px;color:var(--ink2);margin-top:2px}
+.sw{display:flex;gap:10px;align-items:center;border-top:1px solid var(--line);padding:9px 0}
+.sw:first-of-type{border-top:0}
+.sw div{flex:1;min-width:0}
+.sw b{display:block;font-size:15px}
+.sw .b{flex:none;min-width:72px;min-height:44px}
+details{border-top:1px solid var(--line);margin-top:12px;padding-top:10px}
+details summary{font-weight:700;font-size:15px;min-height:40px;display:flex;align-items:center;cursor:pointer}
+details.dz summary{color:#b8432a}
+.pv{border-radius:8px;padding:10px 12px;margin-top:10px;background:var(--infobg)}
+.pv.bad{background:var(--warnbg)}
+.pv ul{margin:6px 0 0 18px;font-size:14px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.chip{border:1.5px solid var(--line);background:#fff;border-radius:16px;padding:6px 12px;font-size:14px;font-weight:700;min-height:36px}
+.pl{display:flex;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--line);font-size:15px}
+.pl:first-child{border-top:0}
+.pl span{flex:1;min-width:0;overflow-wrap:anywhere}
+.pl .b{flex:none;min-height:44px;padding:7px 14px}
+.tkc{border-top:1px solid var(--line);padding:10px 0}
+.tkc:first-of-type{border-top:0}
+.tkc q{display:block;font-size:16px;margin:4px 0;quotes:none;overflow-wrap:anywhere}
+#ask{position:fixed;inset:0;z-index:40;background:rgba(31,46,51,.55);display:flex;align-items:flex-end;justify-content:center}
+#ask[hidden]{display:none}
+#ask .sheet{background:#fff;width:100%;max-width:520px;border-radius:14px 14px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom))}
+#ask h3{font-size:19px;margin:0 0 8px}
+#ask p{font-size:15px;margin-bottom:14px}
+#ask .row .b{min-height:52px}
 </style>
 </head>
 <body>
@@ -91,86 +161,214 @@ label{display:block;font-weight:700;font-size:14px;margin:10px 0 5px}
 <header>
   <div class="wrap">
     <div class="hd"><b>Screen Remote</b><span id="me"></span></div>
-    <div class="st" id="st"><i></i>Connecting</div>
+    <div class="stl"><div class="st" id="st"><i></i>Connecting</div><button id="refreshNow" type="button">Refresh</button></div>
+  </div>
+  <div id="rehBanner" hidden><div class="wrap"><p id="rehTxt"></p><button type="button" data-do="rhStop">Stop</button></div></div>
+  <div class="wrap">
     <nav role="tablist">
-      <button role="tab" data-t="screen" aria-selected="true">Screen</button>
+      <button role="tab" data-t="status" aria-selected="true">Status<em id="sbadge" hidden></em></button>
+      <button role="tab" data-t="people" aria-selected="false">People<em id="pbadge" hidden></em></button>
+      <button role="tab" data-t="screen" aria-selected="false">Screen</button>
       <button role="tab" data-t="approve" aria-selected="false">Approve<em id="badge" hidden></em></button>
       <button role="tab" data-t="polls" aria-selected="false">Polls</button>
+      <button role="tab" data-t="export" aria-selected="false">Export</button>
       <button role="tab" data-t="log" aria-selected="false">Log</button>
     </nav>
   </div>
 </header>
 <main class="wrap">
-  <section id="screen">
+
+  <section id="status">
+    <div class="box" id="stBanner"></div>
+    <div class="box hold" id="stHeld" hidden></div>
+    <div class="box"><h2>The Wall <small id="wallAge"></small></h2><dl class="kv" id="wallKv"></dl></div>
+    <div class="box"><h2>Running by itself <small id="autoNow"></small></h2><ul class="list" id="autoList"></ul></div>
+    <div class="box"><h2>Counts <small>Right now</small></h2><div class="tiles" id="tiles"></div></div>
+    <div class="box"><h2>Waiting for you</h2><div id="waitList"></div></div>
+    <div class="box"><h2>Announce <small>One tap, shows for 30 seconds</small></h2>
+      <div class="grid1" id="annQuick"></div>
+      <p class="muted" id="annState" style="margin-top:10px"></p>
+    </div>
+    <div class="box" id="tools"><h2>Tools</h2>
+      <h3 style="margin-top:0">Rehearsal</h3>
+      <p class="muted" id="rhState"></p>
+      <p class="muted" style="margin-top:4px">A rehearsal moves the clock on the wall and every phone to the time you choose, for 2 hours. It cannot start on 17 November.</p>
+      <label for="rhTime">Start at</label>
+      <input type="time" id="rhTime" value="10:55">
+      <div class="chips" id="rhChips"></div>
+      <div class="row" style="margin-top:10px"><button class="b go" id="rhStart" data-do="rhStart">Start rehearsal</button><button class="b" id="rhStop" data-do="rhStop">Stop rehearsal</button></div>
+      <h3>Wall and lists</h3>
+      <div class="grid"><button class="b" id="reloadWall" data-do="reloadWall">Reload the Wall</button><button class="b" id="repairGo" data-do="repair">Repair Lists</button></div>
+      <p class="muted" style="margin-top:6px">Reload restarts the wall page. Repair rebuilds the photo, card and takeaway lists from storage.</p>
+      <h3>Feature switches</h3>
+      <div id="flags"></div>
+      <details class="dz" id="wipeBox"><summary>Wipe Test Data</summary>
+        <p class="muted">Deletes sign ins, cards, photos, poll answers, takeaways, connections, reactions and the action log. Keeps the people list, the polls and the This Way directions. The server refuses it from 08:00 to 16:00 on 17 November.</p>
+        <label for="wipePhrase">Type RESET MD26 to unlock the button</label>
+        <input type="text" id="wipePhrase" autocomplete="off" autocapitalize="characters" spellcheck="false">
+        <button class="b danger" id="wipeGo" data-do="wipeGo" style="width:100%;margin-top:10px" disabled>Wipe Test Data</button>
+      </details>
+    </div>
+  </section>
+
+  <section id="people" hidden>
+    <div class="box"><h2>Import People <small>From the response sheet</small></h2>
+      <p class="muted">Choose the CSV file downloaded from the sheet, or paste the rows copied from it, header row first. The email address and the full mobile number never leave this browser. Only the last 4 digits are sent.</p>
+      <label for="impFile">CSV file</label>
+      <input type="file" id="impFile" accept=".csv,.tsv,.txt,text/csv,text/plain">
+      <label for="impPaste">Or paste rows</label>
+      <textarea id="impPaste" rows="4" placeholder="Paste here, header row first" spellcheck="false"></textarea>
+      <div id="impPrev"></div>
+      <div class="row" style="margin-top:10px"><button class="b go" id="impSend" data-do="impSend" disabled>Send people</button><button class="b" id="impClear" data-do="impClear">Clear</button></div>
+      <p class="muted" id="impRes" style="margin-top:10px"></p>
+    </div>
+    <div class="box"><h2>Locked Out <small id="lockCount"></small></h2><div id="lockedList"></div></div>
+    <div class="box"><h2>Who Signed In <small id="peopleSum"></small></h2>
+      <input type="text" id="pFind" placeholder="Find a name" aria-label="Find a name" autocomplete="off">
+      <div id="peopleList" style="margin-top:8px"></div></div>
+  </section>
+
+  <section id="screen" hidden>
     <div class="box"><div class="now" id="nowTxt"></div></div>
     <div class="box"><h2>What the screen shows <small>Automatic follows the clock</small></h2><div class="grid" id="modes"></div></div>
     <div class="box"><h2>Hold one scene <small>Fills the screen until you release it</small></h2><div class="grid" id="scenes"></div></div>
-    <div class="box"><h2>Opening speakers</h2><div class="row"><button class="b" id="spPrev">Previous</button><button class="b" id="spAuto">By the clock</button><button class="b" id="spNext">Next</button></div><p class="muted" id="spTxt" style="margin-top:8px"></p></div>
+    <div class="box"><h2>Reactions <small id="rxNow"></small></h2><div class="grid" id="rxBtns"></div><p class="muted" style="margin-top:8px">Auto follows the clock. On and Off hold reactions open or closed on every phone and on the wall.</p></div>
+    <div class="box"><h2>Lunch finale <small id="finNow"></small></h2><div class="grid" id="finBtns"></div><p class="muted" style="margin-top:8px">A step shows on the wall right away. Run by itself returns to the automatic loop.</p></div>
+    <div class="box"><h2>Group photo <small id="gpNow"></small></h2><div class="row"><button class="b go" data-do="gpStart">Group photo in 60 seconds</button><button class="b" data-do="gpStop">Stop countdown</button></div><p class="muted" style="margin-top:8px">The wall shows a full screen countdown, a white flash at zero, then Thank You.</p></div>
+    <div class="box"><h2>Opening speakers</h2><div class="row"><button class="b" id="spPrev" data-do="spPrev">Previous</button><button class="b" id="spAuto" data-do="spAuto">By the clock</button><button class="b" id="spNext" data-do="spNext">Next</button></div><p class="muted" id="spTxt" style="margin-top:8px"></p></div>
     <div class="box"><h2>Videos <small>Plays full screen, then returns by itself</small></h2><div class="grid" id="vids"></div></div>
     <div class="box"><h2>Announcement</h2><textarea id="annTxt" rows="2" maxlength="140" placeholder="Lunch moves to 14:15 in the Main Hall"></textarea>
-      <div class="row" style="margin-top:8px"><select id="annSecs" aria-label="How long it shows"><option value="15">Show for 15 seconds</option><option value="30" selected>Show for 30 seconds</option><option value="60">Show for 1 minute</option></select><button class="b go" id="annGo">Send</button><button class="b" id="annClear">Clear</button></div>
+      <div class="row" style="margin-top:8px"><select id="annSecs" aria-label="How long it shows"><option value="15">Show for 15 seconds</option><option value="30" selected>Show for 30 seconds</option><option value="60">Show for 1 minute</option></select><button class="b go" id="annGo" data-do="annGo">Send</button><button class="b" id="annClear" data-do="annClear">Clear</button></div>
       <p class="muted" id="annNow" style="margin-top:8px"></p></div>
-    <div class="box"><h2>Screen</h2><div class="grid" id="ovs"></div><div class="row" style="margin-top:8px"><button class="b" id="thLight">Light</button><button class="b" id="thDark">Dark</button></div></div>
-    <div class="box"><h2>This Way directions <small>Arrows as seen from the screen</small></h2><div id="way"></div><button class="b go" id="wayGo" style="width:100%;margin-top:10px">Save directions</button></div>
-    <div class="box"><button class="b warn" id="reset" style="width:100%">Reset screen controls</button></div>
+    <div class="box"><h2>Screen</h2><div class="grid" id="ovs"></div><div class="row" style="margin-top:8px"><button class="b" id="thLight" data-do="theme" data-th="light">Light</button><button class="b" id="thDark" data-do="theme" data-th="dark">Dark</button></div></div>
+    <div class="box"><h2>This Way directions <small>Arrows as seen from the screen</small></h2><div id="way"></div><button class="b go" id="wayGo" data-do="wayGo" style="width:100%;margin-top:10px">Save directions</button></div>
+    <div class="box"><h2>Survey link <small>Shown on the thank you page</small></h2>
+      <label for="svLink">Full https address</label><input type="url" id="svLink" placeholder="https://" autocomplete="off">
+      <div class="row" style="margin-top:8px"><button class="b go" data-do="svSave">Save link</button><button class="b" data-do="svClear">Remove link</button></div>
+      <p class="muted" id="svNow" style="margin-top:8px"></p></div>
+    <div class="box"><button class="b warn" id="reset" data-do="reset" style="width:100%">Reset screen controls</button><p class="muted" style="margin-top:6px">Sends mode, scene, speaker, video, announcement, overlay and theme back to automatic. Polls, directions, hidden words and switches stay.</p></div>
   </section>
 
   <section id="approve" hidden>
     <div class="box"><h2>Photos waiting <small id="phCount"></small></h2><div class="ph" id="phWait"></div></div>
     <div class="box"><h2>Profiles waiting <small id="prCount"></small></h2><div id="prWait"></div></div>
+    <div class="box"><h2>Takeaways waiting <small id="tkCount"></small></h2><div id="tkWait"></div></div>
+    <div class="box"><h2>Add team photos <small>Go on the wall at once</small></h2>
+      <label for="teamFiles">Choose photos</label><input type="file" id="teamFiles" accept="image/*" multiple>
+      <label for="teamCap">Caption for all of them, optional</label><input type="text" id="teamCap" maxlength="90" placeholder="Opening in the Main Hall">
+      <button class="b go" id="teamGo" data-do="teamGo" style="width:100%;margin-top:10px">Add to the photo wall</button>
+      <p class="muted" id="teamRes" style="margin-top:8px"></p></div>
+    <div class="box"><h2>Trust switches <small>Who skips the queue</small></h2><div id="trust"></div></div>
     <div class="box"><h2>On the photo wall <small id="phOkCount"></small></h2><div class="ph" id="phOk"></div></div>
+    <div class="box"><h2>Takeaways on the wall <small id="tkOkCount"></small></h2><div id="tkOk"></div></div>
     <div class="box"><h2>On the Networking Board <small id="prOkCount"></small></h2><div id="prOk"></div></div>
   </section>
 
   <section id="polls" hidden>
+    <div class="box" id="pollMode"></div>
     <div class="box"><h2>Current poll</h2><div id="pollNow"></div></div>
     <div class="box"><h2>All polls</h2><div id="pollList"></div></div>
     <div class="box"><h2>Add a poll</h2>
       <label for="npQ">Question</label><input type="text" id="npQ" maxlength="120" placeholder="In one word, what did you learn today?">
       <label for="npType">Answer type</label><select id="npType"><option value="words">Words, shown as a word cloud</option><option value="choice">Choices, shown as bars</option></select>
       <div id="npOptsBox" hidden><label for="npOpts">Choices, one per line</label><textarea id="npOpts" rows="4"></textarea></div>
-      <button class="b go" id="npGo" style="width:100%;margin-top:10px">Add poll</button></div>
+      <button class="b go" id="npGo" data-do="npGo" style="width:100%;margin-top:10px">Add poll</button></div>
+  </section>
+
+  <section id="export" hidden>
+    <div class="box"><h2>Export <small>CSV files for Excel</small></h2>
+      <p class="muted" style="margin-bottom:10px">These files hold names. Keep them with the team.</p>
+      <div class="grid1" id="exList"></div></div>
   </section>
 
   <section id="log" hidden><div class="box log" id="logList"></div></section>
 </main>
 </div>
 <div id="toast" role="status"></div>
+<div id="ask" hidden><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="askT"><h3 id="askT"></h3><p id="askB"></p><div class="row"><button class="b" id="askNo" type="button">Cancel</button><button class="b go" id="askYes" type="button">Yes</button></div></div></div>
 
+<script src="/assets/day.js"></script>
 <script>
 (function(){
 'use strict';
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const ls = { get(k){ try { return localStorage.getItem(k) || ''; } catch(e) { return ''; } }, set(k, v){ try { localStorage.setItem(k, v); } catch(e) {} }, del(k){ try { localStorage.removeItem(k); } catch(e) {} } };
-let PIN = ls.get('md_pin'), WHO = ls.get('md_who'), D = null, busy = false, lastOk = 0;
+const DAYX = window.MD_DAY || null;
+let PIN = ls.get('md_pin'), WHO = ls.get('md_who'), D = null, ST = null, busy = false, lastOk = 0, TAB = 'status', tick = 0, refreshing = false, seq = 0;
+
 const MODES = [['auto','Automatic'],['welcome','Welcome'],['opening','Opening'],['video','Video Messages'],['choose','Coffee Break'],['live','Lounge and Sessions'],['lunch','Lunch'],['close','Thank You']];
 const SCENES = [['rooms','Rooms now'],['choose','Next Up'],['board','One to Ones'],['meet','Networking Board'],['photos','Photo Wall'],['poll','Live Poll'],['pulse','Live Numbers'],['way','This Way'],['spotlight','Advisor Spotlight'],['advisors',"Today's Advisors"]];
-const SPEAKERS = ['Zaid Salem', 'Rand Safi', 'Alaa Alaaedein'];
+const SPEAKERS = DAYX ? DAYX.speakers.map(s => s.name) : ['Zaid Salem', 'Rand Safi', 'Alaa Alaaedein'];
 const WAYS = [['registration','Registration'],['rooms','Rooms A, B and C'],['oneToOnes','One to Ones']];
 const DIRS = ['', 'left', 'right', 'up', 'down', 'up left', 'up right', 'down left', 'down right'];
 const ARROW = {'':'Not shown', left:'Left', right:'Right', up:'Straight ahead', down:'Behind you', 'up left':'Ahead and left', 'up right':'Ahead and right', 'down left':'Back and left', 'down right':'Back and right'};
+const ANNOUNCE = ['Sessions start in 5 minutes', 'Lunch is served in the Main Hall', 'Group photo in the Main Hall now', 'One to one slots are open at the registration desk'];
+const FINALE = [['numbers','Day in Numbers'],['poll','Last Poll'],['photos','Photos'],['voices','Voices of the Day'],['connectors','Connectors'],['thanks','Thank You']];
+const OVERLAY = {black:'The black screen', logo:'The logo screen', check:'The screen check'};
+const FLAGS = [
+  ['trustProfiles', 'Verified cards go up at once', 'People from the list who join the Networking Board skip the queue. Guests still wait for you.', true],
+  ['trustTakeaways', 'Verified takeaways go up at once', 'Takeaways from people on the list reach the wall after the word filter. Guests still wait for you.', true],
+  ['trustPhotos', 'Verified photos skip the queue', 'Photos from people on the list who agreed to photos go straight to the wall.', false],
+  ['hello', 'Say hello on the wall', 'The wall greets people by first name when they sign in and agreed to it.', true],
+  ['picks', 'Pick sessions for people', 'On a first sign in, each person gets a session picked for them in every block.', true],
+  ['meet', 'Meet codes', 'Phones can record that two people met, with a 3 digit code.', true],
+  ['takeaways', 'Takeaways', 'Phones can rate a session and add one line near the end of it.', true]
+];
+const TRUST = ['trustProfiles', 'trustTakeaways', 'trustPhotos'];
+const EXPORTS = [['takeaways','Takeaways','Every takeaway with its session, rating and line.'],['ratings','Ratings','Ratings per session, with the average.'],['polls','Poll Answers','Every poll answer with its count.'],['board','Networking Board','Every card on the board.'],['links','Connections','Every connection, as two names and a time.'],['feedback','Feedback','Feedback after the event. No names.'],['signins','Sign Ins','Who signed in, as person or guest, and when.']];
 
-function toast(t){ const el = $('toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toast.h); toast.h = setTimeout(() => el.classList.remove('show'), 2400); }
+/* time at the venue */
+let tf = null; try { tf = new Intl.DateTimeFormat('en-GB', {timeZone:(DAYX && DAYX.tz) || 'Asia/Hebron', hour:'2-digit', minute:'2-digit', hourCycle:'h23'}); } catch(e) {}
+const fmt = t => tf ? tf.format(new Date(t)) : new Date(t).toTimeString().slice(0, 5);
+const plural = (n, one, many) => n + ' ' + (n === 1 ? one : many);
+
+/* small helpers */
+const HTML = new WeakMap();
+function setHtml(el, html){ if (HTML.get(el) === html) return; HTML.set(el, html); el.innerHTML = html; }
+function toast(t, bad){ const el = $('toast'); el.textContent = t; el.classList.toggle('bad', !!bad); el.classList.add('show'); clearTimeout(toast.h); toast.h = setTimeout(() => el.classList.remove('show'), bad ? 5000 : 2400); }
 const H = () => ({'x-pin':PIN, 'x-who':encodeURIComponent(WHO)});
+function logout(msg){ PIN = ''; ls.del('md_pin'); $('app').hidden = true; $('gate').hidden = false; $('gErr').textContent = msg || ''; }
+
+/* confirm sheet: says what will happen, then Cancel or Yes */
+let askDone = null;
+function ask(title, body, yes, danger){
+  return new Promise(res => {
+    if (askDone) askDone(false);
+    $('askT').textContent = title; $('askB').textContent = body; $('askYes').textContent = yes || 'Yes';
+    $('askYes').className = 'b ' + (danger ? 'danger' : 'go');
+    $('ask').hidden = false; $('askNo').focus();
+    askDone = v => { $('ask').hidden = true; askDone = null; res(v); };
+  });
+}
+$('askNo').onclick = () => askDone && askDone(false);
+$('askYes').onclick = () => askDone && askDone(true);
+$('ask').addEventListener('click', e => { if (e.target === $('ask') && askDone) askDone(false); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && askDone) askDone(false); });
+
 async function get(){
   const r = await fetch('/api/op', {headers:H(), cache:'no-store'});
   if (r.status === 401) { logout('That PIN did not work.'); throw 0; }
   if (!r.ok) throw 0; return r.json();
 }
-async function act(body, done){
-  if (busy) return; busy = true;
+// Sends one team action. conf is {title, body, yes, danger}: shown first, nothing is sent unless it is confirmed.
+// Returns the answer, or null when it was cancelled or failed.
+async function act(body, done, conf){
+  if (conf && !await ask(conf.title, conf.body, conf.yes, conf.danger)) return null;
+  if (busy) { toast('One moment, still sending'); return null; }
+  busy = true; let out = null;
   try {
     const r = await fetch('/api/op', {method:'POST', headers:{...H(), 'content-type':'application/json'}, body:JSON.stringify(body)});
     const d = await r.json().catch(() => ({}));
-    if (r.status === 401) { logout('That PIN did not work.'); return; }
-    if (!r.ok) { toast(d.error || 'That did not work. Try again.'); return; }
-    if (done) toast(done);
-    await refresh();
-  } catch(e) { toast('No connection. Try again.'); }
+    if (r.status === 401) { logout('That PIN did not work.'); return null; }
+    if (!r.ok) { toast(d.error || 'That did not work. Try again.', true); return null; }
+    if (done) toast(typeof done === 'function' ? done(d) : done);
+    out = d;
+  } catch(e) { toast('No connection. Try again.', true); }
   finally { busy = false; }
+  await refresh(true);
+  return out;
 }
-function logout(msg){ PIN = ''; ls.del('md_pin'); $('app').hidden = true; $('gate').hidden = false; $('gErr').textContent = msg || ''; }
 
 /* gate */
 $('gWho').value = WHO;
@@ -182,61 +380,340 @@ $('gGo').onclick = async () => {
 $('gPin').addEventListener('keydown', e => { if (e.key === 'Enter') $('gGo').click(); });
 
 /* tabs */
-document.querySelectorAll('nav button').forEach(b => b.onclick = () => { document.querySelectorAll('nav button').forEach(x => x.setAttribute('aria-selected', String(x === b))); ['screen','approve','polls','log'].forEach(t => $(t).hidden = t !== b.dataset.t); });
+const TABS = ['status','people','screen','approve','polls','export','log'];
+function showTab(t){
+  if (!TABS.includes(t)) t = 'status';
+  TAB = t; ls.set('md_tab', t);
+  document.querySelectorAll('nav button').forEach(x => { const on = x.dataset.t === t; x.setAttribute('aria-selected', String(on)); if (on) { try { x.scrollIntoView({inline:'nearest', block:'nearest'}); } catch(e) {} } });
+  TABS.forEach(n => $(n).hidden = n !== t);
+  if (D) render();
+  if (t === 'status') loadState();
+}
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => { showTab(b.dataset.t); window.scrollTo(0, 0); });
 
-/* rendering */
-const fmt = t => { const d = new Date(t); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
-function render(){
+/* ---------- status ---------- */
+const modeName = k => (MODES.find(m => m[0] === k) || [k, k])[1];
+const sceneName = k => (SCENES.find(s => s[0] === k) || [k, k])[1];
+const sessTitle = sid => { const s = DAYX && DAYX.sessions.find(x => x.id === sid); return s ? `${s.room}, ${s.title}` : sid; };
+const heldList = () => {
+  const c = D.cfg, A = D.auto || {}, out = [];
+  if (c.mode !== 'auto') out.push(['mode', `The wall is held on ${modeName(c.mode)}`, 'Follow the clock']);
+  if (c.pin) out.push(['scene', `The wall is held on the ${sceneName(c.pin)} scene`, 'Rotate scenes']);
+  if (c.overlay) out.push(['overlay', `${OVERLAY[c.overlay] || 'An overlay'} covers the wall`, 'Show the live screen']);
+  if (c.speaker != null) out.push(['speaker', `Speaker card ${c.speaker + 1} is held`, 'By the clock']);
+  if (A.poll && A.poll.manual) out.push(['poll', 'The poll is held by you', 'Back to the schedule']);
+  if (c.rx === 'on' || c.rx === 'off') out.push(['rx', `Reactions are held ${c.rx}`, 'Follow the clock']);
+  if (c.finale) out.push(['finale', `The finale is held on ${(FINALE.find(f => f[0] === c.finale.step) || ['', c.finale.step])[1]}`, 'Run by itself']);
+  if (c.photoAt && D.t < c.photoAt.at + c.photoAt.secs * 1000) out.push(['group', 'The group photo countdown is running', 'Stop']);
+  return out;
+};
+function needs(){
+  const A = D.auto || {}, sc = D.screen, pend = D.pending || {}, p = D.people || {}, out = [];
+  const age = sc ? sc.age : null;
+  if (A.phase === 'day') {
+    if (!sc) out.push({t:'The wall has not reported yet', go:'screen', b:'Open Screen'});
+    else if (age > 150) out.push({t:`The wall has not reported for ${age >= 120 ? Math.round(age / 60) + ' minutes' : age + ' seconds'}`, go:'screen', b:'Open Screen'});
+  }
+  if (sc && sc.err) out.push({t:'The wall reported an error: ' + sc.err, go:'screen', b:'Open Screen'});
+  const ph = (pend.photos || []).length, pr = (pend.profiles || []).length, tk = (pend.takeaways || []).length;
+  if (ph) out.push({t:plural(ph, 'photo is', 'photos are') + ' waiting', go:'approve', b:'Review'});
+  if (pr) out.push({t:plural(pr, 'card is', 'cards are') + ' waiting', go:'approve', b:'Review'});
+  if (tk) out.push({t:plural(tk, 'takeaway is', 'takeaways are') + ' waiting', go:'approve', b:'Review'});
+  const lk = (p.locked || []).length;
+  if (lk) out.push({t:plural(lk, 'person is', 'people are') + ' locked out', go:'people', b:'Unlock'});
+  if (D.pinFails >= 10) out.push({t:`${D.pinFails} wrong PIN tries lately. Someone may be guessing.`, go:'log', b:'Open Log'});
+  return out;
+}
+function autoLines(){
+  const A = D.auto || {}, out = [];
+  if (!A.now) return ['Nothing is known yet.'];
+  const ph = {before:'Before the day. Phones show the countdown to Tuesday.', day:'The day is running.', after:'The event is over. Phones show the thank you page.'}[A.phase];
+  if (ph) out.push(ph);
+  if (A.program) {
+    if (A.program.now) out.push(`Now: ${A.program.now.title}, until ${A.program.now.e}.`);
+    if (A.program.next) out.push(`Next: ${A.program.next.title} at ${A.program.next.s}.`);
+  }
+  const pl = A.poll || {};
+  if (pl.manual) out.push('The poll is held by you. It does not change by itself.');
+  else if (pl.open && pl.until && pl.next) out.push(`Poll changes at ${pl.until}.`);
+  else if (pl.open && pl.until) out.push(`Poll closes at ${pl.until}.`);
+  else if (pl.next) out.push(`Next poll opens at ${pl.next.at}.`);
+  else out.push('No poll is open now.');
+  const rx = A.rx || {};
+  if (rx.mode === 'on') out.push('Reactions are held on by you.');
+  else if (rx.mode === 'off') out.push('Reactions are held off by you.');
+  else if (rx.on && rx.until) out.push(`Reactions on until ${rx.until}.`);
+  else if (rx.next) out.push(`Reactions open at ${rx.next}.`);
+  else out.push('Reactions are closed for the day.');
+  const tk = A.takeaways || [];
+  out.push(tk.length ? `Takeaways are open for block ${tk.join(' and ')}.` : 'Takeaways are closed.');
+  return out;
+}
+function renderStatus(){
+  const c = D.cfg, A = D.auto || {}, sc = D.screen, pend = D.pending || {}, p = D.people || {};
+  // the one box that says it all
+  const nd = needs();
+  const bn = $('stBanner');
+  bn.className = 'box ' + (nd.length ? 'warn' : 'ok');
+  setHtml(bn, nd.length
+    ? `<div class="big">${nd.length === 1 ? 'One thing needs you' : nd.length + ' things need you'}</div>` + nd.map(n => `<div class="need"><span>${esc(n.t)}</span><button class="b" data-go="${n.go}">${n.b}</button></div>`).join('')
+    : `<div class="big">All good</div><p class="muted" style="margin-top:4px">Nothing needs you right now.${D.reh ? ' A rehearsal is running.' : ''}</p>`);
+  const sb = $('sbadge'); sb.hidden = !nd.length; sb.textContent = nd.length; sb.className = 'hot';
+  // what you are holding
+  const hl = heldList(), flagsOff = FLAGS.filter(f => c.flags && c.flags[f[0]] !== f[3]);
+  const hb = $('stHeld'); hb.hidden = !hl.length && !flagsOff.length;
+  setHtml(hb, `<h2>Held by you <small>Not running by itself</small></h2><ul class="list">${hl.map(h => `<li class="held"><span>${esc(h[1])}</span><button class="b" data-do="release" data-what="${h[0]}">${h[2]}</button></li>`).join('')}${flagsOff.map(f => `<li>Switched ${f[3] ? 'off' : 'on'}: ${esc(f[1])}.</li>`).join('')}</ul>`);
+  // the wall
+  const on = sc && sc.age <= 150;
+  $('wallAge').textContent = sc ? (sc.age < 5 ? 'Just now' : 'Seen ' + (sc.age >= 120 ? Math.round(sc.age / 60) + ' min' : sc.age + ' s') + ' ago') : '';
+  const scenes = sc ? [].concat(sc.scenes || []).join(', ') : '';
+  setHtml($('wallKv'), `<dt>Wall</dt><dd><span class="dot ${on ? 'on' : (sc || A.phase === 'day' ? 'bad' : '')}"></span>${on ? 'Online' : (sc ? 'Not connected' : 'Not seen yet')}</dd>`
+    + (sc ? `<dt>Showing</dt><dd>${esc(sc.mode ? modeName(sc.mode) : 'Unknown')}${scenes ? ': ' + esc(scenes) : ''}</dd>
+    <dt>Size</dt><dd>${sc.w && sc.h ? esc(sc.w + ' x ' + sc.h) : 'Unknown'}${sc.layout ? ', ' + esc(sc.layout) + ' layout' : ''}</dd>
+    <dt>Speed</dt><dd>${sc.fps != null ? esc(sc.fps) + ' frames a second' : 'Unknown'}, light mode ${sc.lite ? 'on' : 'off'}</dd>
+    <dt>Last error</dt><dd>${sc.err ? esc(sc.err) : 'None'}</dd>` : ''));
+  // by itself
+  $('autoNow').textContent = A.now ? `Clock ${A.now}${D.reh ? ', rehearsal' : ''}` : '';
+  setHtml($('autoList'), autoLines().map(l => `<li>${esc(l)}</li>`).join(''));
+  // counts
+  const n = (ST && ST.n) || {};
+  const tiles = [
+    [n.here != null ? n.here : (p.here || 0), 'Here'],
+    [`${p.signedIn || 0}/${p.count || 0}`, 'Signed in'],
+    [n.board != null ? n.board : (D.snap.profiles || []).length, 'Cards'],
+    [n.links != null ? n.links : '-', 'Connections'],
+    [n.photos != null ? n.photos : (D.snap.photos || []).length, 'Photos'],
+    [n.takeaways != null ? n.takeaways : (D.snap.takeaways || []).length, 'Takeaways'],
+    [n.answers != null ? n.answers : (D.poll ? D.poll.total : 0), 'Answers'],
+    [ST && ST.rx ? ST.rx.total : '-', 'Reactions']
+  ];
+  setHtml($('tiles'), tiles.map(([v, l]) => `<div class="tile"><b>${esc(v)}</b><small>${l}</small></div>`).join(''));
+  // waiting
+  const ph = (pend.photos || []).length, pr = (pend.profiles || []).length, tk = (pend.takeaways || []).length, lk = (p.locked || []).length;
+  const rows = [[ph, 'photos', 'photo', 'approve'], [pr, 'cards', 'card', 'approve'], [tk, 'takeaways', 'takeaway', 'approve'], [lk, 'people locked out', 'person locked out', 'people']].filter(r => r[0]);
+  setHtml($('waitList'), rows.length ? rows.map(r => `<div class="pl"><span><b>${r[0]}</b> ${r[0] === 1 ? r[2] : r[1]}</span><button class="b" data-go="${r[3]}">${r[3] === 'people' ? 'Unlock' : 'Review'}</button></div>`).join('') : '<p class="muted">Nothing waiting.</p>');
+  // announce
+  setHtml($('annQuick'), ANNOUNCE.map(t => `<button class="b left" data-do="ann" data-t="${esc(t)}">${esc(t)}</button>`).join(''));
+  const ann = c.ann, live = ann && D.t < ann.at + (ann.secs || 20) * 1000;
+  $('annState').textContent = ann ? (live ? `On the wall now: "${ann.text}"` : `Last announcement, finished: "${ann.text}"`) : 'No announcement right now.';
+  // tools
+  const rh = c.rehearsal;
+  $('rhState').textContent = D.reh && rh ? `A rehearsal is running. The clock reads ${A.now}. It ends by itself at ${fmt(rh.until)}.` : 'No rehearsal is running. The clock is real time.';
+  $('rhStop').disabled = !D.reh;
+  if (!$('rhChips').dataset.ready) {
+    $('rhChips').innerHTML = [['09:25','Doors'],['10:00','Opening'],['10:55','5 minute call'],['11:40','Takeaways'],['14:00','Lunch']].map(([t, n]) => `<button class="chip" type="button" data-do="rhPick" data-t="${t}">${t} ${n}</button>`).join('');
+    $('rhChips').dataset.ready = 1;
+  }
+  setHtml($('flags'), FLAGS.map(([k, name, desc]) => { const v = !!(c.flags && c.flags[k]); return `<div class="sw"><div><b>${esc(name)}</b><span class="muted">${esc(desc)}</span></div><button class="b ${v ? 'go' : ''}" data-flag="${k}" data-do="flag" aria-pressed="${v}">${v ? 'On' : 'Off'}</button></div>`; }).join(''));
+}
+async function loadState(){
+  try { const r = await fetch('/api/state', {cache:'no-store'}); if (r.ok) { ST = await r.json(); if (D && TAB === 'status') renderStatus(); } } catch(e) {}
+}
+
+/* ---------- people import ---------- */
+// Reads a CSV file or rows pasted from Google Sheets. Quoted cells may hold line breaks.
+function parseDelimited(text){
+  text = String(text || '').replace(/^\uFEFF/, '');
+  let q = false, tabs = 0, commas = 0;
+  for (let i = 0; i < text.length; i++) { const ch = text[i]; if (ch === '"') q = !q; else if (!q) { if (ch === '\n') break; if (ch === '\t') tabs++; else if (ch === ',') commas++; } }
+  const d = tabs > commas ? '\t' : ',';
+  const rows = []; let row = [], cell = '', inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inQ) { if (ch === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else inQ = false; } else cell += ch; }
+    else if (ch === '"' && cell === '') inQ = true;
+    else if (ch === d) { row.push(cell); cell = ''; }
+    else if (ch === '\r') { /* part of a line break */ }
+    else if (ch === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; }
+    else cell += ch;
+  }
+  if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+  return rows;
+}
+const norm = s => String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
+const EMAIL_RE = /[^\s,;<>]+@[^\s,;<>]+/g, NUM_RE = /\+?\d[\d\s().\-]{5,}\d/g;
+// Removes an email address or a run of 7 or more digits. hit says that something was removed.
+function scrub(s){ let hit = false; const v = String(s || '').replace(EMAIL_RE, () => { hit = true; return ''; }).replace(NUM_RE, m => { if (m.replace(/\D/g, '').length >= 7) { hit = true; return ''; } return m; }); return {v:v.replace(/\s+/g, ' ').trim(), hit}; }
+function stamp(s){
+  const m = /^(\d{1,4})[\/.\-](\d{1,2})[\/.\-](\d{1,4})[ T,]+(\d{1,2}):(\d{2})(?::(\d{2}))?/.exec(String(s || '').trim());
+  if (!m) { const t = Date.parse(s); return Number.isNaN(t) ? null : t; }
+  let [a, b, c] = [+m[1], +m[2], +m[3]], y, mo, dd;
+  if (a > 31) { y = a; mo = b; dd = c; } else { y = c; if (a > 12) { dd = a; mo = b; } else { mo = a; dd = b; } }
+  return Date.UTC(y, mo - 1, dd, +m[4], +m[5], +(m[6] || 0));
+}
+function parsePeople(text){
+  const table = parseDelimited(text), res = {people:[], total:0, empty:0, noName:0, shortNum:0, status:0, older:0, cleaned:0, noTopics:0, error:''};
+  if (!table.length) { res.error = 'Nothing to read yet.'; return res; }
+  const head = table[0].map(h => { const full = norm(h); return {full, first:norm(String(h).split(/\r?\n/)[0])}; });
+  const find = (starts, alt) => { let i = head.findIndex(h => starts.some(s => h.first.startsWith(s))); if (i < 0 && alt) i = head.findIndex(h => alt.some(s => h.full.includes(s))); return i; };
+  const col = {
+    name: find(['full name'], ['full name']), phone: find(['mobile number', 'mobile'], ['phone', 'whatsapp']), company: find(['company or', 'company', 'organization'], null),
+    title: find(['job title'], ['job title']), li: find(['linkedin'], ['linkedin']), topics: find(['which topics'], ['topics']), adv: find(['which advisors'], ['advisors']),
+    consent: head.findIndex(h => h.first.startsWith('do you consent') && h.first.includes('photo')), status: head.findIndex(h => h.first === 'status'),
+    slot: find(['one to one slot'], null), ts: head.findIndex(h => h.first === 'timestamp')
+  };
+  if (col.consent < 0) col.consent = head.findIndex(h => /consent.*photo/.test(h.full));
+  const rooms = {}; head.forEach((h, i) => { const m = /^block (\d) room/.exec(h.first); if (m) rooms[m[1]] = i; });
+  if (col.name < 0 || col.phone < 0) { res.error = 'I could not find ' + (col.name < 0 ? 'the Full Name column' : 'the Mobile Number column') + '. Paste or choose the sheet with its header row first.'; return res; }
+  const keys = DAYX ? Object.keys(DAYX.topicMap) : [];
+  if (!keys.length) { res.error = 'The topic list is missing. Reload this page.'; return res; }
+  const best = new Map(); let seqn = 0;
+  table.slice(1).forEach(r => {
+    if (r.every(x => !String(x).trim())) { res.empty++; return; }
+    res.total++;
+    const cell = i => (i >= 0 && r[i] != null ? String(r[i]) : '');
+    const st = norm(cell(col.status));
+    if (st && /reject|declin|cancel|withdr|wait ?list|denied|not accepted|no show|^no\b/.test(st)) { res.status++; return; }
+    const nm = scrub(cell(col.name)); if (nm.hit) res.cleaned++;
+    if (nm.v.replace(/[\s.\-]/g, '').length < 2) { res.noName++; return; }
+    const digits = cell(col.phone).replace(/\D/g, '');
+    if (digits.length < 4) { res.shortNum++; return; }
+    const topicText = norm(cell(col.topics));
+    const topics = keys.filter(k => topicText.includes(norm(k)));
+    if (!topics.length) res.noTopics++;
+    const advText = norm(cell(col.adv)), intl = advText.includes('international advisors'), local = advText.includes('local advisors');
+    const co = scrub(cell(col.company)), ti = scrub(cell(col.title)), li = scrub(cell(col.li));
+    if (co.hit || ti.hit) res.cleaned++;
+    const person = {name:nm.v, company:co.v, title:ti.v, linkedin:li.hit ? '' : li.v, topics, advisorPref:intl === local ? '' : (intl ? 'remote' : 'local'), last4:digits.slice(-4)};
+    if (li.hit) res.cleaned++;
+    if (col.consent >= 0) person.photoOk = /^yes/i.test(cell(col.consent).trim());
+    const rm = {}; Object.keys(rooms).forEach(b => { const v = cell(rooms[b]).trim(); if (v) rm[b] = v; }); if (Object.keys(rm).length) person.rooms = rm;
+    const sl = scrub(cell(col.slot)).v; if (sl) person.slot = sl;
+    const key = digits.slice(-9), t = stamp(cell(col.ts)), prev = best.get(key);
+    seqn++;
+    if (prev) { res.older++; const newer = prev.t != null && t != null ? t >= prev.t : true; if (!newer) return; }
+    best.set(key, {person, t});
+  });
+  res.people = [...best.values()].map(v => v.person);
+  return res;
+}
+let IMP = null;
+function previewHtml(r){
+  if (r.error) return `<div class="pv bad"><b>${esc(r.error)}</b></div>`;
+  const lines = [];
+  if (r.empty) lines.push(`${plural(r.empty, 'empty row', 'empty rows')} skipped`);
+  if (r.shortNum) lines.push(`${plural(r.shortNum, 'row', 'rows')} skipped: fewer than 4 digits in the mobile number`);
+  if (r.noName) lines.push(`${plural(r.noName, 'row', 'rows')} skipped: no name`);
+  if (r.status) lines.push(`${plural(r.status, 'row', 'rows')} skipped: the Status column says not accepted`);
+  if (r.older) lines.push(`${plural(r.older, 'older row', 'older rows')} dropped: a newer row has the same number`);
+  if (r.cleaned) lines.push(`${plural(r.cleaned, 'field', 'fields')} cleaned: an email address or a long number was removed`);
+  if (r.noTopics) lines.push(`${plural(r.noTopics, 'person', 'people')} with no known topic`);
+  const names = r.people.slice(0, 5).map(p => esc(p.name)).join(', ');
+  const consent = r.people.filter(p => p.photoOk === true).length, remote = r.people.filter(p => p.advisorPref === 'remote').length, local = r.people.filter(p => p.advisorPref === 'local').length;
+  return `<div class="pv ${r.people.length ? '' : 'bad'}"><b id="impCount">${plural(r.people.length, 'person', 'people')} ready</b> <span class="muted">from ${plural(r.total, 'row', 'rows')}</span>
+    ${lines.length ? '<ul>' + lines.map(l => `<li>${esc(l)}</li>`).join('') + '</ul>' : ''}
+    ${r.people.length ? `<p class="muted" style="margin-top:8px">First names on the list: ${names}${r.people.length > 5 ? ', and ' + (r.people.length - 5) + ' more' : ''}.<br>Photos allowed: ${consent}. Advisors: ${remote} remote, ${local} local.</p>` : ''}</div>`;
+}
+function readImport(text){
+  IMP = parsePeople(text);
+  const bytes = JSON.stringify({action:'peopleImport', people:IMP.people}).length;
+  if (!IMP.error && bytes > 240000) IMP.error = 'This list is too large to send in one go. Split the file in two.';
+  setHtml($('impPrev'), text.trim() ? previewHtml(IMP) : '');
+  $('impSend').disabled = !IMP.people.length || !!IMP.error;
+  $('impSend').textContent = IMP.people.length && !IMP.error ? `Send ${plural(IMP.people.length, 'person', 'people')}` : 'Send people';
+  $('impRes').textContent = '';
+}
+let impTimer = 0;
+$('impPaste').addEventListener('input', () => { clearTimeout(impTimer); impTimer = setTimeout(() => readImport($('impPaste').value), 250); });
+$('impFile').addEventListener('change', async () => {
+  const f = $('impFile').files[0]; if (!f) return;
+  if (f.size > 3 * 1024 * 1024) { toast('That file is too large for a people list.', true); return; }
+  $('impPaste').value = ''; readImport(await f.text());
+});
+function peopleHtml(){
+  const p = D.people || {}, q = norm($('pFind').value);
+  const list = (p.list || []).filter(x => !q || norm(x.name).includes(q)).slice(0, 300);
+  return list.length ? list.map(x => `<div class="pl"><span>${esc(x.name || 'No name')}</span>${x.kind === 'guest' ? '<span class="tg gu" style="flex:none">Guest</span>' : ''}${x.here ? '<span class="tg of" style="flex:none">Here</span>' : ''}</div>`).join('') : `<p class="muted">${(p.list || []).length ? 'Nobody matches.' : 'Nobody has signed in yet.'}</p>`;
+}
+function renderPeople(){
+  const p = D.people || {}, lk = p.locked || [];
+  $('lockCount').textContent = lk.length ? lk.length + ' locked' : '';
+  setHtml($('lockedList'), lk.length ? lk.map(x => `<div class="pl"><span><b>${esc(x.name || 'Unknown')}</b><br><span class="muted">${x.tries} wrong tries${x.all ? ', across all phones' : ' on one phone'}</span></span><button class="b" data-do="unlock" data-id="${esc(x.id)}" data-name="${esc(x.name)}">Unlock</button></div>`).join('') : '<p class="muted">Nobody is locked out.</p>');
+  $('peopleSum').textContent = `${p.count || 0} on the list, ${p.signedIn || 0} signed in, ${p.guests || 0} guests, ${p.here || 0} here`;
+  setHtml($('peopleList'), peopleHtml());
+  const pb = $('pbadge'); pb.hidden = !lk.length; pb.textContent = lk.length; pb.className = 'hot';
+}
+$('pFind').addEventListener('input', () => { if (D) setHtml($('peopleList'), peopleHtml()); });
+
+/* ---------- screen, approve, polls, log ---------- */
+function renderScreen(){
   const c = D.cfg;
   $('me').textContent = WHO;
-  const modeName = (MODES.find(m => m[0] === c.mode) || MODES[0])[1], scene = c.pin ? (SCENES.find(s => s[0] === c.pin) || [c.pin, c.pin])[1] : '';
-  $('nowTxt').innerHTML = `Screen: <b>${c.mode === 'auto' ? 'Automatic, follows the clock' : 'Held on ' + esc(modeName)}</b>${scene ? `, showing <b>${esc(scene)}</b> only` : ''}${c.overlay ? `, <b>${{black:'black screen', logo:'logo screen', check:'screen check'}[c.overlay]}</b> on top` : ''}.`;
-  $('modes').innerHTML = MODES.map(([k, n]) => `<button class="b ${c.mode === k ? 'on' : ''}" data-m="${k}">${n}</button>`).join('');
-  $('modes').querySelectorAll('button').forEach(b => b.onclick = () => act({action:'mode', mode:b.dataset.m}, b.dataset.m === 'auto' ? 'Screen follows the clock' : 'Screen held'));
-  $('scenes').innerHTML = `<button class="b blue ${!c.pin ? 'on' : ''}" data-s="">Rotate scenes</button>` + SCENES.map(([k, n]) => `<button class="b blue ${c.pin === k ? 'on' : ''}" data-s="${k}">${n}</button>`).join('');
-  $('scenes').querySelectorAll('button').forEach(b => b.onclick = () => act({action:'pin', scene:b.dataset.s || null}, b.dataset.s ? 'Scene held' : 'Scenes rotate again'));
+  const scene = c.pin ? sceneName(c.pin) : '';
+  $('nowTxt').innerHTML = `Screen: <b>${c.mode === 'auto' ? 'Automatic, follows the clock' : 'Held on ' + esc(modeName(c.mode))}</b>${scene ? `, showing <b>${esc(scene)}</b> only` : ''}${c.overlay ? `, <b>${{black:'black screen', logo:'logo screen', check:'screen check'}[c.overlay]}</b> on top` : ''}.`;
+  setHtml($('modes'), MODES.map(([k, n]) => `<button class="b ${c.mode === k ? 'on' : ''}" data-do="mode" data-m="${k}">${n}</button>`).join(''));
+  setHtml($('scenes'), `<button class="b blue ${!c.pin ? 'on' : ''}" data-do="scene" data-s="">Rotate scenes</button>` + SCENES.map(([k, n]) => `<button class="b blue ${c.pin === k ? 'on' : ''}" data-do="scene" data-s="${k}">${n}</button>`).join(''));
+  const rx = c.rx || 'auto';
+  $('rxNow').textContent = rx === 'auto' ? 'Following the clock' : 'Held ' + rx;
+  setHtml($('rxBtns'), [['auto','Auto'],['on','On'],['off','Off']].map(([k, n]) => `<button class="b blue ${rx === k ? 'on' : ''}" data-do="rx" data-m="${k}">${n}</button>`).join(''));
+  const fin = c.finale && c.finale.step;
+  $('finNow').textContent = fin ? 'Held on ' + (FINALE.find(f => f[0] === fin) || ['', fin])[1] : 'Runs by itself';
+  setHtml($('finBtns'), FINALE.map(([k, n]) => `<button class="b blue ${fin === k ? 'on' : ''}" data-do="finale" data-step="${k}">${n}</button>`).join('') + `<button class="b ${!fin ? 'on' : ''}" data-do="finale" data-step="">Run by itself</button>`);
+  const gp = c.photoAt && D.t < c.photoAt.at + c.photoAt.secs * 1000;
+  $('gpNow').textContent = gp ? 'Countdown running' : '';
   $('spTxt').textContent = c.speaker == null ? 'Speaker cards follow the clock: ' + SPEAKERS.join(', ') + '.' : 'Showing: ' + (SPEAKERS[c.speaker] || 'speaker ' + (c.speaker + 1));
-  $('vids').innerHTML = (D.videos || []).map(v => `<button class="b go" data-v="${v.id}">Play ${esc(v.title)}</button>`).join('') + `<button class="b warn" data-v="">Stop video</button>`;
-  $('vids').querySelectorAll('button').forEach(b => b.onclick = () => act({action:'video', id:b.dataset.v || null}, b.dataset.v ? 'Video playing' : 'Video stopped'));
-  $('annNow').textContent = c.ann ? `On screen and in the ticker: "${c.ann.text}"` : 'No announcement right now.';
-  $('ovs').innerHTML = [['','Live screen'],['black','Black'],['logo','Logos'],['check','Screen check']].map(([k, n]) => `<button class="b ${(c.overlay || '') === k ? 'on' : ''}" data-o="${k}">${n}</button>`).join('');
-  $('ovs').querySelectorAll('button').forEach(b => b.onclick = () => act({action:'overlay', overlay:b.dataset.o || null}));
+  setHtml($('vids'), (D.videos || []).map(v => `<button class="b go" data-do="video" data-v="${esc(v.id)}">Play ${esc(v.title)}</button>`).join('') + `<button class="b warn" data-do="video" data-v="">Stop video</button>`);
+  const ann = c.ann, live = ann && D.t < ann.at + (ann.secs || 20) * 1000;
+  $('annNow').textContent = ann ? (live ? `On screen and in the ticker: "${ann.text}"` : `Last announcement, finished: "${ann.text}"`) : 'No announcement right now.';
+  setHtml($('ovs'), [['','Live screen'],['black','Black'],['logo','Logos'],['check','Screen check']].map(([k, n]) => `<button class="b ${(c.overlay || '') === k ? 'on' : ''}" data-do="overlay" data-o="${k}">${n}</button>`).join(''));
   $('thLight').className = 'b' + (c.theme !== 'dark' ? ' on' : ''); $('thDark').className = 'b' + (c.theme === 'dark' ? ' on' : '');
   if (!$('way').dataset.ready) { $('way').innerHTML = WAYS.map(([k, n]) => `<label for="w_${k}">${n}</label><select id="w_${k}">${DIRS.map(d => `<option value="${d}">${ARROW[d]}</option>`).join('')}</select>`).join(''); $('way').dataset.ready = 1; }
   if (!document.activeElement || !document.activeElement.id.startsWith('w_')) WAYS.forEach(([k]) => { $('w_' + k).value = (c.way && c.way[k]) || ''; });
-
-  // approvals
-  const pp = D.pending.photos, pr = D.pending.profiles, n = pp.length + pr.length;
-  $('badge').hidden = !n; $('badge').textContent = n;
+  $('svNow').textContent = c.links && c.links.survey ? 'Now: ' + c.links.survey : 'No survey link is set.';
+  if (document.activeElement !== $('svLink') && !$('svLink').dataset.touched) $('svLink').value = (c.links && c.links.survey) || '';
+}
+function profileHtml(p, btns){ return `<div class="pr"><b dir="auto">${esc(p.name)}</b>${p.id && p.id[0] === 'g' ? ' <span class="tg gu">Guest</span>' : ''}<div class="muted" dir="auto">${esc([p.role, p.company].filter(Boolean).join(', '))}</div><div>${(p.looking || []).map(t => `<span class="tg">${esc(t)}</span>`).join('')}${(p.offer || []).map(t => `<span class="tg of">${esc(t)}</span>`).join('')}</div>${p.linkedin ? `<div class="muted">${esc(p.linkedin)}</div>` : ''}<div class="row" style="margin-top:8px">${btns.map(([a, n, cl]) => `<button class="b ${cl}" data-a="${a}" data-id="${esc(p.id)}"${a === 'approveProfile' && p.at ? ` data-at="${p.at}"` : ''}>${n}</button>`).join('')}</div></div>`; }
+function trustHtml(){
+  return TRUST.map(k => { const f = FLAGS.find(x => x[0] === k), v = !!(D.cfg.flags && D.cfg.flags[k]); return `<div class="sw"><div><b>${esc(f[1])}</b><span class="muted">${esc(f[2])}</span></div><button class="b ${v ? 'go' : ''}" data-flag="${k}" data-do="flag" aria-pressed="${v}">${v ? 'On' : 'Off'}</button></div>`; }).join('');
+}
+function takeawayHtml(t, btns){ return `<div class="tkc"><div class="muted">${esc(sessTitle(t.sid))}</div><q dir="auto">${esc(t.text || 'No line, rating only')}</q><div class="muted">${t.rating ? esc(t.rating) + ' of 5. ' : ''}${t.guest ? '<span class="tg gu">Guest</span> ' : ''}${(t.showName || (!('showName' in t) && t.first)) && t.first ? 'Shows the name ' + esc(t.first) + '.' : 'No name shown.'}</div><div class="row" style="margin-top:8px">${btns.map(([a, n, cl]) => `<button class="b ${cl}" data-a="${a}" data-id="${esc(t.id)}" data-sid="${esc(t.sid)}"${a === 'approveTakeaway' && t.at ? ` data-at="${t.at}"` : ''}>${n}</button>`).join('')}</div></div>`; }
+function renderApprove(){
+  const pend = D.pending || {}, pp = pend.photos || [], pr = pend.profiles || [], tk = pend.takeaways || [];
   $('phCount').textContent = pp.length ? pp.length + ' waiting' : '';
   $('prCount').textContent = pr.length ? pr.length + ' waiting' : '';
-  $('phWait').innerHTML = pp.length ? pp.map(p => `<figure><img data-id="${p.id}" alt=""><figcaption>${esc(p.caption || '')}${p.name ? `<div class="muted">${esc(p.name)}</div>` : ''}<div class="muted">${fmt(p.at)}</div></figcaption><div class="row"><button class="b go" data-a="approvePhoto" data-id="${p.id}">Approve</button><button class="b warn" data-a="rejectPhoto" data-id="${p.id}">Decline</button></div></figure>`).join('') : '<p class="muted">Nothing waiting.</p>';
-  $('prWait').innerHTML = pr.length ? pr.map(p => profileHtml(p, [['approveProfile','Approve','go'],['rejectProfile','Decline','warn']])).join('') : '<p class="muted">Nothing waiting.</p>';
-  const okp = D.snap.photos || [], okr = D.snap.profiles || [];
-  $('phOkCount').textContent = okp.length; $('prOkCount').textContent = okr.length;
-  $('phOk').innerHTML = okp.length ? okp.map(p => `<figure><img src="/api/photo/${p.id}" alt="" loading="lazy"><figcaption>${esc(p.caption || p.name || '')}</figcaption><div class="row"><button class="b warn" data-a="hidePhoto" data-id="${p.id}">Remove</button></div></figure>`).join('') : '<p class="muted">No photos yet.</p>';
-  $('prOk').innerHTML = okr.length ? okr.map(p => profileHtml(p, [['hideProfile','Remove','warn']])).join('') : '<p class="muted">Nobody yet.</p>';
-  document.querySelectorAll('#approve [data-a]').forEach(b => b.onclick = () => act({action:b.dataset.a, id:b.dataset.id}, {approvePhoto:'Photo approved', rejectPhoto:'Photo declined', hidePhoto:'Photo removed', approveProfile:'Profile approved', rejectProfile:'Profile declined', hideProfile:'Profile removed'}[b.dataset.a]));
+  $('tkCount').textContent = tk.length ? tk.length + ' waiting' : '';
+  setHtml($('phWait'), pp.length ? pp.map(p => `<figure><img data-id="${p.id}" alt=""><figcaption>${esc(p.caption || '')}${p.name ? `<div class="muted">${esc(p.name)}</div>` : ''}<div class="muted">${fmt(p.at)}</div></figcaption><div class="row"><button class="b go" data-a="approvePhoto" data-id="${p.id}">Approve</button><button class="b warn" data-a="rejectPhoto" data-id="${p.id}">Decline</button></div></figure>`).join('') : '<p class="muted">Nothing waiting.</p>');
+  setHtml($('prWait'), pr.length ? pr.map(p => profileHtml(p, [['approveProfile','Approve','go'],['rejectProfile','Decline','warn']])).join('') : '<p class="muted">Nothing waiting.</p>');
+  setHtml($('tkWait'), tk.length ? tk.map(t => takeawayHtml(t, [['approveTakeaway','Approve','go'],['rejectTakeaway','Decline','warn']])).join('') : '<p class="muted">Nothing waiting.</p>');
+  setHtml($('trust'), trustHtml());
+  const badge = pp.length + pr.length + tk.length;
+  $('badge').hidden = !badge; $('badge').textContent = badge;
+  const okp = D.snap.photos || [], okr = D.snap.profiles || [], okt = D.snap.takeaways || [];
+  $('phOkCount').textContent = okp.length; $('prOkCount').textContent = okr.length; $('tkOkCount').textContent = okt.length;
+  setHtml($('phOk'), okp.length ? okp.map(p => `<figure><img src="/api/photo/${p.id}" alt="" loading="lazy"><figcaption>${esc(p.caption || p.name || '')}</figcaption><div class="row"><button class="b warn" data-a="hidePhoto" data-id="${p.id}">Remove</button></div></figure>`).join('') : '<p class="muted">No photos yet.</p>');
+  setHtml($('tkOk'), okt.length ? okt.map(t => takeawayHtml(t, [['hideTakeaway','Remove','warn']])).join('') : '<p class="muted">None yet.</p>');
+  setHtml($('prOk'), okr.length ? okr.map(p => profileHtml(p, [['hideProfile','Remove','warn']])).join('') : '<p class="muted">Nobody yet.</p>');
   loadThumbs();
-
-  // polls
-  const p = D.poll, hidden = new Set(c.hidden || []);
-  $('pollNow').innerHTML = p ? `<div style="font-weight:700;font-size:17px">${esc(p.q)}</div><div class="muted">${p.open ? 'Open' : 'Closed'}, ${p.total} ${p.total === 1 ? 'answer' : 'answers'}. ${p.type === 'words' ? 'Tap a word to hide it from the screen.' : ''}</div>
-    <div class="words">${(p.words || []).map(([w, k]) => `<button data-w="${esc(w)}" class="${hidden.has(w) ? 'hid' : ''}">${esc(w)}<i>${k}</i></button>`).join('')}</div>
-    <div class="row" style="margin-top:10px">${p.open ? '<button class="b" id="pClose">Close poll</button>' : `<button class="b go" id="pOpen">Open again</button>`}<button class="b warn" id="pReset">Clear answers</button></div>` : '<p class="muted">No poll is selected.</p>';
-  if (p) {
-    $('pollNow').querySelectorAll('[data-w]').forEach(b => b.onclick = () => act({action: hidden.has(b.dataset.w) ? 'showWord' : 'hideWord', word:b.dataset.w}, hidden.has(b.dataset.w) ? 'Word restored' : 'Word hidden'));
-    if ($('pClose')) $('pClose').onclick = () => act({action:'pollClose'}, 'Poll closed');
-    if ($('pOpen')) $('pOpen').onclick = () => act({action:'pollActivate', pid:p.id}, 'Poll open');
-    $('pReset').onclick = () => { if ($('pReset').dataset.sure) act({action:'pollReset', pid:p.id}, 'Answers cleared'); else { $('pReset').dataset.sure = 1; $('pReset').textContent = 'Tap again to clear all answers'; } };
-  }
-  $('pollList').innerHTML = D.polls.map(x => `<div class="poll"><div><b>${esc(x.q)}</b><div class="muted">${x.type === 'choice' ? 'Choices: ' + esc(x.options.join(', ')) : 'Word cloud'}${c.poll && c.poll.id === x.id ? ', on screen now' : ''}</div></div><button class="b go" data-p="${x.id}" ${c.poll && c.poll.id === x.id && c.poll.open ? 'disabled' : ''}>Open</button></div>`).join('');
-  $('pollList').querySelectorAll('[data-p]').forEach(b => b.onclick = () => act({action:'pollActivate', pid:b.dataset.p}, 'Poll open on the screen and phones'));
-
-  // log
-  $('logList').innerHTML = D.log.length ? D.log.map(l => `<div><span class="muted">${fmt(l.at)}</span><span><b>${esc(l.who)}</b> ${esc(l.what)}</span></div>`).join('') : '<p class="muted">No actions yet.</p>';
 }
-function profileHtml(p, btns){ return `<div class="pr"><b>${esc(p.name)}</b><div class="muted">${esc([p.role, p.company].filter(Boolean).join(', '))}</div><div>${(p.looking || []).map(t => `<span class="tg">${esc(t)}</span>`).join('')}${(p.offer || []).map(t => `<span class="tg of">${esc(t)}</span>`).join('')}</div>${p.linkedin ? `<div class="muted">${esc(p.linkedin)}</div>` : ''}<div class="row" style="margin-top:8px">${btns.map(([a, n, cl]) => `<button class="b ${cl}" data-a="${a}" data-id="${p.id}">${n}</button>`).join('')}</div></div>`; }
+function renderPolls(){
+  const c = D.cfg, A = D.auto || {}, pl = A.poll || {}, p = D.poll, hidden = new Set(c.hidden || []);
+  const held = !!pl.manual;
+  $('pollMode').className = 'box ' + (held ? 'hold' : 'ok');
+  setHtml($('pollMode'), held
+    ? `<div class="big">Held by you</div><p class="muted" style="margin:4px 0 10px">The poll does not change by itself. Phones and the wall show what you opened.</p><button class="b go" data-do="pollBack" style="width:100%">Back to the schedule</button>`
+    : `<div class="big">Follows the schedule</div><p class="muted" style="margin:4px 0 10px">${pl.open && pl.until ? (pl.next ? `This poll changes at ${esc(pl.until)}.` : `This poll closes at ${esc(pl.until)}.`) : (pl.next ? `The next poll opens at ${esc(pl.next.at)}.` : 'No poll is open now.')}</p><button class="b" data-do="pollHold" style="width:100%">Hold this poll</button>`);
+  setHtml($('pollNow'), p ? `<div dir="auto" style="font-weight:700;font-size:17px">${esc(p.q)}</div><div class="muted">${p.open ? 'Open' : 'Closed'}, ${p.total} ${p.total === 1 ? 'answer' : 'answers'}. ${p.type === 'words' ? 'Tap a word to hide it from the screen.' : ''}</div>
+    <div class="words">${(p.words || []).map(([w, k]) => `<button dir="auto" data-do="word" data-w="${esc(w)}" class="${hidden.has(w) ? 'hid' : ''}">${esc(w)}<i>${k}</i></button>`).join('')}</div>
+    <div class="row" style="margin-top:10px">${p.open ? '<button class="b" id="pClose" data-do="pollClose">Close poll</button>' : `<button class="b go" id="pOpen" data-do="pollOpenAgain" data-p="${esc(p.id)}">Open again</button>`}<button class="b warn" id="pReset" data-do="pollReset" data-p="${esc(p.id)}">Clear answers</button></div>` : '<p class="muted">No poll is selected.</p>');
+  setHtml($('pollList'), D.polls.map(x => `<div class="poll"><div><b dir="auto">${esc(x.q)}</b><div class="muted">${x.type === 'choice' ? 'Choices: ' + esc(x.options.join(', ')) : 'Word cloud'}${p && p.id === x.id ? ', on screen now' : ''}</div></div><button class="b go" data-do="pollOpen" data-p="${x.id}" ${p && p.id === x.id && p.open && held ? 'disabled' : ''}>Open</button></div>`).join(''));
+}
+function renderExport(){ setHtml($('exList'), EXPORTS.map(([k, n, d]) => `<button class="b left" data-x="${k}" data-do="export">${n}<br><span class="muted" style="font-weight:400">${esc(d)}</span></button>`).join('')); }
+function renderLog(){ setHtml($('logList'), D.log.length ? D.log.map(l => `<div><span class="muted">${fmt(l.at)}</span><span><b>${esc(l.who)}</b> ${esc(l.what)}</span></div>`).join('') : '<p class="muted">No actions yet.</p>'); }
+
+function render(){
+  if (!D) return;
+  const c = D.cfg;
+  $('me').textContent = WHO;
+  // a rehearsal banner on every tab
+  const rb = $('rehBanner'); rb.hidden = !D.reh;
+  if (D.reh) $('rehTxt').textContent = `Rehearsal. The clock reads ${(D.auto || {}).now || ''}${c.rehearsal ? ', until ' + fmt(c.rehearsal.until) : ''}. The wall and phones follow it.`;
+  // badges that show on every tab
+  const pend = D.pending || {}, nPend = (pend.photos || []).length + (pend.profiles || []).length + (pend.takeaways || []).length;
+  $('badge').hidden = !nPend; $('badge').textContent = nPend;
+  const lk = ((D.people || {}).locked || []).length, pb = $('pbadge'); pb.hidden = !lk; pb.textContent = lk; pb.className = 'hot';
+  const nd = needs().length, sb = $('sbadge'); sb.hidden = !nd; sb.textContent = nd; sb.className = 'hot';
+  ({status:renderStatus, people:renderPeople, screen:renderScreen, approve:renderApprove, polls:renderPolls, export:renderExport, log:renderLog})[TAB]();
+}
 const THUMBS = {};
 async function loadThumbs(){
   for (const img of document.querySelectorAll('#phWait img[data-id]')) {
@@ -246,24 +723,140 @@ async function loadThumbs(){
   }
 }
 
-/* controls that do not depend on data */
-$('spPrev').onclick = () => act({action:'speaker', index:Math.max(0, (D.cfg.speaker == null ? 0 : D.cfg.speaker) - 1)});
-$('spNext').onclick = () => act({action:'speaker', index:Math.min(SPEAKERS.length - 1, (D.cfg.speaker == null ? -1 : D.cfg.speaker) + 1)});
-$('spAuto').onclick = () => act({action:'speaker', index:null}, 'Speakers follow the clock');
-$('annGo').onclick = () => { const t = $('annTxt').value.trim(); if (!t) { toast('Write the announcement first'); return; } act({action:'ann', text:t, secs:+$('annSecs').value}, 'Announcement sent'); };
-$('annClear').onclick = () => { $('annTxt').value = ''; act({action:'ann', text:''}, 'Announcement cleared'); };
-$('thLight').onclick = () => act({action:'theme', theme:'light'}); $('thDark').onclick = () => act({action:'theme', theme:'dark'});
-$('wayGo').onclick = () => { const w = {}; WAYS.forEach(([k]) => { w[k] = $('w_' + k).value; }); act({action:'way', way:w}, 'Directions saved'); };
-$('reset').onclick = () => { if ($('reset').dataset.sure) { delete $('reset').dataset.sure; $('reset').textContent = 'Reset screen controls'; act({action:'reset'}, 'Screen controls reset'); } else { $('reset').dataset.sure = 1; $('reset').textContent = 'Tap again to reset everything to automatic'; } };
+/* ---------- actions ---------- */
+const DONE = {approvePhoto:'Photo approved', rejectPhoto:'Photo declined', hidePhoto:'Photo removed', approveProfile:'Profile approved', rejectProfile:'Profile declined', hideProfile:'Profile removed', approveTakeaway:'Takeaway approved', rejectTakeaway:'Takeaway declined', hideTakeaway:'Takeaway removed from the wall'};
+function approval(el){ const d = el.dataset, body = {action:d.a, id:d.id}; if (d.sid) body.sid = d.sid; if (d.at) body.at = +d.at; act(body, DONE[d.a]); }
+const RELEASE = {
+  mode:[{action:'mode', mode:'auto'}, 'The wall follows the clock'], scene:[{action:'pin', scene:null}, 'Scenes rotate again'], overlay:[{action:'overlay', overlay:null}, 'Back to the live screen'],
+  speaker:[{action:'speaker', index:null}, 'Speakers follow the clock'], poll:[{action:'pollManual', on:false}, 'Polls follow the schedule'], rx:[{action:'rx', mode:'auto'}, 'Reactions follow the clock'],
+  finale:[{action:'finale', step:null}, 'The finale runs by itself'], group:[{action:'groupPhoto', secs:null}, 'Countdown stopped']
+};
+const DO = {
+  release: el => { const r = RELEASE[el.dataset.what]; if (r) act(r[0], r[1]); },
+  mode: el => act({action:'mode', mode:el.dataset.m}, el.dataset.m === 'auto' ? 'Screen follows the clock' : 'Screen held'),
+  scene: el => act({action:'pin', scene:el.dataset.s || null}, el.dataset.s ? 'Scene held' : 'Scenes rotate again'),
+  video: el => act({action:'video', id:el.dataset.v || null}, el.dataset.v ? 'Video playing' : 'Video stopped'),
+  overlay: el => act({action:'overlay', overlay:el.dataset.o || null}),
+  theme: el => act({action:'theme', theme:el.dataset.th}),
+  rx: el => act({action:'rx', mode:el.dataset.m}, {auto:'Reactions follow the clock', on:'Reactions held on', off:'Reactions held off'}[el.dataset.m]),
+  finale: el => act({action:'finale', step:el.dataset.step || null}, el.dataset.step ? 'Finale step shown' : 'The finale runs by itself'),
+  gpStart: () => act({action:'groupPhoto', secs:60}, 'Group photo countdown started', {title:'Start the group photo countdown?', body:'The whole wall shows a 60 second countdown, a white flash at zero, then Thank You.', yes:'Start countdown'}),
+  gpStop: () => act({action:'groupPhoto', secs:null}, 'Countdown stopped'),
+  spPrev: () => act({action:'speaker', index:Math.max(0, (D.cfg.speaker == null ? 0 : D.cfg.speaker) - 1)}),
+  spNext: () => act({action:'speaker', index:Math.min(SPEAKERS.length - 1, (D.cfg.speaker == null ? -1 : D.cfg.speaker) + 1)}),
+  spAuto: () => act({action:'speaker', index:null}, 'Speakers follow the clock'),
+  ann: el => act({action:'ann', text:el.dataset.t, secs:30}, 'On the wall for 30 seconds'),
+  annGo: () => { const t = $('annTxt').value.trim(); if (!t) { toast('Write the announcement first'); return; } act({action:'ann', text:t, secs:+$('annSecs').value}, 'Announcement sent'); },
+  annClear: () => { $('annTxt').value = ''; act({action:'ann', text:''}, 'Announcement cleared'); },
+  wayGo: () => { const w = {}; WAYS.forEach(([k]) => { w[k] = $('w_' + k).value; }); act({action:'way', way:w}, 'Directions saved'); },
+  svSave: () => { const v = $('svLink').value.trim(); if (!v) { toast('Paste the survey address first'); return; } act({action:'links', survey:v}, 'Survey link saved').then(d => { if (d) delete $('svLink').dataset.touched; }); },
+  svClear: () => act({action:'links', survey:null}, 'Survey link removed', {title:'Remove the survey link?', body:'The thank you page stops showing the survey button.', yes:'Remove link'}).then(d => { if (d) { $('svLink').value = ''; delete $('svLink').dataset.touched; } }),
+  reset: () => act({action:'reset'}, 'Screen controls reset', {title:'Reset the screen controls?', body:'Mode, scene, speaker, video, announcement, overlay and theme go back to automatic. Polls, directions, hidden words and switches stay.', yes:'Reset controls', danger:true}),
+  word: el => { const w = el.dataset.w, hid = new Set(D.cfg.hidden || []).has(w); act({action:hid ? 'showWord' : 'hideWord', word:w}, hid ? 'Word restored' : 'Word hidden'); },
+  pollClose: () => act({action:'pollClose'}, 'Poll closed', {title:'Close the poll?', body:'Phones stop taking answers. The poll then stays as you left it until you tap Back to the schedule.', yes:'Close poll'}),
+  pollOpenAgain: el => act({action:'pollActivate', pid:el.dataset.p}, 'Poll open', {title:'Open this poll again?', body:'Phones can answer again. The schedule stops changing polls until you tap Back to the schedule.', yes:'Open poll'}),
+  pollReset: () => act({action:'pollReset', pid:D.poll.id}, 'Answers cleared', {title:'Clear all answers of this poll?', body:'Every answer is deleted and the word cloud starts again. This cannot be undone.', yes:'Clear answers', danger:true}),
+  pollOpen: el => { const q = (D.polls.find(x => x.id === el.dataset.p) || {}).q || 'this poll'; act({action:'pollActivate', pid:el.dataset.p}, 'Poll open on the screen and phones', {title:'Open this poll now?', body:`"${q}" opens on the wall and on every phone and is held until you tap Back to the schedule.`, yes:'Open poll'}); },
+  pollBack: () => act({action:'pollManual', on:false}, 'Polls follow the schedule'),
+  pollHold: () => act({action:'pollManual', on:true}, 'Poll held', {title:'Hold this poll?', body:'The schedule stops changing polls. The poll on screen now stays until you tap Back to the schedule.', yes:'Hold poll'}),
+  npGo: async () => { const d = await act({action:'pollAdd', q:$('npQ').value, type:$('npType').value, options:$('npOpts').value.split('\n').map(s => s.trim()).filter(Boolean)}, 'Poll added'); if (d) { $('npQ').value = ''; $('npOpts').value = ''; } },
+  rhPick: el => { $('rhTime').value = el.dataset.t; },
+  rhStart: () => { const t = $('rhTime').value; if (!/^\d\d:\d\d$/.test(t)) { toast('Choose a time first', true); return; } act({action:'rehearsal', hhmm:t}, 'Rehearsal started', {title:`Start a rehearsal at ${t}?`, body:'The clock on the wall and on every phone moves to this time for 2 hours. Polls, reactions and takeaways follow it. Stop it before the doors open on 17 November.', yes:'Start rehearsal'}); },
+  rhStop: () => act({action:'rehearsal', hhmm:null}, 'Rehearsal stopped', {title:'Stop the rehearsal?', body:'The wall and every phone go back to the real time.', yes:'Stop rehearsal'}),
+  reloadWall: () => act({action:'reload'}, 'The wall will reload', {title:'Reload the wall?', body:'The wall page restarts in a few seconds. Do not do this during a video.', yes:'Reload the wall'}),
+  repair: () => act({action:'repair'}, d => `Lists repaired: ${d.photos} photos, ${d.profiles} cards, ${d.takeaways} takeaways`, {title:'Repair the lists?', body:'Rebuilds the photo, card and takeaway lists from storage. It is safe and takes a few seconds.', yes:'Repair lists'}),
+  flag: el => { const k = el.dataset.flag, f = FLAGS.find(x => x[0] === k), on = !(D.cfg.flags && D.cfg.flags[k]); act({action:'flags', name:k, on}, `${f[1]}: ${on ? 'on' : 'off'}`, {title:`Turn ${on ? 'on' : 'off'} "${f[1]}"?`, body:`${f[2]} You can change it back at any time.`, yes:on ? 'Turn on' : 'Turn off'}); },
+  unlock: el => act({action:'peopleUnlock', id:el.dataset.id}, 'Unlocked', {title:`Unlock ${el.dataset.name || 'this person'}?`, body:'They can try their last 4 digits again, and sign in on up to 3 phones. Check their name first.', yes:'Unlock'}),
+  wipeGo: async () => { if ($('wipePhrase').value.trim() !== 'RESET MD26') return; const d = await act({action:'wipe', phrase:'RESET MD26'}, d => `Test data wiped, ${d.deleted || 0} items removed`, {title:'Wipe all test data?', body:'This deletes sign ins, cards, photos, poll answers, takeaways, connections, reactions and the log. The people list, the polls and the directions stay. It cannot be undone.', yes:'Wipe Test Data', danger:true}); if (d) { $('wipePhrase').value = ''; $('wipeGo').disabled = true; } },
+  export: el => download(el.dataset.x),
+  impClear: () => { $('impPaste').value = ''; $('impFile').value = ''; IMP = null; setHtml($('impPrev'), ''); $('impSend').disabled = true; $('impSend').textContent = 'Send people'; $('impRes').textContent = ''; },
+  impSend: async () => {
+    if (!IMP || !IMP.people.length || IMP.error) return;
+    const n = IMP.people.length;
+    const d = await act({action:'peopleImport', people:IMP.people}, null, {title:`Send ${plural(n, 'person', 'people')}?`, body:'This replaces the people list on the server. Only name, company, job title, LinkedIn, topics, advisor preference, photo consent and the last 4 digits are sent. Email addresses and full numbers stay in this browser.', yes:'Send people'});
+    if (!d) return;
+    const why = {}; (d.skipped || []).forEach(s => { why[s.why] = (why[s.why] || 0) + 1; });
+    const sk = Object.entries(why).map(([w, k]) => `${plural(k, 'row', 'rows')}: ${w}`).join('; ');
+    $('impRes').textContent = `Imported ${plural(d.count, 'person', 'people')}.${d.replaced ? ' ' + plural(d.replaced, 'row', 'rows') + ' replaced an earlier one.' : ''}${sk ? ' The server skipped ' + sk + '.' : ''}`;
+    toast('People imported');
+  },
+  teamGo: () => teamUpload()
+};
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-go],[data-a],[data-do]'); if (!t || t.disabled) return;
+  if (t.dataset.go) { showTab(t.dataset.go); window.scrollTo(0, 0); return; }
+  if (t.dataset.a) { approval(t); return; }
+  const f = DO[t.dataset.do]; if (f) f(t);
+});
 $('npType').onchange = () => { $('npOptsBox').hidden = $('npType').value !== 'choice'; };
-$('npGo').onclick = () => act({action:'pollAdd', q:$('npQ').value, type:$('npType').value, options:$('npOpts').value.split('\n').map(s => s.trim()).filter(Boolean)}, 'Poll added').then(() => { $('npQ').value = ''; $('npOpts').value = ''; });
+$('wipePhrase').addEventListener('input', () => { $('wipeGo').disabled = $('wipePhrase').value.trim() !== 'RESET MD26'; });
+$('svLink').addEventListener('input', () => { $('svLink').dataset.touched = 1; });
+$('refreshNow').onclick = () => { refresh(true); if (TAB === 'status') loadState(); toast('Refreshed'); };
 
-async function refresh(){
-  try { D = await get(); lastOk = Date.now(); render(); $('st').className = 'st'; $('st').innerHTML = '<i></i>Connected. Changes reach the screen in a few seconds.'; }
-  catch(e) { if (PIN) { $('st').className = 'st off'; $('st').innerHTML = '<i></i>Connection lost, retrying'; } }
+async function download(what){
+  try {
+    const r = await fetch('/api/export/' + what, {headers:H(), cache:'no-store'});
+    if (r.status === 401) { logout('That PIN did not work.'); return; }
+    if (!r.ok) { toast('That export did not work. Try again.', true); return; }
+    const blob = await r.blob(), a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = `md26-${what}.csv`; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    toast('Downloaded md26-' + what + '.csv');
+  } catch(e) { toast('No connection. Try again.', true); }
 }
-function start(){ $('gate').hidden = true; $('app').hidden = false; render(); $('st').className = 'st'; $('st').innerHTML = '<i></i>Connected. Changes reach the screen in a few seconds.'; setInterval(() => { if (!document.hidden && !busy) refresh(); }, 5000); }
-if (PIN && WHO) { get().then(d => { D = d; start(); }).catch(() => { if (!$('gErr').textContent) logout(''); }); } else { $('gate').hidden = false; }
+// A large phone photo is scaled down so it fits the 4 MB limit.
+async function prepPhoto(f){
+  if (f.size <= 3.5 * 1024 * 1024 && /^image\/(jpeg|png|webp)$/.test(f.type)) return f;
+  const bmp = await createImageBitmap(f), k = Math.min(1, 2400 / Math.max(bmp.width, bmp.height));
+  const cv = document.createElement('canvas'); cv.width = Math.round(bmp.width * k); cv.height = Math.round(bmp.height * k);
+  cv.getContext('2d').drawImage(bmp, 0, 0, cv.width, cv.height);
+  return new Promise(res => cv.toBlob(res, 'image/jpeg', .85));
+}
+async function teamUpload(){
+  const files = [...$('teamFiles').files]; if (!files.length) { toast('Choose at least one photo', true); return; }
+  const cap = $('teamCap').value.trim(); let ok = 0, last = '';
+  $('teamGo').disabled = true;
+  for (let i = 0; i < files.length; i++) {
+    $('teamRes').textContent = `Adding photo ${i + 1} of ${files.length}`;
+    try {
+      const body = await prepPhoto(files[i]);
+      const r = await fetch('/api/photo', {method:'POST', headers:{'x-pin':PIN, 'content-type':body.type, 'x-name':encodeURIComponent('Team'), 'x-caption':encodeURIComponent(cap)}, body});
+      if (r.status === 401) { logout('That PIN did not work.'); return; }
+      if (r.ok) ok++; else last = (await r.json().catch(() => ({}))).error || '';
+    } catch(e) { last = 'No connection.'; }
+  }
+  $('teamGo').disabled = false;
+  $('teamRes').textContent = `${ok} of ${files.length} added to the photo wall.${last ? ' ' + last : ''}`;
+  if (ok) { $('teamFiles').value = ''; toast(ok === 1 ? 'Photo added' : ok + ' photos added'); refresh(true); }
+}
+
+/* ---------- polling ---------- */
+async function refresh(force){
+  if (refreshing && !force) return; refreshing = true; const my = ++seq;
+  try {
+    const d = await get(); if (my < seq) return;
+    D = d; lastOk = Date.now(); render(); showConn();
+    if (TAB === 'status' && (!ST || ++tick % 2 === 0)) loadState();
+  } catch(e) { if (PIN) showConn(); }
+  finally { refreshing = false; }
+}
+function showConn(){
+  const el = $('st'), age = Date.now() - lastOk;
+  if (!lastOk || age < 20000) { el.className = 'st'; el.innerHTML = '<i></i>Connected. Updates every 8 seconds.'; }
+  else { el.className = 'st off'; el.innerHTML = `<i></i>No connection since ${esc(fmt(lastOk))}. Showing the last data.`; }
+}
+let timer = 0;
+function start(){
+  $('gate').hidden = true; $('app').hidden = false;
+  const saved = ls.get('md_tab'); showTab(TABS.includes(saved) ? saved : 'status');
+  render(); showConn(); readImport($('impPaste').value);
+  clearInterval(timer);
+  // every 8 seconds, only while the page is visible
+  timer = setInterval(() => { if (!document.hidden && !busy) refresh(); else if (!document.hidden) showConn(); }, 8000);
+  loadState();
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden && PIN && !$('app').hidden) { refresh(true); if (TAB === 'status') loadState(); } });
+if (PIN && WHO) { get().then(d => { D = d; lastOk = Date.now(); start(); }).catch(() => { if (!$('gErr').textContent) logout(''); }); } else { $('gate').hidden = false; }
 })();
 </script>
 </body>
