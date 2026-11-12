@@ -1,4 +1,5 @@
 node_modules
 .netlify
-dev/blobs
-dev/shots
+.env
+data
+dev

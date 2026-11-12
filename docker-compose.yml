@@ -1,0 +1,10 @@
+services:
+  mentorship-day-live:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      REMOTE_PIN: ${REMOTE_PIN:?Set REMOTE_PIN in .env}
+    volumes:
+      - ./data:/data

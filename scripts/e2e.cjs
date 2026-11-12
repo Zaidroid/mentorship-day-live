@@ -1,5 +1,5 @@
 const { chromium, devices } = require('playwright');
-const B = 'http://localhost:8899';
+const B = process.env.BASE || 'http://localhost:8899';
 (async () => {
   const b = await chromium.launch(); const errs = [];
   const phone = await b.newContext({ ...devices['iPhone 13'] }); const p = await phone.newPage();
@@ -9,7 +9,7 @@ const B = 'http://localhost:8899';
   await p.click('#t-poll'); await p.waitForTimeout(500);
   await p.fill('#word', 'Confidence'); await p.click('#sendWord'); await p.waitForTimeout(900);
   await p.screenshot({ path: 'dev/shots/ph_poll.png' });
-  await p.click('#t-photo'); await p.setInputFiles('#file', '/tmp/seed.jpg'); await p.waitForTimeout(800);
+  await p.click('#t-photo'); await p.setInputFiles('#file', 'scripts/sample.jpg'); await p.waitForTimeout(800);
   await p.fill('#cap', 'Coffee break in the Main Hall'); await p.fill('#pname', 'E2E Tester'); await p.click('#send'); await p.waitForTimeout(900);
   console.log('photo msg:', await p.textContent('#photoMsg'));
   await p.screenshot({ path: 'dev/shots/ph_photo.png' });
