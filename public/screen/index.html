@@ -12,8 +12,8 @@
 @font-face{font-family:SS3;font-weight:700;src:url(/assets/ss3-700.woff2) format('woff2')}
 @font-face{font-family:SS3;font-weight:900;src:url(/assets/ss3-900.woff2) format('woff2')}
 :root{--red:#DF6236;--teal:#2F9CC3;--navy:#1F2E33;--orange:#E78B3F;--u:10px;--ease:cubic-bezier(.2,.8,.2,1)}
-[data-theme=light]{--bg1:#E3E3E3;--bg2:#F7F7F7;--ink:#1F2E33;--ink2:rgba(31,46,51,.70);--ink3:rgba(31,46,51,.44);--line:rgba(31,46,51,.14);--glass:rgba(255,255,255,.64);--glassline:rgba(255,255,255,.95);--shadow:0 calc(var(--u)*.6) calc(var(--u)*2.6) rgba(31,46,51,.07);--soft2:rgba(31,46,51,.08);--chip:transparent;--redsoft:rgba(223,98,54,.12)}
-[data-theme=dark]{--bg1:#1F2E33;--bg2:#162226;--ink:#FFFFFF;--ink2:rgba(255,255,255,.72);--ink3:rgba(255,255,255,.44);--line:rgba(255,255,255,.14);--glass:rgba(255,255,255,.06);--glassline:rgba(255,255,255,.10);--shadow:none;--soft2:rgba(255,255,255,.10);--chip:#FFFFFF;--redsoft:rgba(223,98,54,.22)}
+[data-theme=light]{--glass-solid:rgba(250,250,250,.86);--bg1:#E3E3E3;--bg2:#F7F7F7;--ink:#1F2E33;--ink2:rgba(31,46,51,.70);--ink3:rgba(31,46,51,.44);--line:rgba(31,46,51,.14);--glass:rgba(255,255,255,.64);--glassline:rgba(255,255,255,.95);--shadow:0 calc(var(--u)*.6) calc(var(--u)*2.6) rgba(31,46,51,.07);--soft2:rgba(31,46,51,.08);--chip:transparent;--redsoft:rgba(223,98,54,.12)}
+[data-theme=dark]{--glass-solid:rgba(41,55,60,.86);--bg1:#1F2E33;--bg2:#162226;--ink:#FFFFFF;--ink2:rgba(255,255,255,.72);--ink3:rgba(255,255,255,.44);--line:rgba(255,255,255,.14);--glass:rgba(255,255,255,.06);--glassline:rgba(255,255,255,.10);--shadow:none;--soft2:rgba(255,255,255,.10);--chip:#FFFFFF;--redsoft:rgba(223,98,54,.22)}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{width:100%;height:100%;overflow:hidden;color:var(--ink);font-family:SS3,system-ui,sans-serif;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;background:linear-gradient(180deg,var(--bg1),var(--bg2));transition:color .9s var(--ease)}
 ::view-transition-old(root),::view-transition-new(root){animation:none;mix-blend-mode:normal}
@@ -23,6 +23,9 @@ html,body{width:100%;height:100%;overflow:hidden;color:var(--ink);font-family:SS
 #app[data-layout=standard] #rail{display:none}
 .glass{background:var(--glass);border:1px solid var(--glassline);border-radius:10px;box-shadow:var(--shadow);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
 .leaf{border-radius:calc(var(--u)*.7) calc(var(--u)*3) 0 calc(var(--u)*3)}
+/* lite: set by the performance governor. Glass becomes a solid fill, no backdrop blur anywhere */
+[data-lite] .glass:not(.free){backdrop-filter:none;-webkit-backdrop-filter:none;background:var(--glass-solid)}
+[data-lite] *{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 
 /* Now zone */
 #now{display:flex;flex-direction:column;min-height:0;padding:calc(var(--u)*2.6) calc(var(--u)*2.8) calc(var(--u)*2.4)}
@@ -427,8 +430,28 @@ function fmt(m){ return String(Math.floor(m/60)).padStart(2,'0') + ':' + String(
 function nowMin(){ const v = venue(); return v.h*60 + v.m + v.s/60 + v.ms/60000; }
 function mmss(sec){ sec = Math.max(0, Math.round(sec)); const h = Math.floor(sec/3600), m = Math.floor(sec%3600/60), s = sec%60; return (h ? h + ':' + String(m).padStart(2,'0') : String(m)) + ':' + String(s).padStart(2,'0'); }
 
-/* ============ Performance ============ */
-const GOV = {lite:false, fps:null};
+/* ============ Performance governor ============ */
+// Frame time is measured for the first 6 seconds (after 1.5 seconds of warm up, while fonts and photos
+// load) and then over the last 120 frames. When the average stays over 22 ms for 3 seconds, the wall goes
+// lite for the rest of the session: no backdrop blur (glass becomes a solid fill), no blur in reveals,
+// half the background nodes, at most 30 effect particles. The background keeps moving.
+// ?lite=1 and ?lite=0 force it. A gap over 250 ms is a pause (hidden page), not a slow frame.
+const GOV = {force:/^[01]$/.test(P.get('lite') || '') ? P.get('lite') : null, lite:false, why:'', fps:null, avg:0, buf:[], sum:0, t0:0, last:0, slow:0, at:0,
+  WARM:1500, FIRST:6000, ROLL:120, LIMIT:22, HOLD:3000};
+function goLite(why){ if (GOV.lite) return; GOV.lite = true; GOV.why = why; GOV.at = Date.now(); document.documentElement.dataset.lite = ''; }
+function govFrame(t){
+  requestAnimationFrame(govFrame);
+  if (!GOV.t0) { GOV.t0 = GOV.last = t; return; }
+  const dt = t - GOV.last; GOV.last = t;
+  if (t - GOV.t0 < GOV.WARM || dt > 250) return;
+  GOV.buf.push(dt); GOV.sum += dt;
+  if (t - GOV.t0 > GOV.WARM + GOV.FIRST) while (GOV.buf.length > GOV.ROLL) GOV.sum -= GOV.buf.shift();
+  GOV.avg = GOV.sum / GOV.buf.length; GOV.fps = Math.round(1000 / GOV.avg);
+  if (GOV.lite || GOV.force || GOV.buf.length < 10) return;
+  if (GOV.avg > GOV.LIMIT) { if (!GOV.slow) GOV.slow = t; else if (t - GOV.slow >= GOV.HOLD) goLite(`average frame ${GOV.avg.toFixed(1)} ms for 3 seconds`); } else GOV.slow = 0;
+}
+if (GOV.force === '1') goLite('lite=1 in the URL');
+requestAnimationFrame(govFrame);
 
 /* ============ State ============ */
 // Theme: theme= in the URL wins over everything until the T key is pressed. Otherwise the sheet's Theme,
@@ -708,8 +731,17 @@ function renderCheck(){
   const corner = (t, l) => `<b style="${t}:0;${l}:0;border-${t}:calc(var(--u)*1.2) solid #2F9CC3;border-${l}:calc(var(--u)*1.2) solid #2F9CC3"></b>`;
   $('check').innerHTML = `<div class="grid">${g.join('')}</div><div class="edge"></div>${corner('top','left')}${corner('top','right')}${corner('bottom','left')}${corner('bottom','right')}<div class="cross"></div>
     <div class="info glass"><strong>Screen check</strong><div>${W} x ${H} browser pixels</div><div>${Math.round(W * dpr)} x ${Math.round(H * dpr)} device pixels</div><div>Shape ${(W / H).toFixed(2)} to 1</div><div>Layout: ${L.wide ? 'ultra wide, with side panel' : (L.n > 1 ? L.n + ' columns' : 'one column')}</div>
+    <div id="ckFps"></div><div id="ckLite"></div>
     <div>The red frame and blue corners should sit exactly on the edges of the wall.</div><div style="font-size:calc(var(--u)*1.3);margin-top:calc(var(--u)*1)">This is the smallest text the screen uses. Check it is readable from the back of the hall.</div></div>`;
+  checkPerf();
 }
+// The live part of the screen check: frame rate and lite state, every half second while it shows.
+function checkPerf(){
+  const f = $('ckFps'), l = $('ckLite'); if (!f || $('check').classList.contains('hide')) return;
+  f.innerHTML = GOV.fps ? `Frame rate <b>${GOV.fps} fps</b>, ${GOV.avg.toFixed(1)} ms a frame` : 'Frame rate: measuring';
+  l.innerHTML = GOV.lite ? `Lite mode <b>on</b>: ${esc(GOV.why)}` : `Lite mode <b>off</b>${GOV.force === '0' ? ', held off by lite=0' : ', full effects'}`;
+}
+setInterval(checkPerf, 500);
 
 /* shared pieces */
 function emptyJoin(title, text, c){ const col = c.w < 70;
@@ -827,7 +859,8 @@ function showScene(st, animate){
 }
 function reveal(root, animate){
   root.querySelectorAll('.rv').forEach((e, i) => { if (!animate || matchMedia('(prefers-reduced-motion: reduce)').matches) { e.style.opacity = 1; return; }
-    e.animate([{opacity:0, transform:`translateY(${U * 2.4}px)`, filter:'blur(4px)'}, {opacity:1, transform:'none', filter:'blur(0)'}], {duration:820, delay:Math.min(i, 14) * 65, easing:'cubic-bezier(.2,.8,.2,1)', fill:'forwards'}); });
+    const b = GOV.lite ? {} : {filter:'blur(4px)'}, b0 = GOV.lite ? {} : {filter:'blur(0)'};
+    e.animate([{opacity:0, transform:`translateY(${U * 2.4}px)`, ...b}, {opacity:1, transform:'none', ...b0}], {duration:820, delay:Math.min(i, 14) * 65, easing:'cubic-bezier(.2,.8,.2,1)', fill:'forwards'}); });
 }
 function refreshScenes(){ slotState.forEach(st => { const res = R[st.id](ctxFor(st)); st.res = res; st.el.querySelector('h2').textContent = res.title; const sb = st.el.querySelector('.sb'); sb.innerHTML = res.html; if (res.after) res.after(sb); countUps(sb); reveal(sb, false); }); renderRail(); }
 const COUNT_MEM = {};
@@ -973,15 +1006,17 @@ function demo(){ if (!S.demo) return; const m = nowMin();
   const n = Math.max(0, Math.min(DEMO_WORDS.length, Math.floor((m - 570) / 4))); if (!S.pollTotal) S.poll = DEMO_WORDS.slice(0, n).map((w, i) => [w, Math.max(1, Math.round(16 / (1 + i * .42)))]); }
 
 /* ============ Background: drifting network of light, like the Summit artwork ============ */
-const cv = $('bg'), cx = cv.getContext('2d'); let nodes = [], orbs = [], pulses = [], lastTotal = -1, lastFrame = 0;
+const cv = $('bg'), cx = cv.getContext('2d'); let nodes = [], orbs = [], pulses = [], lastTotal = -1, lastFrame = 0, bgN = 0;
+const particleMax = () => GOV.lite ? 30 : 80; // effect particles alive at once
 function initBg(){
   const k = Math.min(1, 1600 / innerWidth); cv.width = innerWidth * k; cv.height = innerHeight * k; cx.setTransform(k, 0, 0, k, 0, 0);
-  const n = Math.round(Math.max(10, Math.min(26, innerWidth / 160)));
-  nodes = Array.from({length:n}, () => ({x:Math.random() * innerWidth, y:Math.random() * innerHeight * .9, vx:(Math.random() - .5) * .12, vy:(Math.random() - .5) * .08, r:Math.random() * U * 2.2 + U * .8, ph:Math.random() * 6.28}));
+  bgN = Math.round(Math.max(10, Math.min(26, innerWidth / 160)));
+  nodes = Array.from({length:GOV.lite ? Math.ceil(bgN / 2) : bgN}, () => ({x:Math.random() * innerWidth, y:Math.random() * innerHeight * .9, vx:(Math.random() - .5) * .12, vy:(Math.random() - .5) * .08, r:Math.random() * U * 2.2 + U * .8, ph:Math.random() * 6.28}));
   orbs = Array.from({length:4}, (_, i) => ({x:innerWidth * (.15 + i * .25), y:innerHeight * (.2 + (i % 2) * .4), r:Math.max(innerWidth, innerHeight) * (.12 + Math.random() * .08), ph:Math.random() * 6.28}));
 }
 function bgLoop(t){
   requestAnimationFrame(bgLoop); if (t - lastFrame < 33) return; lastFrame = t;
+  if (GOV.lite && nodes.length > Math.ceil(bgN / 2)) { nodes.length = Math.ceil(bgN / 2); pulses = pulses.filter(q => q.a < nodes.length && q.b < nodes.length); }
   const W = innerWidth, H = innerHeight, s = t / 1000, dark = document.documentElement.dataset.theme === 'dark';
   cx.clearRect(0, 0, W, H);
   const lc = dark ? '120,190,215' : '255,255,255';
@@ -993,7 +1028,7 @@ function bgLoop(t){
   pulses = pulses.filter(q => q.t < 1);
   pulses.forEach(q => { q.t += .01; const a = nodes[q.a], b = nodes[q.b]; if (!a || !b) return; const x = a.x + (b.x - a.x) * q.t, y = a.y + (b.y - a.y) * q.t; const g = cx.createRadialGradient(x, y, 0, x, y, U * 2.4); g.addColorStop(0, q.c); g.addColorStop(1, 'rgba(255,255,255,0)'); cx.fillStyle = g; cx.beginPath(); cx.arc(x, y, U * 2.4, 0, 6.29); cx.fill(); });
 }
-function burst(n){ for (let i = 0; i < n && nodes.length > 2; i++) { const a = Math.floor(Math.random() * nodes.length); let b = (a + 1 + Math.floor(Math.random() * (nodes.length - 1))) % nodes.length; pulses.push({a, b, t:0, c: Math.random() < .5 ? 'rgba(223,98,54,.9)' : 'rgba(47,156,195,.9)'}); } }
+function burst(n){ for (let i = 0; i < n && nodes.length > 2 && pulses.length < particleMax(); i++) { const a = Math.floor(Math.random() * nodes.length); let b = (a + 1 + Math.floor(Math.random() * (nodes.length - 1))) % nodes.length; pulses.push({a, b, t:0, c: Math.random() < .5 ? 'rgba(223,98,54,.9)' : 'rgba(47,156,195,.9)'}); } }
 function checkSparks(){ const total = SESSIONS.reduce((a, s) => a + s.booked, 0) + SLOTS.filter(x => x.status === 'Booked').length + (S.checkedIn || 0) + (S.pollTotal || 0) + S.photos.length + S.profiles.length; if (lastTotal >= 0 && total > lastTotal) burst(1 + Math.floor((total - lastTotal) / 5)); lastTotal = total; if (Math.random() < .12) burst(1); }
 
 /* ============ Operator keys ============ */
@@ -1077,7 +1112,7 @@ requestAnimationFrame(bgLoop); requestAnimationFrame(tickerLoop);
 wake();
 if (!P.has('quiet')) setTimeout(() => toast('Press F for full screen and H for controls'), 1200);
 // For probes and tests (scripts/probe.cjs, scripts/wall-check.cjs). Reading it changes nothing.
-window.__md = {S, slotState, GOV, RELOAD, CLOCK, WD, ERR, L:() => L, venue, nowMin, beatBody,
+window.__md = {S, slotState, GOV, RELOAD, CLOCK, WD, ERR, L:() => L, venue, nowMin, beatBody, bg:() => ({nodes:nodes.length, full:bgN, pulses:pulses.length, max:particleMax()}),
   force(id){ if (!R[id]) return -1; let i = slotState.findIndex(st => st.scenes.includes(id)); if (i < 0) i = 0; const st = slotState[i]; if (!st) return -1; if (!st.scenes.includes(id)) st.scenes.push(id); st.idx = st.scenes.indexOf(id); st.since = Date.now(); showScene(st, true); return i; }};
 })();
 </script>

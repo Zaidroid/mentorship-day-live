@@ -181,6 +181,60 @@ check('polling-budget', async () => {
   return [ok, `requests in ${Math.round((Date.now() - t1) / 1000)} s from load: ${JSON.stringify(count)}; photos fetched twice: ${photoRepeats} (budget: state every 3 s, the 3 sheet tabs at load and every 60 s, a beat at 8 s and every 60 s, snap only when snapV changes)`];
 });
 
+/* ---------- Task 2: performance governor ---------- */
+
+// Blocks the main thread for ms in every animation frame, as a slow wall computer would.
+const HOG = ms => `(() => { function hog(){ if (window.__hogStop) return; const e = performance.now() + ${ms}; while (performance.now() < e); requestAnimationFrame(hog); } requestAnimationFrame(hog); })()`;
+const liteFacts = () => { const g = document.querySelector('.glass'), cs = g && getComputedStyle(g); const m = window.__md; return { lite: document.documentElement.hasAttribute('data-lite'), why: m.GOV.why, fps: m.GOV.fps, avg: +m.GOV.avg.toFixed(1), bg: m.bg(), backdrop: cs ? cs.backdropFilter : '', fill: cs ? cs.backgroundColor : '' }; };
+
+check('governor-goes-lite', async () => {
+  const w = await wall('/screen/?t=11:20&quiet');
+  await sleep(2500);
+  const before = await md(w.p, liteFacts);
+  await w.p.evaluate(HOG(32));
+  const t1 = Date.now(); let took = -1;
+  while (Date.now() - t1 < 15000) { await sleep(250); if (await md(w.p, () => document.documentElement.hasAttribute('data-lite'))) { took = Date.now() - t1; break; } }
+  await w.p.evaluate(() => { window.__hogStop = true; });
+  await sleep(4000);
+  const after = await md(w.p, liteFacts);
+  await w.close();
+  const ok = !before.lite && took >= 3000 && took < 12000 && after.lite && after.bg.nodes === Math.ceil(after.bg.full / 2) && after.bg.max === 30 && after.backdrop === 'none' && /0\.86\)$/.test(after.fill);
+  return [ok, `before: lite ${before.lite}, ${before.fps} fps; frames blocked 32 ms: lite after ${took} ms (${after.why}); 4 s after the frames are fast again: lite ${after.lite}, ${after.fps} fps; nodes ${after.bg.nodes} of ${after.bg.full}, particle cap ${after.bg.max}, glass backdrop ${after.backdrop}, fill ${after.fill}`];
+});
+
+// Headless Chromium on a busy build machine composites in software and is slow at full HD, so the
+// governor rightly goes lite there. This check uses a small page, where frames are fast on any machine.
+check('governor-stays-full', async () => {
+  const w = await wall('/screen/?t=11:20&quiet', '640x360');
+  await sleep(12000);
+  const f = await md(w.p, liteFacts);
+  await w.close();
+  return [!f.lite && f.fps > 40, `fast frames (640x360), 12 s: lite ${f.lite}, ${f.fps} fps (${f.avg} ms), nodes ${f.bg.nodes} of ${f.bg.full}`];
+});
+
+check('governor-url-force', async () => {
+  const w = await wall('/screen/?t=11:20&quiet&lite=0');
+  await w.p.evaluate(HOG(32));
+  await sleep(9000);
+  const off = await md(w.p, liteFacts);
+  await w.close();
+  const w2 = await wall('/screen/?t=11:20&quiet&lite=1');
+  await sleep(600);
+  const on = await md(w2.p, liteFacts);
+  await w2.close();
+  return [!off.lite && on.lite && on.bg.nodes === Math.ceil(on.bg.full / 2), `lite=0 with frames blocked 32 ms for 9 s: lite ${off.lite} (${off.fps} fps); lite=1: lite ${on.lite} at once (${on.why}), nodes ${on.bg.nodes} of ${on.bg.full}`];
+});
+
+check('screen-check-shows-perf', async () => {
+  const w = await wall('/screen/?t=11:20&quiet');
+  await sleep(3500);
+  await w.p.keyboard.press('k');
+  await sleep(1200);
+  const t = await md(w.p, () => ({ fps: (document.getElementById('ckFps') || {}).textContent || '', lite: (document.getElementById('ckLite') || {}).textContent || '', shown: !document.getElementById('check').classList.contains('hide') }));
+  await w.close();
+  return [t.shown && /\d+ fps/.test(t.fps) && /Lite mode (on|off)/.test(t.lite), `screen check: "${t.fps}", "${t.lite}"`];
+});
+
 (async () => {
   if (process.argv.includes('--list')) { CHECKS.forEach(c => console.log(c.name)); return; }
   browser = await chromium.launch();
