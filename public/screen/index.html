@@ -37,7 +37,9 @@ m-w{display:inline}
 [data-lite] *{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 
 /* Now zone */
-#now{display:flex;flex-direction:column;min-height:0;padding:calc(var(--u)*2.6) calc(var(--u)*2.8) calc(var(--u)*2.4)}
+/* Every part of #app has a fixed place in the grid, so the moment can lie over the stage and the rail
+   without pushing them out of their cells. */
+#now{grid-row:1;grid-column:1;display:flex;flex-direction:column;min-height:0;padding:calc(var(--u)*2.6) calc(var(--u)*2.8) calc(var(--u)*2.4)}
 .wm h1{font-weight:700;font-size:calc(var(--u)*4.4);line-height:1;color:var(--red);letter-spacing:-.01em;white-space:nowrap}
 .wm i{display:block;height:calc(var(--u)*.55);background:var(--teal);margin-top:calc(var(--u)*1.2);width:100%}
 .wm span{display:block;font-size:calc(var(--u)*1.6);color:var(--ink2);margin-top:calc(var(--u)*1.1)}
@@ -61,7 +63,7 @@ m-w{display:inline}
 .logos img{display:block;width:auto}
 
 /* Stage */
-#stage{position:relative;min-width:0;min-height:0;display:flex;gap:calc(var(--u)*3)}
+#stage{grid-row:1;grid-column:2;position:relative;min-width:0;min-height:0;display:flex;gap:calc(var(--u)*3)}
 .slot{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column}
 .sh{display:flex;align-items:flex-end;gap:calc(var(--u)*2);margin:calc(var(--u)*.6) 0 calc(var(--u)*2.2)}
 .sh h2{font-weight:700;font-size:calc(var(--u)*3.4);line-height:1;color:var(--red);white-space:nowrap}
@@ -140,7 +142,7 @@ m-w{display:inline}
 .legend i.n{border-color:var(--red);background:var(--red)}
 
 /* rail */
-#rail{display:flex;flex-direction:column;gap:calc(var(--u)*1.8);min-height:0}
+#rail{grid-row:1;grid-column:3;display:flex;flex-direction:column;gap:calc(var(--u)*1.8);min-height:0}
 .mod{padding:calc(var(--u)*2) calc(var(--u)*2.2)}
 .mod h3{display:flex;align-items:baseline;justify-content:space-between;font-weight:700;font-size:calc(var(--u)*2.1);margin-bottom:calc(var(--u)*1.6)}
 .mod h3 em{font-style:normal;font-weight:300;font-size:calc(var(--u)*3.8);line-height:.8;color:var(--teal)}
@@ -241,7 +243,7 @@ m-w{display:inline}
 .recap .kpi b{font-size:calc(var(--u)*7.4);color:var(--ink)}
 
 /* garden timeline */
-#garden{grid-column:1/-1;position:relative;margin:0 calc(var(--u)*-3.4)}
+#garden{grid-row:2;grid-column:1/-1;position:relative;margin:0 calc(var(--u)*-3.4)}
 .fl{position:absolute;bottom:0;width:calc(var(--u)*3.4);height:calc(var(--u)*8);transform-origin:50% 100%;transition:opacity var(--t-e) var(--ease)}
 .fl svg{display:block;width:100%;height:100%}
 .fl.past{opacity:.38}
@@ -254,7 +256,7 @@ m-w{display:inline}
 .fl-l.on b{color:var(--red)}
 
 /* band with ticker */
-#band{grid-column:1/-1;margin:0 calc(var(--u)*-3.4);display:flex;flex-direction:column;gap:calc(var(--u)*.35)}
+#band{grid-row:3;grid-column:1/-1;margin:0 calc(var(--u)*-3.4);display:flex;flex-direction:column;gap:calc(var(--u)*.35)}
 .thin{height:calc(var(--u)*.45);background:var(--teal);position:relative}
 .thin i{position:absolute;left:0;top:0;bottom:0;background:var(--red);transition:width 1s linear}
 #needle{position:absolute;top:50%;width:calc(var(--u)*1.6);height:calc(var(--u)*1.6);margin:calc(var(--u)*-.8) 0 0 calc(var(--u)*-.8);border-radius:50%;background:var(--red);box-shadow:0 0 0 calc(var(--u)*.5) var(--redsoft),0 0 calc(var(--u)*2) rgba(223,98,54,.6);transition:left 1s linear;z-index:2}
@@ -271,16 +273,29 @@ m-w{display:inline}
 .leaves svg{display:block;width:100%;height:100%}
 
 /* moments */
-#moment{position:absolute;inset:0;z-index:5;display:none;flex-direction:column;justify-content:center;padding:calc(var(--u)*4) calc(var(--u)*5);overflow:hidden}
+/* A moment covers the stage and, on an ultra wide wall, the rail. What it covers recedes. */
+#moment{grid-row:1;grid-column:2;z-index:5;display:none;flex-direction:column;justify-content:center;min-width:0;min-height:0;padding:calc(var(--u)*4) calc(var(--u)*5);overflow:hidden}
+#app[data-layout=wide] #moment{grid-column:2 / 4}
 #moment.show{display:flex}
+#stage,#rail{transition:opacity var(--t-e) var(--ease-io),transform var(--t-e) var(--ease-io)}
+#app.mom #stage,#app.mom #rail{opacity:0;transform:scale(.97)}
 #moment .k{display:flex;align-items:center;gap:calc(var(--u)*1.2);font-weight:600;font-size:calc(var(--u)*3);color:var(--ink)}
-#moment h1{font-weight:700;font-size:calc(var(--u)*10.5);line-height:.92;letter-spacing:-.02em;margin-top:calc(var(--u)*1.6);color:var(--red)}
+#moment h1{font-weight:700;font-size:calc(var(--u)*10.5);line-height:.92;letter-spacing:-.02em;margin-top:calc(var(--u)*1.6);color:var(--red);text-wrap:balance}
 #moment .rule{height:calc(var(--u)*.8);background:var(--teal);margin-top:calc(var(--u)*2.6);width:60%}
 #moment p{font-size:calc(var(--u)*2.8);color:var(--ink2);margin-top:calc(var(--u)*2.4)}
-#moment .mr{display:flex;gap:calc(var(--u)*3.6);margin-top:calc(var(--u)*4);flex-wrap:wrap}
-#moment .mr div{display:flex;flex-direction:column;align-items:flex-start;gap:calc(var(--u)*1);max-width:calc(var(--u)*44)}
-#moment .mr .pill{font-size:calc(var(--u)*2);padding:calc(var(--u)*.9) calc(var(--u)*1.8)}
-#moment .mr strong{font-weight:700;font-size:calc(var(--u)*2.1);line-height:1.15}
+#moment .cd{position:relative;font-weight:300;line-height:.84;letter-spacing:-.04em;color:var(--red);margin-top:calc(var(--u)*1.4)}
+/* the countdown clip is exactly one line tall; the old and the new number stack in it and move up together */
+#moment .cd m-l{height:.84em;padding:.1em 0 .06em;margin:-.1em 0 -.06em;box-sizing:content-box}
+#moment .cd m-i{display:block}
+#moment .mr{display:flex;gap:calc(var(--u)*3.4);margin-top:calc(var(--u)*4);flex-wrap:wrap}
+#moment .mrc{display:flex;align-items:flex-start;gap:calc(var(--u)*1.8);flex:1 1 0;min-width:calc(var(--u)*24);max-width:calc(var(--u)*50)}
+#moment .mrt{display:flex;flex-direction:column;align-items:flex-start;gap:calc(var(--u)*1);min-width:0}
+#moment .mrt .pill{font-size:calc(var(--u)*2);padding:calc(var(--u)*.9) calc(var(--u)*1.8)}
+#moment .mrt strong{font-weight:700;font-size:calc(var(--u)*2.2);line-height:1.15;text-wrap:balance}
+#moment .mrt .who{font-size:calc(var(--u)*1.7);color:var(--ink2)}
+#moment .arr{width:calc(var(--u)*7.6);height:calc(var(--u)*7.6);flex:none;background:var(--red);display:grid;place-items:center}
+#moment .arr i{display:grid;place-items:center;width:100%;height:100%}
+#moment .arr svg{width:62%;height:62%;animation:nudge 1.6s var(--ease) .9s 2}
 
 .ov{position:fixed;inset:0;z-index:30;display:grid;place-items:center}
 #black{background:#000}
@@ -383,8 +398,9 @@ m-w{display:inline}
     <div class="join" id="join"></div>
     <div class="logos" id="logos"></div>
   </aside>
-  <main id="stage"><div id="moment" class="glass"></div></main>
+  <main id="stage"></main>
   <aside id="rail"></aside>
+  <div id="moment" class="glass"></div>
   <div id="garden"></div>
   <div id="band">
     <div class="thin" id="dayline"><i id="dayfill"></i><div id="needle"></div></div>
@@ -1108,12 +1124,12 @@ const slotState = [];
 function buildStage(){
   const p = plan(), key = S.mode + '|' + L.n + '|' + L.wide + '|' + p.map(a => a.role + ':' + a.scenes.join(',')).join('/');
   if (key === S.plan) return false; S.plan = key;
-  const stage = $('stage'), mom = $('moment');
+  const stage = $('stage');
   stage.querySelectorAll('.slot').forEach(s => s.remove()); slotState.length = 0;
   p.forEach((a, i) => {
     const el = document.createElement('section'); el.className = 'slot'; el.style.flex = i === 0 ? (p.length > 1 ? '1.55 1 0' : '1 1 0') : '1 1 0';
     el.innerHTML = `<div class="sh"><h2></h2><div class="pager"></div></div><div class="shrule"></div><div class="sb"></div>`;
-    stage.insertBefore(el, mom);
+    stage.appendChild(el);
     slotState.push({el, role:a.role, scenes:a.scenes, id:null, since:Date.now(), sub:Date.now(), turn:0, joinAt:-99, bump:null, last:null, extra:0, gen:0});
   });
   slotState.forEach(st => go(st, nextFor(st), 'start'));
@@ -1233,27 +1249,72 @@ function garden(){
   $('dayfill').style.width = nx + 'px';
   $('needle').style.left = nx + 'px';
 }
+// Moments take the stage and the rail for a few seconds (docs/PLAN.md WP4 task 6). Times and places come from
+// day.js: the 5 minute calls, with the rooms of the block and the way to them when directions are set; the
+// last 10 seconds before the Opening and before each block, counted in large numerals; then Starting Now;
+// the coffee break; lunch. An announcement from the remote takes precedence and keeps its look.
+function momentList(){
+  const op = PROGRAM.find(p => p.mode === 'opening'), choose = PROGRAM.find(p => p.mode === 'choose'), lunch = PROGRAM.find(p => p.mode === 'lunch'), out = [];
+  if (op) { const s = toMin(op.s) * 60;
+    out.push({from:s - 300, dur:25, k:'In 5 minutes', t:`${op.title} in the ${op.where}`, p:'Please take your seats.'});
+    out.push({from:s - 10, dur:10, count:true, k:`${op.title} in`});
+    out.push({from:s, dur:10, k:op.title, t:'Starting Now', p:`In the ${op.where}`, big:true}); }
+  if (choose) out.push({from:toMin(choose.s) * 60, dur:18, k:'Coffee break', t:'Pick your sessions', p:'One to one slots are booked at the registration desk.'});
+  BLOCKS.forEach(b => { const s = toMin(b.s) * 60;
+    out.push({from:s - 300, dur:25, k:'In 5 minutes', t:`The ${b.s} sessions start`, p:'Head to your room now.', rooms:b.n, way:true});
+    out.push({from:s - 10, dur:10, count:true, k:`The ${b.s} sessions start in`});
+    out.push({from:s, dur:12, k:`The ${b.s} sessions`, t:'Starting Now', p:'Find your room, the advisors are ready.', rooms:b.n, on:true, big:true}); });
+  if (lunch) out.push({from:toMin(lunch.s) * 60, dur:18, k:'Lunch is served', t:lunch.title, p:`In the ${lunch.where} until ${lunch.e}.`});
+  return out;
+}
+// The rooms of a block as cards. With directions set, each card carries the arrow to the rooms.
+function momentRooms(n, on, way){
+  const dir = way && S.way && S.way.rooms, list = ROOMS.map(r => SESSIONS.find(x => x.b === n && x.room === r)).filter(Boolean);
+  return `<div class="mr">${list.map(s => `<div class="mrc rv">${dir ? `<div class="arr leaf lf"><i style="rotate:${DEG[dir] || 0}deg">${ARROW}</i></div>` : ''}<div class="mrt"><span class="pill leaf lf ${on ? '' : 'ghost'}">${esc(s.room)}</span><strong class="tx">${esc(s.title)}</strong><span class="who">${esc(names(s.who))}</span></div></div>`).join('')}</div>`;
+}
 function moments(){
-  const list = [{at:'09:55', dur:25, k:'In 5 minutes', t:'Opening in the Main Hall', p:'Please take your seats.'}];
-  list.push({at:'10:40', dur:18, k:'Coffee break', t:'Pick your sessions', p:'One to one slots are booked at the registration desk.'});
-  BLOCKS.forEach(b => { list.push({at:fmt(toMin(b.s) - 5), dur:25, k:'In 5 minutes', t:`The ${b.s} sessions start`, p:'Head to your room now.', rooms:b.n});
-    list.push({at:b.s, dur:12, k:'Starting now', t:'Sessions are on', p:'Find your room, the advisors are ready.', rooms:b.n}); });
-  list.push({at:'14:00', dur:18, k:'Lunch is served', t:'Lunch and Networking', p:'In the Main Hall until 15:00.'});
-  const m = nowMin();
-  let act = list.find(x => m * 60 >= toMin(x.at) * 60 && m * 60 < toMin(x.at) * 60 + x.dur);
-  if (S.annUntil && Date.now() < S.annUntil) act = {at:'ann' + S.annAt, k:'Announcement', t:S.ann, p:''};
+  if (!S.started) return;
+  const sec = nowMin() * 60;
+  let act = momentList().find(x => sec >= x.from && sec < x.from + x.dur);
+  if (S.annUntil && Date.now() < S.annUntil) act = {key:'ann' + S.annAt, k:'Announcement', t:S.ann, ann:true};
   if (S.annUntil && Date.now() >= S.annUntil) S.annUntil = 0;
-  const key = act ? act.at + act.t : '';
-  if (key === S.momentKey) return; S.momentKey = key;
-  const el = $('moment');
-  // A moment comes forward over the stage, and recedes when it ends.
+  const key = act ? (act.key || act.from + '|' + (act.t || act.k)) : '';
+  if (key === S.momentKey) { if (act && act.count) countTick(act, sec); return; }
+  S.momentKey = key;
+  const el = $('moment'); $('app').classList.toggle('mom', !!act);
+  // A moment comes forward over the stage while the stage recedes, and recedes itself when it ends.
   if (!act) { const a = recede(el, M.e); a.finished.then(() => { if (!S.momentKey) { el.classList.remove('show'); el.innerHTML = ''; } a.cancel(); }, () => {}); return; }
-  const rooms = act.rooms ? `<div class="mr">${ROOMS.map(r => { const s = SESSIONS.find(x => x.b === act.rooms && x.room === r); return s ? `<div class="rv"><span class="pill leaf lf ${act.k === 'Starting now' ? '' : 'ghost'}">${r}</span><strong>${esc(s.title)}</strong></div>` : ''; }).join('')}</div>` : '';
-  el.innerHTML = `<div class="k tx"><span class="live-dot"></span>${esc(act.k)}</div><h1 class="tx" style="font-size:calc(var(--u)*${String(act.at).startsWith('ann') ? 7 : 10.5})">${esc(act.t)}</h1><div class="rule dr"></div>${act.p ? `<p class="tx">${esc(act.p)}</p>` : ''}${rooms}`;
   el.getAnimations().forEach(a => a.cancel()); el.classList.add('show');
+  if (act.count) {
+    const h = el.clientHeight / U, fs = Math.min(44, h * .56);
+    el.innerHTML = `<div class="k"><span class="live-dot"></span><span class="tx">${esc(act.k)}</span></div><div class="cd" style="font-size:calc(var(--u)*${fs.toFixed(1)})"><m-l class="ln"><m-i class="li"></m-i></m-l></div>`;
+    el.dataset.n = '';
+    countTick(act, sec);
+  } else {
+    const size = act.ann ? 7 : (act.big ? 13 : 10.5);
+    el.innerHTML = `<div class="k"><span class="live-dot"></span><span class="tx">${esc(act.k)}</span></div><h1 class="tx" ${act.ann ? 'dir="auto"' : ''} style="font-size:calc(var(--u)*${size})">${esc(act.t)}</h1><div class="rule dr"></div>${act.p ? `<p class="tx">${esc(act.p)}</p>` : ''}${act.rooms ? momentRooms(act.rooms, act.on, act.way) : ''}`;
+  }
   if (!still()) el.animate([{opacity:0, transform:'scale(1.06)'}, {opacity:1, transform:'none'}], {duration:M.x, easing:M.out, fill:'backwards'});
   reveal(el, true);
   burst(6);
+}
+// The countdown numeral rolls: the last number rises out of its clip as the new one rises in, in lockstep
+// (same duration and curve, one line apart), so the two never overlap.
+function countTick(act, sec){
+  const el = $('moment'), n = Math.max(1, Math.ceil(act.from + act.dur - sec));
+  if (el.dataset.n === String(n)) return; el.dataset.n = n;
+  const ln = el.querySelector('.cd m-l'); if (!ln) return;
+  ln.querySelectorAll('m-i.old').forEach(x => x.remove()); // a roll still running on a slow machine ends here
+  const cur = ln.querySelector('m-i'), li = document.createElement('m-i');
+  li.className = 'li'; li.textContent = n; ln.classList.remove('ok');
+  if (!cur || !cur.textContent || still()) {
+    if (cur) cur.remove(); ln.appendChild(li);
+    if (!still()) li.animate([{transform:'translateY(110%)'}, {transform:'none'}], {duration:M.e, easing:M.out, fill:'backwards'});
+    return;
+  }
+  cur.classList.add('old'); ln.appendChild(li);
+  const k = [{transform:'none'}, {transform:'translateY(-100%)'}], o = {duration:M.e, easing:M.io, fill:'forwards'}, a = cur.animate(k, o), b = li.animate(k, o);
+  b.finished.then(() => { cur.remove(); a.cancel(); b.cancel(); }, () => {});
 }
 
 /* ============ Ticker ============ */
@@ -1262,7 +1323,7 @@ function tickerItems(){
   const m = nowMin(), o = [], ph = phase(m), nb = nextBlock(m);
   if (S.ann) o.push(`<span class="ann" dir="auto">${esc(S.ann)}</span>`);
   // Hellos go to the ticker when the welcome scene is not on screen: the newest six of the last 10 minutes.
-  if (!welcomeShown()) { const t = Date.now() + S.skew, names = S.hello.filter(h => t - h.at < 600000).slice(0, 6).map(h => `<bdi>${esc(h.f)}</bdi>`); if (names.length) o.push(`<span>Welcome, ${names.length > 1 ? names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1] : names[0]}</span>`); }
+  if (!welcomeShown()) { const t = Date.now() + S.skew, names = S.hello.filter(h => Math.abs(t - h.at) < 600000).slice(0, 6).map(h => `<bdi>${esc(h.f)}</bdi>`); if (names.length) o.push(`<span>Welcome, ${names.length > 1 ? names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1] : names[0]}</span>`); }
   if (ph.kind === 'session') SESSIONS.filter(s => s.b === ph.b.n).forEach(s => o.push(`<span>On now in ${esc(s.room)}: ${esc(s.title)} with ${esc(names(s.who))}</span>`));
   if (nb && toMin(nb.s) - m <= 25) SESSIONS.filter(s => s.b === nb.n).forEach(s => o.push(`<span>${nb.s} in ${esc(s.room)}: ${esc(s.title)}</span>`));
   const op = openSlots(m); if (op.length) o.push(`<span>${op.length} one to one slots still open, next at ${op[0].s} with ${esc(adv(op[0].who).name)}. Book at the registration desk.</span>`);
@@ -1438,7 +1499,7 @@ restore(); S.mode = S.override || autoMode(nowMin()); document.documentElement.d
 resize(); S.started = true;
 addEventListener('resize', resize);
 setInterval(() => loop(false), 1000);
-setInterval(nowZone, 250);
+setInterval(() => { nowZone(); moments(); }, 250);
 initVideo(); setConn(); refresh(); setInterval(refresh, CONFIG.refreshSeconds * 1000);
 if (location.protocol.startsWith('http')) { pullState(); setInterval(pullState, CONFIG.stateSeconds * 1000); setTimeout(beat, 8000); setInterval(beat, CONFIG.beatSeconds * 1000); }
 requestAnimationFrame(bgLoop); requestAnimationFrame(tickerLoop);

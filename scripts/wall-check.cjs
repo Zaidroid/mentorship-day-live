@@ -488,6 +488,63 @@ check('arrival-qr-line', async () => {
   return [ok, got.map(g => `${g[0]} "${g[1]}"${g[3] ? '' : ' WRONG'}`).join('; ') + `; rail at 3840x1080 10:45 "${rail.text}"; ring every ${rail.ring}`];
 });
 
+/* ---------- Task 6: moments ---------- */
+
+check('moment-countdown', async () => {
+  const w = await wall('/screen/?t=10:59:47&quiet', '3840x1080');
+  const seen = [], overlaps = []; let startAt = null, cover = null;
+  const end = Date.now() + 17000;
+  while (Date.now() < end) {
+    const s = await md(w.p, () => {
+      const v = window.__md.venue(), el = document.getElementById('moment'), cur = el.querySelector('.cd m-i:not(.old)'), old = el.querySelector('.cd m-i.old');
+      // Layout boxes (offset*), not transformed ones: the panel enters from scale 1.06 and the stage recedes to .97.
+      const h1 = el.querySelector('h1'), box = e => ({ left: e.offsetLeft, right: e.offsetLeft + e.offsetWidth }), r = box(el), st = box(document.getElementById('stage')), rl = box(document.getElementById('rail'));
+      return { sec: v.h * 3600 + v.m * 60 + v.s + v.ms / 1000, n: cur ? cur.textContent : null, h1: h1 ? h1.textContent : null,
+        overlap: cur && old ? old.getBoundingClientRect().bottom - cur.getBoundingClientRect().top : null,
+        cover: el.classList.contains('show') ? { left: Math.round(r.left - st.left), right: Math.round(rl.right - r.right), stageOpacity: getComputedStyle(document.getElementById('stage')).opacity } : null };
+    });
+    if (s.n && seen[seen.length - 1] !== s.n) seen.push(s.n);
+    if (s.overlap !== null && s.overlap > 1) overlaps.push(Math.round(s.overlap));
+    if (s.h1 === 'Starting Now' && startAt === null) startAt = s.sec;
+    if (s.cover && !cover && s.n) cover = s.cover;
+    await sleep(80);
+  }
+  await w.close();
+  const want = ['10', '9', '8', '7', '6', '5', '4', '3', '2', '1'], start = 11 * 3600;
+  const ok = JSON.stringify(seen) === JSON.stringify(want) && startAt !== null && startAt - start < 0.6 && startAt >= start && !overlaps.length && cover && Math.abs(cover.left) <= 1 && Math.abs(cover.right) <= 1;
+  return [ok, `numerals: ${seen.join(' ')}; Starting Now at ${startAt === null ? 'never' : '+' + (startAt - start).toFixed(2) + ' s'} after 11:00:00; old and new numerals overlapping during a roll: ${overlaps.length ? overlaps.join(',') + ' px' : 'never'}; at 3840x1080 the moment lines up with the stage left edge (${cover && cover.left} px) and the rail right edge (${cover && cover.right} px), stage opacity under it ${cover && cover.stageOpacity}`];
+});
+
+check('moment-call-arrows', async () => {
+  const w = await wall('/screen/?t=10:54:58&quiet', '1920x1080');
+  await w.p.waitForFunction(() => document.querySelectorAll('#moment .mrc').length > 0, null, { timeout: 8000 }).catch(() => {});
+  await sleep(1200);
+  const a = await md(w.p, () => ({ cards: [...document.querySelectorAll('#moment .mrc')].map(c => ({ room: c.querySelector('.pill').textContent, arrow: c.querySelector('.arr i') ? c.querySelector('.arr i').style.rotate : null })), dot: !!document.querySelector('#moment .k .live-dot') && document.querySelector('#moment .k .live-dot').getBoundingClientRect().width > 0 }));
+  await w.close();
+  const e = await emptyWall('/screen/?t=11:54:58&quiet', '1920x1080');
+  await e.p.waitForFunction(() => document.querySelectorAll('#moment .mrc').length > 0, null, { timeout: 8000 }).catch(() => {});
+  await sleep(800);
+  const b = await md(e.p, () => [...document.querySelectorAll('#moment .mrc')].map(c => ({ room: c.querySelector('.pill').textContent, arrow: !!c.querySelector('.arr') })));
+  await e.close();
+  const st = await state(), dir = st.cfg.way && st.cfg.way.rooms, deg = { 'right': 0, 'down right': 45, 'down': 90, 'down left': 135, 'left': 180, 'up left': 225, 'up': 270, 'up right': 315 }[dir];
+  const ok = a.cards.length === 3 && a.cards.every(c => c.arrow === deg + 'deg') && a.dot && b.length === 1 && b[0].room === 'Room A' && !b[0].arrow;
+  return [ok, `10:55 call with directions (rooms "${dir}"): ${a.cards.map(c => c.room + ' ' + c.arrow).join(', ')}; live dot shows ${a.dot}; 11:55 call without directions: ${b.map(c => c.room + (c.arrow ? ' with arrow' : ' no arrow')).join(', ')}`];
+});
+
+check('moment-announcement', async () => {
+  const w = await wall('/screen/?t=11:20&quiet', '1920x1080');
+  await sleep(2500);
+  const text = 'Lunch is ready in the Main Hall';
+  await op({ action: 'ann', text, secs: 10 });
+  try {
+    await w.p.waitForFunction(t => { const h = document.querySelector('#moment h1'); return h && h.textContent === t; }, text, { timeout: 8000 });
+    await sleep(100);
+    const r = await md(w.p, () => { const h = document.querySelector('#moment h1'); return { lines: h.querySelectorAll('m-l').length, dir: h.getAttribute('dir'), rising: document.getAnimations().some(a => a.effect.target && a.effect.target.closest && a.effect.target.closest('#moment h1') && /translateY\(110%\)/.test(a.effect.getKeyframes()[0].transform || '')) }; });
+    await w.close();
+    return [r.lines > 0 && r.dir === 'auto' && r.rising, `announcement on the wall in ${'<'}8 s: masked lines ${r.lines}, rising ${r.rising}, dir ${r.dir}`];
+  } finally { await op({ action: 'ann', text: '' }).catch(() => {}); }
+});
+
 (async () => {
   if (process.argv.includes('--list')) { CHECKS.forEach(c => console.log(c.name)); return; }
   browser = await chromium.launch();
