@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#E3E3E3">
+<title>Mentorship Day Live</title>
+<meta name="description" content="Live poll, photo wall, Networking Board and today's agenda for Mentorship Day at the Palestine Innovation Summit.">
+<style>
+@font-face{font-family:SS3;font-weight:400;font-display:swap;src:url(/assets/ss3-400.woff2) format('woff2')}
+@font-face{font-family:SS3;font-weight:600;font-display:swap;src:url(/assets/ss3-600.woff2) format('woff2')}
+@font-face{font-family:SS3;font-weight:700;font-display:swap;src:url(/assets/ss3-700.woff2) format('woff2')}
+:root{--red:#DF6236;--teal:#2F9CC3;--ink:#1F2E33;--ink2:rgba(31,46,51,.7);--ink3:rgba(31,46,51,.45);--line:rgba(31,46,51,.13);--card:rgba(255,255,255,.78);--redsoft:rgba(223,98,54,.12);--tealsoft:rgba(47,156,195,.14)}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:SS3,system-ui,sans-serif;color:var(--ink);background:linear-gradient(180deg,#E3E3E3,#F6F6F6) fixed;min-height:100vh;line-height:1.4;-webkit-font-smoothing:antialiased}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+.wrap{max-width:560px;margin:0 auto;padding:0 16px}
+header{position:sticky;top:0;z-index:5;background:rgba(232,232,232,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);padding-top:env(safe-area-inset-top)}
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding:16px 0 10px}
+.top h1{font-size:28px;line-height:1;font-weight:700;color:var(--red);letter-spacing:-.01em;white-space:nowrap}
+.top span{font-size:12px;color:var(--ink2);text-align:right;line-height:1.2}
+.rule{height:5px;background:var(--teal)}
+nav{display:flex;gap:6px;padding:10px 0 12px;overflow-x:auto;scrollbar-width:none}
+nav::-webkit-scrollbar{display:none}
+nav button{flex:1 0 auto;border:0;background:transparent;padding:9px 14px;border-radius:6px 20px 0 20px;font-weight:700;font-size:15px;color:var(--ink2);position:relative}
+nav button[aria-selected=true]{background:var(--red);color:#fff}
+nav button .dot{position:absolute;top:6px;right:8px;width:8px;height:8px;border-radius:50%;background:var(--teal)}
+main{padding:14px 0 40px}
+section[hidden]{display:none}
+h2{font-size:24px;font-weight:700;line-height:1.15;margin:6px 0 4px}
+h3{font-size:18px;font-weight:700;margin:22px 0 10px}
+.lead{color:var(--ink2);font-size:16px}
+.card{background:var(--card);border:1px solid rgba(255,255,255,.95);border-radius:10px;padding:16px;margin-top:12px;box-shadow:0 4px 18px rgba(31,46,51,.06)}
+.now{border-top:5px solid var(--red)}
+.k{font-size:13px;font-weight:700;color:var(--red);display:flex;align-items:center;gap:8px}
+.k.blue{color:var(--teal)}
+.live{width:9px;height:9px;border-radius:50%;background:var(--red);box-shadow:0 0 0 4px var(--redsoft)}
+.big{font-size:22px;font-weight:700;line-height:1.15;margin-top:6px}
+.muted{color:var(--ink2)}
+.small{font-size:14px}
+.pill{display:inline-flex;align-items:center;font-weight:700;font-size:13px;color:#fff;background:var(--red);padding:4px 10px;border-radius:4px 14px 0 14px;white-space:nowrap}
+.pill.blue{background:var(--teal)}
+.pill.ghost{background:transparent;color:var(--ink3);box-shadow:inset 0 0 0 1.5px var(--line)}
+.mode{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--ink2)}
+.mode:before{content:"";width:8px;height:8px;border-radius:50%;background:var(--red)}
+.mode.on:before{background:var(--teal)}
+.hour{margin-top:18px}
+.hour>b{display:block;font-size:20px;font-weight:700;padding-bottom:6px;border-bottom:2px solid var(--line)}
+.sess{display:grid;grid-template-columns:72px 1fr;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
+.sess .t{font-weight:700;font-size:16px;line-height:1.2}
+.sess .w{font-size:14px;color:var(--ink2);margin-top:4px;display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center}
+.sess.free .t{color:var(--ink3);font-weight:600}
+label{display:block;font-weight:700;font-size:15px;margin:14px 0 6px}
+label span{font-weight:400;color:var(--ink2)}
+input[type=text],input[type=url],textarea{width:100%;font-size:17px;padding:12px 14px;border:1.5px solid var(--line);border-radius:8px;background:#fff}
+input:focus,textarea:focus{border-color:var(--teal);outline:none}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;background:var(--red);color:#fff;font-weight:700;font-size:17px;padding:13px 22px;border-radius:6px 22px 0 22px;margin-top:16px;min-height:48px}
+.btn.blue{background:var(--teal)}
+.btn.wide{width:100%}
+.btn.line{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)}
+.btn:disabled{opacity:.5;cursor:default}
+.msg{margin-top:12px;font-size:15px;font-weight:600}
+.msg.ok{color:#2a7f62}.msg.err{color:#b8432a}
+.opts{display:grid;gap:10px;margin-top:14px}
+.opt{text-align:left;border:1.5px solid var(--line);background:#fff;border-radius:8px;padding:14px 16px;font-weight:700;font-size:17px}
+.opt[aria-pressed=true]{border-color:var(--teal);background:var(--tealsoft)}
+.words{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.words span{background:#fff;border-radius:6px;padding:5px 10px;font-weight:700;font-size:15px}
+.words span i{font-style:normal;font-weight:400;color:var(--ink2);margin-left:6px}
+.tags{display:flex;flex-wrap:wrap;gap:8px}
+.tag{border:1.5px solid var(--line);background:#fff;border-radius:4px 16px 0 16px;padding:7px 12px;font-weight:700;font-size:14px}
+.tag[aria-pressed=true]{background:var(--red);border-color:var(--red);color:#fff}
+.tags.of .tag[aria-pressed=true]{background:var(--teal);border-color:var(--teal)}
+.tg{display:inline-block;font-weight:700;font-size:13px;padding:3px 9px;border-radius:4px 14px 0 14px;margin:3px 4px 0 0}
+.tg.lk{background:var(--redsoft);color:var(--red)}.tg.of{background:var(--tealsoft);color:var(--teal)}
+.person{display:grid;grid-template-columns:44px 1fr;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
+.ini{width:44px;height:44px;border-radius:50%;background:var(--teal);color:#fff;display:grid;place-items:center;font-weight:700}
+.person b{display:block;font-size:17px;line-height:1.2}
+.person a{color:var(--teal);font-weight:700;font-size:14px}
+.check{display:flex;gap:10px;align-items:flex-start;margin-top:16px;font-size:15px}
+.check input{width:22px;height:22px;flex:none;margin-top:1px;accent-color:var(--teal)}
+.drop{display:grid;place-items:center;text-align:center;border:2px dashed var(--ink3);border-radius:10px;min-height:180px;padding:16px;margin-top:14px;position:relative;overflow:hidden;background:rgba(255,255,255,.5)}
+.drop img{max-width:100%;max-height:360px;border-radius:6px;display:block}
+.drop input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.status{display:flex;gap:10px;align-items:center;font-weight:700}
+.status i{width:10px;height:10px;border-radius:50%;background:var(--teal)}
+.status.wait i{background:#E78B3F}
+footer{padding:20px 0 calc(28px + env(safe-area-inset-bottom))}
+.logos{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:14px 20px}
+.logos img{height:26px;width:auto}
+.logos img.tp{height:44px}
+.band{margin-top:22px;height:22px;background:linear-gradient(var(--teal),var(--teal)) top/100% 3px no-repeat,linear-gradient(var(--teal),var(--teal)) 0 6px/100% 9px no-repeat,linear-gradient(var(--teal),var(--teal)) 0 18px/100% 3px no-repeat}
+.foot{margin-top:12px;text-align:center;font-size:12px;color:var(--ink2)}
+.empty{color:var(--ink3);font-size:15px;padding:12px 0}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="top"><h1>Mentorship Day</h1><span>Palestine Innovation Summit</span></div>
+    <div class="rule"></div>
+    <nav role="tablist" aria-label="Sections">
+      <button role="tab" id="t-today" aria-controls="today" aria-selected="true">Today</button>
+      <button role="tab" id="t-poll" aria-controls="poll" aria-selected="false">Poll</button>
+      <button role="tab" id="t-photo" aria-controls="photo" aria-selected="false">Photo</button>
+      <button role="tab" id="t-meet" aria-controls="meet" aria-selected="false">Meet</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <section id="today" role="tabpanel" aria-labelledby="t-today">
+    <div class="card now" id="nowCard"></div>
+    <div id="agenda"></div>
+  </section>
+
+  <section id="poll" role="tabpanel" aria-labelledby="t-poll" hidden>
+    <h2>Live poll</h2>
+    <p class="lead">Answer here and watch the big screen in the Main Hall.</p>
+    <div class="card" id="pollCard"></div>
+  </section>
+
+  <section id="photo" role="tabpanel" aria-labelledby="t-photo" hidden>
+    <h2>Photo wall</h2>
+    <p class="lead">Share a moment from today. The team approves each photo before it appears on the big screen.</p>
+    <div class="card">
+      <div class="drop" id="drop"><div id="dropTxt"><b>Tap to take or choose a photo</b><div class="muted small">JPEG or PNG, from your camera or gallery</div></div><input type="file" id="file" accept="image/*" aria-label="Choose a photo"></div>
+      <label for="cap">Caption <span>(optional)</span></label><input type="text" id="cap" maxlength="90" placeholder="What is happening?">
+      <label for="pname">Your name <span>(optional)</span></label><input type="text" id="pname" maxlength="40" autocomplete="name">
+      <button class="btn wide" id="send" disabled>Send photo</button>
+      <div class="msg" id="photoMsg" role="status"></div>
+    </div>
+  </section>
+
+  <section id="meet" role="tabpanel" aria-labelledby="t-meet" hidden>
+    <h2>Networking Board</h2>
+    <p class="lead">Say what you are looking for and how you can help. Your card shows on the big screen and here, so the right people can find you.</p>
+    <div class="card" id="myCard"></div>
+    <h3 id="matchH" hidden>Good people for you to meet</h3>
+    <div id="matches"></div>
+    <h3>People on the board</h3>
+    <div class="tags" id="filter" aria-label="Filter by tag"></div>
+    <div id="people"></div>
+  </section>
+</main>
+
+<footer class="wrap">
+  <div class="logos"><img src="/assets/mercycorps.png" alt="Mercy Corps"><img src="/assets/gsg.png" alt="Gaza Sky Geeks"><img src="/assets/sida.png" alt="Sweden Sverige"><img class="tp" src="/assets/technopark.png" alt="Palestine TechnoPark"><img src="/assets/pis.png" alt="Palestine Innovation Summit"></div>
+  <div class="band" aria-hidden="true"></div>
+  <p class="foot">Gaza Sky Geeks, a program of Mercy Corps, with the support of Sweden</p>
+</footer>
+
+<script>
+(function(){
+'use strict';
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const store = { get(k){ try { return localStorage.getItem(k); } catch(e) { return null; } }, set(k, v){ try { localStorage.setItem(k, v); } catch(e) {} } };
+let DEV = store.get('md_dev');
+if (!DEV || !/^[a-z0-9]{8,40}$/.test(DEV)) { DEV = Array.from(crypto.getRandomValues(new Uint8Array(12)), b => (b % 36).toString(36)).join(''); store.set('md_dev', DEV); }
+const P = new URLSearchParams(location.search);
+
+/* ---------- schedule (same as the big screen) ---------- */
+const SESSIONS = [
+  {s:'11:00', room:'Room A', t:'Pitching and Outreach to International Clients', who:'Gigi Aulsebrook', mode:'Online'},
+  {s:'11:00', room:'Room B', t:'AI Impact on Technical Jobs', who:'Asem', mode:'In person'},
+  {s:'11:00', room:'Room C', t:'Sales Tactics for Startups and Scaleups', who:'Taylor Mohylsky', mode:'Online'},
+  {s:'12:00', room:'Room A', t:'From Vision to Execution: Turning Ideas into Results', who:'Zyad Alhasan', mode:'In person'},
+  {s:'13:00', room:'Room A', t:'Growing Against the Odds: Building Tech Companies in Uncertain Times', who:'Tom Sperry and Adam Stoll', mode:'Online'},
+  {s:'13:00', room:'Room B', t:'Lead Through Communication', who:'Rania Jaber', mode:'In person'},
+  {s:'13:00', room:'Room C', t:'Personal Branding', who:'Rajai Nuseibeh', mode:'In person'}
+];
+const ONES = [
+  {s:'11:00', e:'12:00', who:'Rand Safi', t:'Founder and Career Conversations', room:'Small Room 1', mode:'In person'},
+  {s:'12:00', e:'13:00', who:'Alan', t:'Founder and Career Conversations', room:'Small Room 1', mode:'In person'},
+  {s:'13:00', e:'14:00', who:'Iyas Hisham Sabri', t:'Fundraising', room:'Small Room 3', mode:'Online'}
+];
+const PROGRAM = [
+  {s:'09:30', e:'10:00', t:'Registration and Coffee', w:'Registration desk'},
+  {s:'10:00', e:'10:30', t:'Opening', w:'Main Hall'},
+  {s:'10:30', e:'10:40', t:'Video Messages', w:'Main Hall'},
+  {s:'10:40', e:'11:00', t:'Coffee Break', w:'Main Hall'},
+  {s:'11:00', e:'11:45', t:'Sessions', w:'Rooms A, B and C', h:'11:00'},
+  {s:'11:45', e:'12:00', t:'Short break', w:'Move to your next room'},
+  {s:'12:00', e:'12:45', t:'Session', w:'Room A', h:'12:00'},
+  {s:'12:45', e:'13:00', t:'Short break', w:'Move to your next room'},
+  {s:'13:00', e:'13:45', t:'Sessions', w:'Rooms A, B and C', h:'13:00'},
+  {s:'13:45', e:'14:00', t:'Short break', w:'One to ones close at 14:00'},
+  {s:'14:00', e:'15:00', t:'Lunch and Networking', w:'Main Hall'}
+];
+const toMin = s => { const [h, m] = s.split(':').map(Number); return h * 60 + m; };
+function nowMin(){ if (P.get('t')) return toMin(P.get('t')); const d = new Date(); return d.getHours() * 60 + d.getMinutes(); }
+const mode = m => `<span class="mode ${m === 'Online' ? 'on' : ''}">${m}</span>`;
+
+function renderToday(){
+  const m = nowMin(), cur = PROGRAM.find(p => m >= toMin(p.s) && m < toMin(p.e)), next = PROGRAM.find(p => toMin(p.s) > m && !/break/i.test(p.t));
+  let h;
+  if (!cur && m < toMin('09:30')) h = `<div class="k">Today</div><div class="big">Doors open at 09:30</div><p class="muted small" style="margin-top:6px">Opening at 10:00 in the Main Hall.</p>`;
+  else if (!cur) h = `<div class="k">Thank you</div><div class="big">Mentorship Day is over</div><p class="muted small" style="margin-top:6px">Thank you for joining us.</p>`;
+  else {
+    h = `<div class="k"><span class="live"></span>On now, until ${cur.e}</div><div class="big">${esc(cur.t)}</div><p class="muted small" style="margin-top:4px">${esc(cur.w)}</p>`;
+    if (cur.h) h += SESSIONS.filter(x => x.s === cur.h).map(x => `<div class="sess" style="border-bottom:0;padding-bottom:0"><div><span class="pill">${x.room}</span></div><div><div class="t">${esc(x.t)}</div><div class="w"><span>${esc(x.who)}</span>${mode(x.mode)}</div></div></div>`).join('');
+    if (next) h += `<p class="small" style="margin-top:14px;padding-top:10px;border-top:1px solid var(--line)"><b>Next at ${next.s}:</b> ${esc(next.t)}, ${esc(next.w)}</p>`;
+  }
+  $('nowCard').innerHTML = h;
+  let a = `<h3>Today's agenda</h3>`;
+  a += `<div class="card" style="padding:4px 16px">${PROGRAM.filter(p => !/break/i.test(p.t)).map(p => `<div class="sess"><div class="t" style="color:${m >= toMin(p.s) && m < toMin(p.e) ? 'var(--red)' : 'inherit'}">${p.s}</div><div><div class="t">${esc(p.t)}</div><div class="w">${esc(p.w)}</div></div></div>`).join('').replace(/border-bottom[^"]*"([^]*)$/, '"$1')}</div>`;
+  a += `<h3>Sessions by hour</h3><p class="muted small">Pick one room each hour. Each session is 45 minutes, with about 25 seats.</p>`;
+  ['11:00', '12:00', '13:00'].forEach(hh => {
+    a += `<div class="hour"><b>${hh}</b>`;
+    ['Room A', 'Room B', 'Room C'].forEach(r => { const x = SESSIONS.find(y => y.s === hh && y.room === r);
+      a += x ? `<div class="sess"><div><span class="pill">${r}</span></div><div><div class="t">${esc(x.t)}</div><div class="w"><span>${esc(x.who)}</span>${mode(x.mode)}</div></div></div>`
+             : `<div class="sess free"><div><span class="pill ghost">${r}</span></div><div><div class="t">No session this hour</div></div></div>`; });
+    a += `</div>`; });
+  a += `<h3>One to Ones</h3><p class="muted small">15 minute conversations. Book yours at the registration desk.</p><div class="card" style="padding:4px 16px">${ONES.map(o => `<div class="sess"><div><span class="pill blue">${o.s}</span></div><div><div class="t">${esc(o.who)}</div><div class="w"><span>${esc(o.t)}</span><span>${esc(o.room)}</span>${mode(o.mode)}</div></div></div>`).join('')}</div>`;
+  $('agenda').innerHTML = a;
+}
+
+/* ---------- live state ---------- */
+let STATE = null, myAnswer = store.get('md_ans') || '', myAnswerPoll = store.get('md_ansp') || '';
+async function pull(){
+  if (document.hidden) return;
+  try { const r = await fetch('/api/state', {cache:'no-store'}); if (!r.ok) throw 0; STATE = await r.json(); renderPoll(); renderPeople(); } catch(e) {}
+}
+async function post(url, body){
+  const r = await fetch(url, {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify(body)});
+  let d = {}; try { d = await r.json(); } catch(e) {}
+  if (!r.ok) throw new Error(d.error || 'Something went wrong. Please try again.');
+  return d;
+}
+
+/* ---------- poll ---------- */
+let pollBusy = false;
+function renderPoll(){
+  const p = STATE && STATE.poll, el = $('pollCard');
+  if (pollBusy) return;
+  if (!p) { el.innerHTML = '<p class="empty">The next poll opens soon. Check back in a few minutes.</p>'; return; }
+  const mine = myAnswerPoll === p.id ? myAnswer : '';
+  let h = `<div class="k blue">${p.open ? 'Open now' : 'Closed'}</div><div class="big">${esc(p.q)}</div>`;
+  if (p.open && p.type === 'choice') h += `<div class="opts">${p.options.map(o => `<button class="opt" data-o="${esc(o)}" aria-pressed="${mine === o}">${esc(o)}</button>`).join('')}</div>`;
+  else if (p.open) h += `<label for="word">Your answer <span>(one or two words)</span></label><input type="text" id="word" maxlength="28" autocomplete="off" enterkeyhint="send" value="${esc(mine)}"><button class="btn wide" id="sendWord">${mine ? 'Change my answer' : 'Send'}</button>`;
+  h += `<div class="msg ok" id="pollMsg" role="status">${mine ? `Your answer: ${esc(mine)}. It is on the big screen.` : ''}</div>`;
+  if (p.words && p.words.length) {
+    const tot = p.total || 0;
+    h += `<h3 style="margin-top:20px">${tot} ${tot === 1 ? 'answer' : 'answers'} so far</h3><div class="words">${p.words.slice(0, p.type === 'choice' ? 8 : 16).map(([w, n]) => `<span>${esc(w)}<i>${n}</i></span>`).join('')}</div>`;
+  }
+  el.innerHTML = h;
+  el.querySelectorAll('.opt').forEach(b => b.onclick = () => answer(b.dataset.o));
+  const sw = $('sendWord'); if (sw) { sw.onclick = () => answer($('word').value); $('word').addEventListener('keydown', e => { if (e.key === 'Enter') answer($('word').value); }); }
+}
+async function answer(text){
+  const p = STATE && STATE.poll; if (!p) return;
+  if (!String(text || '').trim()) { $('pollMsg').className = 'msg err'; $('pollMsg').textContent = 'Type a word first.'; return; }
+  pollBusy = true; $('pollMsg').className = 'msg'; $('pollMsg').textContent = 'Sending...';
+  try { const d = await post('/api/answer', {pid:p.id, dev:DEV, text}); myAnswer = d.word; myAnswerPoll = p.id; store.set('md_ans', myAnswer); store.set('md_ansp', p.id); pollBusy = false; await pull(); }
+  catch(e) { pollBusy = false; $('pollMsg').className = 'msg err'; $('pollMsg').textContent = e.message; }
+}
+
+/* ---------- photo ---------- */
+let photoBlob = null;
+$('pname').value = store.get('md_name') || '';
+$('file').addEventListener('change', async e => {
+  const f = e.target.files && e.target.files[0]; if (!f) return;
+  $('photoMsg').className = 'msg'; $('photoMsg').textContent = 'Preparing your photo...';
+  try { photoBlob = await shrink(f); $('dropTxt').innerHTML = `<img src="${URL.createObjectURL(photoBlob)}" alt="Your photo">`; $('send').disabled = false; $('photoMsg').textContent = ''; }
+  catch(err) { photoBlob = null; $('send').disabled = true; $('photoMsg').className = 'msg err'; $('photoMsg').textContent = 'That file could not be read. Try another photo.'; }
+});
+async function shrink(file){
+  const bmp = await createImageBitmap(file, {imageOrientation:'from-image'}).catch(() => null);
+  let src = bmp, w, h;
+  if (!src) { src = await new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = URL.createObjectURL(file); }); }
+  w = src.width; h = src.height; const k = Math.min(1, 1600 / Math.max(w, h));
+  const c = document.createElement('canvas'); c.width = Math.round(w * k); c.height = Math.round(h * k);
+  c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
+  return await new Promise(ok => c.toBlob(ok, 'image/jpeg', .85));
+}
+$('send').addEventListener('click', async () => {
+  if (!photoBlob) return; const btn = $('send'); btn.disabled = true;
+  $('photoMsg').className = 'msg'; $('photoMsg').textContent = 'Sending...';
+  const name = $('pname').value.trim(); if (name) store.set('md_name', name);
+  try {
+    const r = await fetch('/api/photo', {method:'POST', headers:{'content-type':'image/jpeg', 'x-dev':DEV, 'x-name':encodeURIComponent(name), 'x-caption':encodeURIComponent($('cap').value.trim())}, body:photoBlob});
+    let d = {}; try { d = await r.json(); } catch(e) {}
+    if (!r.ok) throw new Error(d.error || 'The photo did not send. Please try again.');
+    $('photoMsg').className = 'msg ok'; $('photoMsg').textContent = 'Sent. It will appear on the big screen once the team approves it.';
+    photoBlob = null; $('cap').value = ''; $('file').value = ''; $('dropTxt').innerHTML = '<b>Tap to share another photo</b>';
+  } catch(e) { btn.disabled = false; $('photoMsg').className = 'msg err'; $('photoMsg').textContent = e.message; }
+});
+
+/* ---------- Networking Board ---------- */
+let MY = null, editing = false, filter = '';
+const TAGS_FALLBACK = ['Funding','Clients','Partnerships','Hiring','A New Job','Mentoring','Marketing','Product','AI and Tech','Freelancing'];
+const tags = () => (STATE && STATE.tags) || TAGS_FALLBACK;
+const initials = n => String(n).split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+async function loadMine(){ try { const r = await fetch('/api/profile?dev=' + DEV, {cache:'no-store'}); MY = await r.json(); } catch(e) { MY = MY || {status:'none'}; } renderMine(); renderPeople(); }
+function tagPicker(id, chosen, cls){ return `<div class="tags ${cls}" id="${id}" role="group">${tags().map(t => `<button type="button" class="tag" aria-pressed="${chosen.includes(t)}">${esc(t)}</button>`).join('')}</div>`; }
+function renderMine(){
+  const el = $('myCard'), st = MY ? MY.status : 'none', p = (MY && MY.profile) || {};
+  if (st !== 'none' && !editing) {
+    const label = {approved:'You are on the board', pending:'Waiting for the team to approve your card', declined:'Your card was not approved. You can edit it and send again.'}[st] || '';
+    el.innerHTML = `<div class="status ${st === 'approved' ? '' : 'wait'}"><i></i>${label}</div>
+      <div class="person" style="border:0"><div class="ini">${esc(initials(p.name || '?'))}</div><div><b>${esc(p.name)}</b><div class="muted small">${esc([p.role, p.company].filter(Boolean).join(', '))}</div>
+      <div>${(p.looking || []).map(t => `<span class="tg lk">${esc(t)}</span>`).join('')}${(p.offer || []).map(t => `<span class="tg of">${esc(t)}</span>`).join('')}</div></div></div>
+      <button class="btn line" id="edit">Edit my card</button>`;
+    $('edit').onclick = () => { editing = true; renderMine(); };
+    return;
+  }
+  el.innerHTML = `<label for="mName">Name</label><input type="text" id="mName" maxlength="40" autocomplete="name" value="${esc(p.name || store.get('md_name') || '')}">
+    <label for="mCo">Company <span>(optional)</span></label><input type="text" id="mCo" maxlength="50" autocomplete="organization" value="${esc(p.company || '')}">
+    <label for="mRole">Role <span>(optional)</span></label><input type="text" id="mRole" maxlength="50" autocomplete="organization-title" value="${esc(p.role || '')}">
+    <label>I am looking for <span>(up to 3)</span></label>${tagPicker('mLook', p.looking || [], 'lk')}
+    <label>I can help with <span>(up to 3)</span></label>${tagPicker('mOffer', p.offer || [], 'of')}
+    <label for="mLi">LinkedIn <span>(optional)</span></label><input type="url" id="mLi" maxlength="120" inputmode="url" placeholder="linkedin.com/in/yourname" value="${esc(p.linkedin || '')}">
+    <div class="check"><input type="checkbox" id="mOk" ${p.name ? 'checked' : ''}><label for="mOk" style="margin:0;font-weight:400">Show my name, company, tags and LinkedIn on the big screen and to other attendees today.</label></div>
+    <button class="btn wide" id="mSend">${st === 'none' ? 'Join the board' : 'Send changes'}</button>${st !== 'none' ? '<button class="btn line wide" id="mCancel" style="margin-top:10px">Cancel</button>' : ''}
+    <div class="msg" id="mMsg" role="status"></div>`;
+  ['mLook', 'mOffer'].forEach(id => $(id).querySelectorAll('.tag').forEach(b => b.onclick = () => {
+    const on = b.getAttribute('aria-pressed') === 'true', n = $(id).querySelectorAll('[aria-pressed=true]').length;
+    if (!on && n >= 3) return; b.setAttribute('aria-pressed', String(!on)); }));
+  if ($('mCancel')) $('mCancel').onclick = () => { editing = false; renderMine(); };
+  $('mSend').onclick = async () => {
+    const pick = id => [...$(id).querySelectorAll('[aria-pressed=true]')].map(b => b.textContent);
+    const body = {dev:DEV, name:$('mName').value, company:$('mCo').value, role:$('mRole').value, looking:pick('mLook'), offer:pick('mOffer'), linkedin:$('mLi').value, consent:$('mOk').checked};
+    $('mMsg').className = 'msg'; $('mMsg').textContent = 'Sending...'; $('mSend').disabled = true;
+    try { await post('/api/profile', body); store.set('md_name', body.name.trim()); editing = false; await loadMine(); }
+    catch(e) { $('mSend').disabled = false; $('mMsg').className = 'msg err'; $('mMsg').textContent = e.message; }
+  };
+}
+function personHtml(p){
+  return `<div class="person"><div class="ini">${esc(initials(p.name))}</div><div><b>${esc(p.name)}</b><div class="muted small">${esc([p.role, p.company].filter(Boolean).join(', '))}</div>
+    <div>${(p.looking || []).map(t => `<span class="tg lk" title="Looking for">${esc(t)}</span>`).join('')}${(p.offer || []).map(t => `<span class="tg of" title="Can help with">${esc(t)}</span>`).join('')}</div>
+    ${p.linkedin ? `<a href="${esc(p.linkedin)}" target="_blank" rel="noopener">Connect on LinkedIn</a>` : ''}</div></div>`;
+}
+function renderPeople(){
+  const list = ((STATE && STATE.profiles) || []).filter(p => p.id !== DEV);
+  const me = MY && MY.profile;
+  if (me && list.length) {
+    const ms = list.map(q => ({q, n:(q.offer || []).filter(t => (me.looking || []).includes(t)).length + (q.looking || []).filter(t => (me.offer || []).includes(t)).length})).filter(x => x.n).sort((a, b) => b.n - a.n).slice(0, 4);
+    $('matchH').hidden = !ms.length; $('matches').innerHTML = ms.length ? `<div class="card" style="padding:0 16px">${ms.map(x => personHtml(x.q)).join('')}</div>` : '';
+  } else { $('matchH').hidden = true; $('matches').innerHTML = ''; }
+  const used = tags().filter(t => list.some(p => (p.looking || []).includes(t) || (p.offer || []).includes(t)));
+  $('filter').innerHTML = list.length ? [''].concat(used).map(t => `<button type="button" class="tag" data-t="${esc(t)}" aria-pressed="${filter === t}">${t ? esc(t) : 'Everyone'}</button>`).join('') : '';
+  $('filter').querySelectorAll('.tag').forEach(b => b.onclick = () => { filter = b.dataset.t; renderPeople(); });
+  const shown = filter ? list.filter(p => (p.looking || []).includes(filter) || (p.offer || []).includes(filter)) : list;
+  $('people').innerHTML = shown.length ? `<div class="card" style="padding:0 16px">${shown.map(personHtml).join('')}</div>` : `<p class="empty">${list.length ? 'Nobody with that tag yet.' : 'Be the first to join the board.'}</p>`;
+}
+
+/* ---------- tabs ---------- */
+const TABS = ['today', 'poll', 'photo', 'meet'];
+function show(id){ TABS.forEach(t => { $(t).hidden = t !== id; $('t-' + t).setAttribute('aria-selected', String(t === id)); }); store.set('md_tab', id); if (history.replaceState) history.replaceState(null, '', '#' + id); window.scrollTo(0, 0); }
+TABS.forEach(t => $('t-' + t).onclick = () => show(t));
+const start = (location.hash || '').slice(1);
+show(TABS.includes(start) ? start : 'today');
+
+renderToday(); renderPoll(); renderMine(); renderPeople();
+pull(); loadMine();
+setInterval(pull, 12000); setInterval(renderToday, 30000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { pull(); renderToday(); } });
+})();
+</script>
+</body>
+</html>

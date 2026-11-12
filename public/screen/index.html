@@ -1,0 +1,1029 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mentorship Day Live Screen</title>
+<link rel="preload" href="/assets/ss3-700.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+@font-face{font-family:SS3;font-weight:300;src:url(/assets/ss3-300.woff2) format('woff2')}
+@font-face{font-family:SS3;font-weight:400;src:url(/assets/ss3-400.woff2) format('woff2')}
+@font-face{font-family:SS3;font-weight:600;src:url(/assets/ss3-600.woff2) format('woff2')}
+@font-face{font-family:SS3;font-weight:700;src:url(/assets/ss3-700.woff2) format('woff2')}
+@font-face{font-family:SS3;font-weight:900;src:url(/assets/ss3-900.woff2) format('woff2')}
+:root{--red:#DF6236;--teal:#2F9CC3;--navy:#1F2E33;--orange:#E78B3F;--u:10px;--ease:cubic-bezier(.2,.8,.2,1)}
+[data-theme=light]{--bg1:#E3E3E3;--bg2:#F7F7F7;--ink:#1F2E33;--ink2:rgba(31,46,51,.70);--ink3:rgba(31,46,51,.44);--line:rgba(31,46,51,.14);--glass:rgba(255,255,255,.64);--glassline:rgba(255,255,255,.95);--shadow:0 calc(var(--u)*.6) calc(var(--u)*2.6) rgba(31,46,51,.07);--soft2:rgba(31,46,51,.08);--chip:transparent;--redsoft:rgba(223,98,54,.12)}
+[data-theme=dark]{--bg1:#1F2E33;--bg2:#162226;--ink:#FFFFFF;--ink2:rgba(255,255,255,.72);--ink3:rgba(255,255,255,.44);--line:rgba(255,255,255,.14);--glass:rgba(255,255,255,.06);--glassline:rgba(255,255,255,.10);--shadow:none;--soft2:rgba(255,255,255,.10);--chip:#FFFFFF;--redsoft:rgba(223,98,54,.22)}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;color:var(--ink);font-family:SS3,system-ui,sans-serif;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;background:linear-gradient(180deg,var(--bg1),var(--bg2));transition:color .9s var(--ease)}
+::view-transition-old(root),::view-transition-new(root){animation:none;mix-blend-mode:normal}
+#bg{position:fixed;inset:0;width:100%;height:100%;display:block}
+#app{position:fixed;inset:0;display:grid;grid-template-columns:calc(var(--u)*var(--nowW)) minmax(0,1fr) calc(var(--u)*var(--railW));grid-template-rows:minmax(0,1fr) calc(var(--u)*11.5) calc(var(--u)*8.2);column-gap:calc(var(--u)*3);padding:calc(var(--u)*3.2) calc(var(--u)*3.4) 0}
+#app[data-layout=standard]{grid-template-columns:calc(var(--u)*var(--nowW)) minmax(0,1fr) 0}
+#app[data-layout=standard] #rail{display:none}
+.glass{background:var(--glass);border:1px solid var(--glassline);border-radius:10px;box-shadow:var(--shadow);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.leaf{border-radius:calc(var(--u)*.7) calc(var(--u)*3) 0 calc(var(--u)*3)}
+
+/* Now zone */
+#now{display:flex;flex-direction:column;min-height:0;padding:calc(var(--u)*2.6) calc(var(--u)*2.8) calc(var(--u)*2.4)}
+.wm h1{font-weight:700;font-size:calc(var(--u)*4.4);line-height:1;color:var(--red);letter-spacing:-.01em;white-space:nowrap}
+.wm i{display:block;height:calc(var(--u)*.55);background:var(--teal);margin-top:calc(var(--u)*1.2);width:100%}
+.wm span{display:block;font-size:calc(var(--u)*1.6);color:var(--ink2);margin-top:calc(var(--u)*1.1)}
+.clock{margin-top:auto;font-weight:300;font-size:calc(var(--u)*14.5);line-height:.82;letter-spacing:-.035em;display:flex;align-items:flex-start;color:var(--ink)}
+.clock sup{font-size:.26em;font-weight:600;letter-spacing:0;color:var(--ink3);margin:calc(var(--u)*1) 0 0 calc(var(--u)*.9)}
+.status{margin-top:calc(var(--u)*3.2)}
+.st-label{display:flex;align-items:center;gap:calc(var(--u)*1);font-weight:700;font-size:calc(var(--u)*2.6);line-height:1.1}
+.st-label.on{color:var(--red)}
+.live-dot{width:calc(var(--u)*1.2);height:calc(var(--u)*1.2);border-radius:50%;background:var(--red);flex:none;position:relative}
+.live-dot:after{content:"";position:absolute;inset:0;border-radius:50%;background:var(--red);animation:ping 2s var(--ease) infinite}
+@keyframes ping{0%{transform:scale(1);opacity:.6}80%,100%{transform:scale(2.6);opacity:0}}
+.st-cd{display:flex;align-items:baseline;gap:calc(var(--u)*1.2);margin-top:calc(var(--u)*1.2)}
+.st-cd b{font-weight:300;font-size:calc(var(--u)*7);line-height:1;letter-spacing:-.02em}
+.st-cd span{font-size:calc(var(--u)*1.8);color:var(--ink2)}
+.prog{height:calc(var(--u)*.55);background:var(--soft2);overflow:hidden;margin-top:calc(var(--u)*1.5)}
+.prog i{display:block;height:100%;width:0;background:var(--red);transition:width 1s linear}
+.st-next{margin-top:calc(var(--u)*1.7);font-size:calc(var(--u)*1.8);color:var(--ink2);line-height:1.35}
+.st-next b{color:var(--ink);font-weight:700}
+.logos{margin-top:auto;display:flex;flex-direction:column;gap:calc(var(--u)*1.4);padding-top:calc(var(--u)*2.4)}
+.logos div{display:flex;align-items:center;justify-content:space-between;gap:calc(var(--u)*1.6);background:var(--chip);border-radius:10px;padding:calc(var(--u)*.4) calc(var(--u)*.6)}
+.logos img{display:block;width:auto}
+
+/* Stage */
+#stage{position:relative;min-width:0;min-height:0;display:flex;gap:calc(var(--u)*3)}
+.slot{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column}
+.sh{display:flex;align-items:flex-end;gap:calc(var(--u)*2);margin:calc(var(--u)*.6) 0 calc(var(--u)*2.2)}
+.sh h2{font-weight:700;font-size:calc(var(--u)*3.4);line-height:1;color:var(--red);white-space:nowrap}
+.sh .rule{position:absolute}
+.pager{margin-left:auto;display:flex;gap:calc(var(--u)*1.8);font-size:calc(var(--u)*1.5);font-weight:600;color:var(--ink3)}
+.pager span{position:relative;padding-bottom:calc(var(--u)*.7);white-space:nowrap;transition:color .4s}
+.pager span.on{color:var(--ink)}
+.pager span.on:after{content:"";position:absolute;left:0;bottom:0;height:3px;width:100%;background:var(--teal);transform-origin:left;animation:fill var(--dwell) linear both}
+@keyframes fill{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.shrule{height:calc(var(--u)*.4);background:var(--teal);margin:calc(var(--u)*-1) 0 calc(var(--u)*2.4);width:calc(var(--u)*12)}
+.sb{position:relative;flex:1;min-height:0;display:flex;flex-direction:column}
+.rv{opacity:0}
+.out{animation:out .42s var(--ease) both}
+@keyframes out{to{opacity:0;transform:translateY(calc(var(--u)*-1.4))}}
+
+/* shared */
+.av{border-radius:50%;object-fit:cover;flex:none;background:var(--soft2);display:grid;place-items:center;font-weight:700;color:var(--ink2);box-shadow:0 0 0 3px rgba(255,255,255,.9)}
+.dl{display:inline-flex;align-items:center;gap:calc(var(--u)*.6);font-size:calc(var(--u)*1.5);font-weight:600;color:var(--ink2);white-space:nowrap}
+.dl:before{content:"";width:calc(var(--u)*.9);height:calc(var(--u)*.9);border-radius:50%;background:var(--red)}
+.dl.on:before{background:var(--teal)}
+.pill{display:inline-flex;align-items:center;font-weight:700;color:#fff;background:var(--red);white-space:nowrap;line-height:1}
+.pill.blue{background:var(--teal)}
+.pill.ghost{background:transparent;color:var(--red);box-shadow:inset 0 0 0 2px var(--red)}
+.pill.ghost.blue{color:var(--teal);box-shadow:inset 0 0 0 2px var(--teal)}
+.pill.mute{background:var(--soft2);color:var(--ink3)}
+.bar{height:calc(var(--u)*.5);background:var(--soft2);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--teal);transition:width 1.2s var(--ease)}
+.bar.hot i{background:var(--red)}
+.muted{color:var(--ink2)}
+
+/* rooms */
+.rooms{display:grid;flex:1;min-height:0;gap:calc(var(--u)*2)}
+.room{display:flex;flex-direction:column;gap:calc(var(--u)*1.4);min-height:0;min-width:0;padding:calc(var(--u)*2.2) calc(var(--u)*2.4)}
+.room .top{display:flex;align-items:center;gap:calc(var(--u)*1.4);flex-wrap:wrap}
+.room .top .pill{font-size:calc(var(--u)*2.2);padding:calc(var(--u)*1) calc(var(--u)*2)}
+.room .top em{font-style:normal;font-weight:600;font-size:calc(var(--u)*1.6);color:var(--ink2)}
+.room .top em.on{color:var(--red)}
+.room .ttl{font-weight:700;line-height:1.13;text-wrap:balance}
+.room .who{display:flex;align-items:center;gap:calc(var(--u)*1.2);margin-top:calc(var(--u)*.4)}
+.room .who b{display:block;font-weight:700;font-size:calc(var(--u)*1.85);line-height:1.15}
+.room .who span{display:block;font-size:calc(var(--u)*1.4);color:var(--ink2);line-height:1.25}
+.room .seats{margin-top:auto;display:flex;align-items:center;gap:calc(var(--u)*1.2);font-size:calc(var(--u)*1.45);color:var(--ink2)}
+.room .seats .bar{flex:1}
+.room.free{background:transparent;border:2px dashed var(--line);box-shadow:none;backdrop-filter:none}
+.room.free .ttl{color:var(--ink3);font-weight:600;font-size:calc(var(--u)*2)}
+.room.live{box-shadow:var(--shadow),inset 0 calc(var(--u)*.5) 0 var(--red)}
+.stack{display:flex}
+.stack>*+*{margin-left:calc(var(--u)*-1.4)}
+
+/* choose grid */
+.cg{display:grid;flex:1;min-height:0}
+.cg .hd{padding:0 calc(var(--u)*.7) calc(var(--u)*1.2)}
+.cg .hd .pill{font-size:calc(var(--u)*1.9);padding:calc(var(--u)*.9) calc(var(--u)*1.8);width:100%}
+.cg .tm{border-top:1px solid var(--line);padding:calc(var(--u)*1.4) calc(var(--u)*1) 0 0}
+.cg .tm b{display:block;font-weight:700;font-size:calc(var(--u)*3.2);line-height:1}
+.cg .c{border-top:1px solid var(--line);border-left:1px solid var(--line);padding:calc(var(--u)*1.4);display:flex;flex-direction:column;gap:calc(var(--u)*.8);min-height:0;overflow:hidden}
+.cg .c .s{font-weight:700;font-size:calc(var(--u)*1.9);line-height:1.15;text-wrap:balance}
+.cg .c .p{display:flex;align-items:center;gap:calc(var(--u)*.8);font-size:calc(var(--u)*1.5);color:var(--ink2);margin-top:auto}
+.cg .c .m{display:flex;align-items:center;gap:calc(var(--u)*1.2);font-size:calc(var(--u)*1.4);color:var(--ink2)}
+.cg .c .m .bar{flex:1}
+.cg .c.free{color:var(--ink3);font-size:calc(var(--u)*1.6);justify-content:center}
+
+/* one to one chips */
+.oo{display:flex;flex-direction:column;gap:calc(var(--u)*1.5)}
+.oo-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:calc(var(--u)*1.2)}
+.oo-who{display:flex;align-items:center;gap:calc(var(--u)*1);min-width:0}
+.oo-who b{font-weight:700;font-size:calc(var(--u)*1.75);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.oo-who span{font-size:calc(var(--u)*1.3);color:var(--ink2);display:block;white-space:nowrap}
+.chips{display:flex;gap:calc(var(--u)*.6)}
+.chp{width:calc(var(--u)*6.4);height:calc(var(--u)*3.4);border-radius:6px;display:grid;place-items:center;font-weight:700;font-size:calc(var(--u)*1.45);border:2px solid var(--teal);color:var(--ink);background:rgba(255,255,255,.5);transition:all .6s var(--ease)}
+.chips.sm .chp{width:calc(var(--u)*5.6);height:calc(var(--u)*3.1);font-size:calc(var(--u)*1.35)}
+.chp.taken{border-color:transparent;background:var(--soft2);color:var(--ink3)}
+.chp.now{border-color:var(--red);background:var(--red);color:#fff}
+.chp.done{border-color:transparent;background:transparent;color:var(--ink3);text-decoration:line-through}
+.legend{display:flex;gap:calc(var(--u)*1.8);font-size:calc(var(--u)*1.35);color:var(--ink2);flex-wrap:wrap}
+.legend i{display:inline-block;width:calc(var(--u)*1.3);height:calc(var(--u)*1.3);border-radius:3px;margin-right:calc(var(--u)*.5);vertical-align:-.12em;border:2px solid var(--teal)}
+.legend i.t{border-color:transparent;background:var(--soft2)}
+.legend i.n{border-color:var(--red);background:var(--red)}
+
+/* rail */
+#rail{display:flex;flex-direction:column;gap:calc(var(--u)*1.8);min-height:0}
+.mod{padding:calc(var(--u)*2) calc(var(--u)*2.2)}
+.mod h3{display:flex;align-items:baseline;justify-content:space-between;font-weight:700;font-size:calc(var(--u)*2.1);margin-bottom:calc(var(--u)*1.6)}
+.mod h3 em{font-style:normal;font-weight:300;font-size:calc(var(--u)*3.8);line-height:.8;color:var(--teal)}
+.mod .foot{margin-top:calc(var(--u)*1.4);font-size:calc(var(--u)*1.45);color:var(--ink2)}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:calc(var(--u)*1.8)}
+.kpi b{display:block;font-weight:300;font-size:calc(var(--u)*5.2);line-height:.9;letter-spacing:-.02em}
+.kpi span{display:block;font-size:calc(var(--u)*1.45);color:var(--ink2);margin-top:calc(var(--u)*.7)}
+.qrrow{display:flex;gap:calc(var(--u)*1.8);align-items:center}
+.qr{background:#fff;border-radius:10px;padding:calc(var(--u)*.9);flex:none;box-shadow:var(--shadow)}
+.qr svg{display:block;width:100%;height:100%}
+.qrph{flex:none;border:2px dashed var(--ink3);border-radius:10px;display:grid;place-items:center;text-align:center;color:var(--ink3);font-weight:700;font-size:calc(var(--u)*1.4);line-height:1.3}
+.qrtxt b{display:block;font-weight:700;font-size:calc(var(--u)*2);line-height:1.2}
+.qrtxt span{display:block;font-size:calc(var(--u)*1.5);color:var(--ink2);margin-top:calc(var(--u)*.6);line-height:1.3}
+
+/* spotlight */
+.spot{flex:1;display:grid;align-items:center;gap:calc(var(--u)*3.6)}
+.spot .ph{position:relative;justify-self:center}
+.spot .ph svg.ring{position:absolute;inset:calc(var(--u)*-1.3);width:calc(100% + var(--u)*2.6);height:calc(100% + var(--u)*2.6);transform:rotate(-90deg)}
+.spot .ph svg.ring circle{fill:none;stroke-width:1.4}
+@keyframes ring{to{stroke-dashoffset:0}}
+.spot .ph .av{box-shadow:0 calc(var(--u)*1) calc(var(--u)*3) rgba(31,46,51,.18)}
+.spot .kick{font-size:calc(var(--u)*1.9);color:var(--ink2)}
+.spot .nm{font-weight:700;font-size:calc(var(--u)*5.4);line-height:1;letter-spacing:-.01em;color:var(--red);margin-top:calc(var(--u)*.6)}
+.spot .rule{height:calc(var(--u)*.45);background:var(--teal);width:calc(var(--u)*14);margin-top:calc(var(--u)*1.6)}
+.spot .rl{font-size:calc(var(--u)*1.9);color:var(--ink2);margin-top:calc(var(--u)*1.4)}
+.spot .ss{font-weight:700;font-size:calc(var(--u)*2.6);line-height:1.2;margin-top:calc(var(--u)*2.2);text-wrap:balance}
+.spot .meta{display:flex;gap:calc(var(--u)*1.4);align-items:center;margin-top:calc(var(--u)*1.8);flex-wrap:wrap}
+.spot .meta .pill{font-size:calc(var(--u)*1.7);padding:calc(var(--u)*.7) calc(var(--u)*1.5)}
+.spot .count{margin-top:calc(var(--u)*2.4);display:flex;gap:calc(var(--u)*.6)}
+.spot .count i{width:calc(var(--u)*2.2);height:3px;background:var(--soft2)}
+.spot .count i.on{background:var(--red)}
+
+/* wall */
+.wall{flex:1;display:grid;align-content:center;gap:calc(var(--u)*2.4) calc(var(--u)*1.6)}
+.wall .w{display:flex;flex-direction:column;align-items:center;text-align:center;gap:calc(var(--u)*.9);transition:transform .7s var(--ease),opacity .7s}
+.wall .w b{font-size:calc(var(--u)*1.6);font-weight:700;line-height:1.15}
+.wall .w span{font-size:calc(var(--u)*1.3);color:var(--ink2)}
+.wall .w .av{transition:box-shadow .7s var(--ease)}
+.wall.hl .w{opacity:.45}
+.wall.hl .w.on{opacity:1;transform:scale(1.08)}
+.wall.hl .w.on .av{box-shadow:0 0 0 3px #fff,0 0 0 7px var(--red)}
+
+/* poll */
+.poll{flex:1;min-height:0;display:grid;gap:calc(var(--u)*3)}
+.cloud{position:relative;min-height:0;min-width:0}
+.cloud span{position:absolute;white-space:nowrap;font-weight:700;line-height:1;transform:translate(-50%,-50%);transition:left 1.2s var(--ease),top 1.2s var(--ease),font-size 1.2s var(--ease)}
+.cloud span.new{animation:pop .9s cubic-bezier(.2,1.5,.4,1) both}
+@keyframes pop{from{opacity:0;transform:translate(-50%,-50%) scale(.3)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+.empty{display:grid;place-items:center;text-align:center;color:var(--ink3);font-size:calc(var(--u)*2);line-height:1.4}
+
+/* hero, speaker, recap */
+.hero{flex:1;display:flex;flex-direction:column;justify-content:center}
+.hero .k{font-size:calc(var(--u)*3.6);font-weight:400;line-height:1.1}
+.hero h1{font-weight:700;line-height:.95;letter-spacing:-.02em;color:var(--red);margin-top:calc(var(--u)*.8)}
+.hero .rule{height:calc(var(--u)*.9);background:var(--teal);margin-top:calc(var(--u)*2.6)}
+.hero p{font-size:calc(var(--u)*2.5);color:var(--ink);line-height:1.4;margin-top:calc(var(--u)*3);max-width:calc(var(--u)*80)}
+.hero .feat{display:flex;gap:calc(var(--u)*3.4);margin-top:calc(var(--u)*3.4);flex-wrap:wrap}
+.hero .feat span{display:flex;align-items:center;gap:calc(var(--u)*1.1);font-size:calc(var(--u)*2.2);font-weight:600}
+.hero .feat span:before{content:"";width:calc(var(--u)*1.1);height:calc(var(--u)*1.1);border-radius:50%;background:var(--red)}
+.speaker{flex:1;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:calc(var(--u)*6)}
+.speaker .k{font-size:calc(var(--u)*3);color:var(--ink2)}
+.speaker .nm{font-weight:700;line-height:.92;letter-spacing:-.02em;color:var(--red);margin-top:calc(var(--u)*1)}
+.speaker .rule{height:calc(var(--u)*.8);background:var(--teal);margin-top:calc(var(--u)*2.4);width:70%}
+.speaker .org{font-weight:700;font-size:calc(var(--u)*3.4);margin-top:calc(var(--u)*2.4)}
+.speaker .what{font-size:calc(var(--u)*2.4);color:var(--ink2);margin-top:calc(var(--u)*.8)}
+.sl{display:flex;flex-direction:column;min-width:calc(var(--u)*40);padding:calc(var(--u)*1.4) calc(var(--u)*2.4)}
+.sl>div{display:grid;grid-template-columns:calc(var(--u)*8) 1fr;gap:calc(var(--u)*1.2);padding:calc(var(--u)*1.5) 0;transition:opacity .6s}
+.sl>div+div{border-top:1px solid var(--line)}
+.sl>div>b{font-weight:700;font-size:calc(var(--u)*2.2);color:var(--ink2)}
+.sl>div strong{display:block;font-weight:700;font-size:calc(var(--u)*2.1)}
+.sl>div span{display:block;font-size:calc(var(--u)*1.5);color:var(--ink2)}
+.sl>div.past{opacity:.38}
+.sl>div.on strong,.sl>div.on>b{color:var(--red)}
+.recap{flex:1;display:flex;flex-direction:column;justify-content:center}
+.recap .kpis{grid-template-columns:repeat(4,minmax(calc(var(--u)*17),auto));justify-content:start;gap:calc(var(--u)*3);margin-top:calc(var(--u)*4)}
+.recap .kpi b{font-size:calc(var(--u)*7.4);color:var(--ink)}
+
+/* garden timeline */
+#garden{grid-column:1/-1;position:relative;margin:0 calc(var(--u)*-3.4)}
+.fl{position:absolute;bottom:0;width:calc(var(--u)*3.4);height:calc(var(--u)*8);transform-origin:50% 100%;transition:opacity .8s}
+.fl svg{display:block;width:100%;height:100%}
+.fl.past{opacity:.38}
+.fl.on{animation:sway 4s ease-in-out infinite}
+@keyframes sway{0%,100%{transform:rotate(-2.5deg)}50%{transform:rotate(2.5deg)}}
+.fl-l{position:absolute;bottom:calc(var(--u)*3.4);white-space:nowrap;line-height:1.1;transition:opacity .8s}
+.fl-l b{display:block;font-weight:700;font-size:calc(var(--u)*1.7);overflow:hidden;text-overflow:ellipsis}
+.fl-l span{display:block;font-size:calc(var(--u)*1.35);color:var(--ink2);margin-top:calc(var(--u)*.2)}
+.fl-l.past{opacity:.45}
+.fl-l.on b{color:var(--red)}
+
+/* band with ticker */
+#band{grid-column:1/-1;margin:0 calc(var(--u)*-3.4);display:flex;flex-direction:column;gap:calc(var(--u)*.35)}
+.thin{height:calc(var(--u)*.45);background:var(--teal);position:relative}
+.thin i{position:absolute;left:0;top:0;bottom:0;background:var(--red);transition:width 1s linear}
+#needle{position:absolute;top:50%;width:calc(var(--u)*1.6);height:calc(var(--u)*1.6);margin:calc(var(--u)*-.8) 0 0 calc(var(--u)*-.8);border-radius:50%;background:var(--red);box-shadow:0 0 0 calc(var(--u)*.5) var(--redsoft),0 0 calc(var(--u)*2) rgba(223,98,54,.6);transition:left 1s linear;z-index:2}
+.thick{height:calc(var(--u)*4.4);background:var(--teal);position:relative;overflow:hidden}
+.tk-in{position:absolute;top:0;left:0;height:100%;display:flex;align-items:center;white-space:nowrap;font-size:calc(var(--u)*2);font-weight:600;color:#fff;will-change:transform}
+.tk-in span{padding:0 calc(var(--u)*2.4)}
+.tk-in i{display:inline-block;width:calc(var(--u)*.7);height:calc(var(--u)*.7);background:#fff;transform:rotate(45deg);opacity:.8}
+.tk-in .ann{font-weight:900}
+#conn{position:absolute;right:0;top:0;bottom:0;display:flex;align-items:center;gap:calc(var(--u)*.7);padding:0 calc(var(--u)*3) 0 calc(var(--u)*6);background:linear-gradient(90deg,transparent,var(--teal) 35%);font-size:calc(var(--u)*1.3);color:rgba(255,255,255,.85);font-weight:600}
+#conn i{width:calc(var(--u)*.8);height:calc(var(--u)*.8);border-radius:50%;background:rgba(255,255,255,.5)}
+#conn.live i{background:#fff}
+.leaves{height:calc(var(--u)*2.2);margin-top:calc(var(--u)*.6)}
+.leaves svg{display:block;width:100%;height:100%}
+
+/* moments */
+#moment{position:absolute;inset:0;z-index:5;display:none;flex-direction:column;justify-content:center;padding:calc(var(--u)*4) calc(var(--u)*5);overflow:hidden}
+#moment.show{display:flex}
+#moment .k{display:flex;align-items:center;gap:calc(var(--u)*1.2);font-weight:600;font-size:calc(var(--u)*3);color:var(--ink)}
+#moment h1{font-weight:700;font-size:calc(var(--u)*10.5);line-height:.92;letter-spacing:-.02em;margin-top:calc(var(--u)*1.6);color:var(--red)}
+#moment .rule{height:calc(var(--u)*.8);background:var(--teal);margin-top:calc(var(--u)*2.6);width:60%}
+#moment p{font-size:calc(var(--u)*2.8);color:var(--ink2);margin-top:calc(var(--u)*2.4)}
+#moment .mr{display:flex;gap:calc(var(--u)*3.6);margin-top:calc(var(--u)*4);flex-wrap:wrap}
+#moment .mr div{display:flex;flex-direction:column;align-items:flex-start;gap:calc(var(--u)*1);max-width:calc(var(--u)*44)}
+#moment .mr .pill{font-size:calc(var(--u)*2);padding:calc(var(--u)*.9) calc(var(--u)*1.8)}
+#moment .mr strong{font-weight:700;font-size:calc(var(--u)*2.1);line-height:1.15}
+#moment .wipe{position:absolute;inset:0;background:var(--teal)}
+
+.ov{position:fixed;inset:0;z-index:30;display:grid;place-items:center}
+#black{background:#000}
+#logo{background:linear-gradient(180deg,var(--bg1),var(--bg2))}
+#help{background:rgba(31,46,51,.92);color:#fff;font-size:calc(var(--u)*2);line-height:1.75}
+#help td{padding:0 calc(var(--u)*1.6)}
+#help td:first-child{color:var(--orange);font-weight:700;text-align:right;white-space:nowrap}
+#toast{position:fixed;left:50%;bottom:calc(var(--u)*22);transform:translateX(-50%);z-index:25;background:var(--navy);color:#fff;border-radius:10px;padding:calc(var(--u)*1.2) calc(var(--u)*2.2);font-size:calc(var(--u)*1.7);font-weight:600;opacity:0;transition:opacity .5s}
+#toast.show{opacity:1}
+/* join block in the now zone */
+.join{display:flex;align-items:center;gap:calc(var(--u)*1.4);margin-top:calc(var(--u)*2.4)}
+.join .qr{padding:calc(var(--u)*.6)}
+.join b{display:block;font-weight:700;font-size:calc(var(--u)*2);line-height:1.15}
+.join span{display:block;font-size:calc(var(--u)*1.4);color:var(--ink2);margin-top:calc(var(--u)*.4);line-height:1.3}
+/* networking board */
+.meet{flex:1;min-height:0;display:grid;gap:calc(var(--u)*2.4)}
+.card{padding:calc(var(--u)*2.6) calc(var(--u)*2.8);display:flex;flex-direction:column;gap:calc(var(--u)*1.5);min-width:0;min-height:0}
+.card .ini{width:calc(var(--u)*8.4);height:calc(var(--u)*8.4);border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:calc(var(--u)*3.2);color:#fff;background:var(--teal);flex:none}
+.card .nm{font-weight:700;font-size:calc(var(--u)*4);line-height:1;color:var(--red);letter-spacing:-.01em}
+.card .co{font-size:calc(var(--u)*1.9);color:var(--ink2);margin-top:calc(var(--u)*.6)}
+.tagrow{display:flex;flex-wrap:wrap;gap:calc(var(--u)*.8);align-items:center}
+.tagrow em{font-style:normal;font-size:calc(var(--u)*1.5);color:var(--ink2);width:100%}
+.tg{display:inline-flex;align-items:center;font-weight:700;font-size:calc(var(--u)*1.7);padding:calc(var(--u)*.6) calc(var(--u)*1.3);border-radius:calc(var(--u)*.5) calc(var(--u)*1.8) 0 calc(var(--u)*1.8);white-space:nowrap}
+.tg.lk{background:var(--redsoft);color:var(--red)}
+.tg.of{background:rgba(47,156,195,.15);color:var(--teal)}
+.match{margin-top:auto;border-top:1px solid var(--line);padding-top:calc(var(--u)*1.4);font-size:calc(var(--u)*1.7);color:var(--ink2);line-height:1.35}
+.match b{color:var(--ink)}
+.bal{display:flex;flex-direction:column;justify-content:center;gap:calc(var(--u)*1.2);min-width:0}
+.bal h4{font-weight:700;font-size:calc(var(--u)*2.1);margin-bottom:calc(var(--u)*.4)}
+.bal .r{display:grid;grid-template-columns:calc(var(--u)*14) minmax(0,1fr);align-items:center;gap:calc(var(--u)*1.2);font-size:calc(var(--u)*1.6)}
+.bal .r b{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bal .bars{display:flex;flex-direction:column;gap:3px}
+.bal .bars i{display:block;height:calc(var(--u)*.75);border-radius:2px;min-width:3px;transition:width 1s var(--ease)}
+.bal .bars i.lk{background:var(--red)}
+.bal .bars i.of{background:var(--teal)}
+.names{display:flex;flex-wrap:wrap;gap:calc(var(--u)*.7) calc(var(--u)*1.8);font-size:calc(var(--u)*1.6);color:var(--ink2)}
+.names b{color:var(--ink);font-weight:700}
+/* photo wall */
+.pw{flex:1;min-height:0;display:grid;gap:calc(var(--u)*1.2)}
+.ph{position:relative;overflow:hidden;border-radius:10px;background:var(--soft2);min-height:0}
+.ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ph.big img{animation:kb 9s ease-out both}
+@keyframes kb{from{transform:scale(1)}to{transform:scale(1.07)}}
+.ph .cap{position:absolute;left:0;right:0;bottom:0;padding:calc(var(--u)*3.4) calc(var(--u)*2.2) calc(var(--u)*1.8);background:linear-gradient(180deg,transparent,rgba(31,46,51,.8));color:#fff}
+.ph .cap b{display:block;font-weight:700;font-size:calc(var(--u)*2.3);line-height:1.2}
+.ph .cap span{display:block;font-size:calc(var(--u)*1.6);opacity:.88;margin-top:calc(var(--u)*.3)}
+.ph .cap.sm{padding:calc(var(--u)*2.4) calc(var(--u)*1.4) calc(var(--u)*1.1)}
+.ph .cap.sm span{font-size:calc(var(--u)*1.35)}
+/* live numbers */
+.pulse{flex:1;display:grid;align-content:center;gap:calc(var(--u)*3.6) calc(var(--u)*3)}
+.pulse .kpi b{font-size:calc(var(--u)*9);color:var(--ink)}
+.pulse .kpi:nth-child(3n+1) b{color:var(--red)}
+.pulse .kpi span{font-size:calc(var(--u)*1.9)}
+.pulse .kpi i{display:block;height:calc(var(--u)*.45);width:calc(var(--u)*6);background:var(--teal);margin-top:calc(var(--u)*1.3)}
+/* this way */
+.way{flex:1;display:grid;gap:calc(var(--u)*2);align-content:center}
+.wy{display:flex;align-items:center;gap:calc(var(--u)*2.4);padding:calc(var(--u)*2.2) calc(var(--u)*2.6);min-width:0}
+.wy .arr{width:calc(var(--u)*10);height:calc(var(--u)*10);flex:none;background:var(--red);display:grid;place-items:center}
+.wy .arr.blue{background:var(--teal)}
+.wy .arr i{display:grid;place-items:center;width:100%;height:100%}
+.wy .arr svg{width:62%;height:62%;animation:nudge 1.8s var(--ease) infinite}
+@keyframes nudge{0%,100%{transform:translateX(0)}50%{transform:translateX(calc(var(--u)*.9))}}
+.wy b{display:block;font-weight:700;font-size:calc(var(--u)*3.4);line-height:1.05;text-wrap:balance}
+.wy span{display:block;font-size:calc(var(--u)*1.8);color:var(--ink2);margin-top:calc(var(--u)*.6)}
+.here{display:flex;align-items:center;gap:calc(var(--u)*1.2);font-size:calc(var(--u)*2.2);font-weight:700;margin-bottom:calc(var(--u)*.6)}
+.here:before{content:"";width:calc(var(--u)*1.4);height:calc(var(--u)*1.4);border-radius:50%;background:var(--red);box-shadow:0 0 0 calc(var(--u)*.5) var(--redsoft)}
+/* poll bars */
+.pbars{display:flex;flex-direction:column;justify-content:center;gap:calc(var(--u)*2);min-width:0}
+.pbars .r b{display:flex;justify-content:space-between;gap:calc(var(--u)*2);font-weight:700;font-size:calc(var(--u)*2.3);margin-bottom:calc(var(--u)*.7)}
+.pbars .r b span{font-weight:300;color:var(--ink2)}
+.pbars .bar{height:calc(var(--u)*1.4)}
+/* video and screen check */
+#vid{background:#000;z-index:40}
+#vid video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
+#vid .vmsg{position:relative;color:#fff;font-size:calc(var(--u)*3);font-weight:700;text-align:center}
+#check{z-index:45;display:block}
+#check .grid i{position:absolute;background:rgba(47,156,195,.45)}
+#check .edge{position:absolute;inset:0;border:calc(var(--u)*.5) solid #DF6236}
+#check>b{position:absolute;width:calc(var(--u)*8);height:calc(var(--u)*8)}
+#check .cross{position:absolute;left:50%;top:50%;width:calc(var(--u)*8);height:calc(var(--u)*8);margin:calc(var(--u)*-4) 0 0 calc(var(--u)*-4);background:linear-gradient(#DF6236,#DF6236) center/2px 100% no-repeat,linear-gradient(#DF6236,#DF6236) center/100% 2px no-repeat}
+#check .info{position:absolute;left:50%;top:50%;transform:translate(-50%,calc(var(--u)*6));padding:calc(var(--u)*2.4) calc(var(--u)*3);font-size:calc(var(--u)*1.9);line-height:1.5;max-width:calc(var(--u)*70);background:rgba(255,255,255,.92)}
+#check .info strong{display:block;font-size:calc(var(--u)*3);color:var(--red)}
+
+.hide{display:none!important}
+@media (prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}.rv{opacity:1}}
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+<div id="app" data-layout="standard">
+  <aside id="now" class="glass">
+    <div class="wm"><h1>Mentorship Day</h1><i></i><span>Palestine Innovation Summit</span></div>
+    <div class="clock" id="clock"></div>
+    <div class="status">
+      <div class="st-label" id="stLabel"></div>
+      <div class="st-cd"><b id="stCd"></b><span id="stCdTxt"></span></div>
+      <div class="prog"><i id="stProg"></i></div>
+      <div class="st-next" id="stNext"></div>
+    </div>
+    <div class="join" id="join"></div>
+    <div class="logos" id="logos"></div>
+  </aside>
+  <main id="stage"><div id="moment" class="glass"></div></main>
+  <aside id="rail"></aside>
+  <div id="garden"></div>
+  <div id="band">
+    <div class="thin" id="dayline"><i id="dayfill"></i><div id="needle"></div></div>
+    <div class="thick"><div class="tk-in" id="tkIn"></div><div id="conn"><i></i><span id="connTxt"></span></div></div>
+    <div class="thin"></div>
+    <div class="leaves"><svg aria-hidden="true" preserveAspectRatio="xMinYMid slice" viewBox="0 0 3000 32"><defs><pattern id="lv" width="60" height="32" patternUnits="userSpaceOnUse"><path fill="#DF6236" d="M30,28 C40,27 52,20 60,2 C50,12 38,14 30,28 Z M30,28 C20,27 8,20 0,2 C10,12 22,14 30,28 Z"/></pattern></defs><rect width="3000" height="32" fill="url(#lv)"/></svg></div>
+  </div>
+</div>
+<div class="ov hide" id="black"></div>
+<div class="ov hide" id="logo"></div>
+<div class="ov hide" id="help"></div>
+<div class="ov hide" id="check"></div>
+<div class="ov hide" id="vid"><video playsinline preload="auto"></video><div class="vmsg"></div></div>
+<div id="toast"></div>
+<script src="/assets/qrcode.js"></script>
+<script>
+(function(){
+'use strict';
+const A = {gigi:'/assets/p_gigi.jpg', taylor:'/assets/p_taylor.jpg', ziad:'/assets/p_ziad.jpg', tom:'/assets/p_tom.jpg', rania:'/assets/p_rania.jpg', rajai:'/assets/p_rajai.jpg', iyas:'/assets/p_iyas.jpg', adam:'/assets/p_adam.jpg', rand:'/assets/p_rand.jpg', alan:'/assets/p_alan.jpg', mc:'/assets/mercycorps.png', gsg:'/assets/gsg.png', sida:'/assets/sida.png', tp:'/assets/technopark.png', pis:'/assets/pis.png'};
+
+/* ============ Settings ============ */
+const CONFIG = {
+  feedSheet: '1xOXRmAqi5NqVaLL-IkoEKC7H9eguoc5-idOxpNcbiAY',
+  links: { survey:'' },
+  join: (location.protocol.startsWith('http') && !/^(localhost|127\.)/.test(location.hostname)) ? location.origin + '/' : 'https://mentorship-day-live.netlify.app/',
+  hashtag: '#MentorshipDay',
+  theme: 'light',
+  refreshSeconds: 30,
+  stateSeconds: 3
+};
+
+const ADVISORS = {
+  gigi:   {name:'Gigi Aulsebrook',   role:'Founder and Director, Gia', photo:A.gigi},
+  taylor: {name:'Taylor Mohylsky',   role:'Growth Advisor, Founders Loft', photo:A.taylor},
+  asem:   {name:'Asem',              role:'', photo:null, noPhoto:true},
+  zyad:   {name:'Zyad Alhasan',      role:'Managing Director, Milestones Training and Consulting', photo:A.ziad},
+  tom:    {name:'Tom Sperry',        role:'Managing Director, Rogue Venture Partners', photo:A.tom},
+  adam:   {name:'Adam Stoll',        role:'', photo:A.adam},
+  rania:  {name:'Rania Jaber',       role:'Assistant Professor, Birzeit University', photo:A.rania},
+  rajai:  {name:'Rajai Nuseibeh',    role:'Managing Partner, Ather Ventures', photo:A.rajai},
+  rand:   {name:'Rand Safi',         role:'Gaza Sky Geeks', photo:A.rand},
+  alan:   {name:'Alan',              role:'Gaza Sky Geeks', photo:A.alan},
+  iyas:   {name:'Iyas Hisham Sabri', role:'CEO, Sabri Invest', photo:A.iyas}
+};
+const ROOMS = ['Room A','Room B','Room C'];
+const BLOCKS = [{n:1,s:'11:00',e:'11:45',end:'12:00'},{n:2,s:'12:00',e:'12:45',end:'13:00'},{n:3,s:'13:00',e:'13:45',end:'14:00'}];
+let SESSIONS = [
+  {b:1, room:'Room A', title:'Pitching and Outreach to International Clients', who:['gigi'], mode:'Online', seats:25, booked:0, ok:true},
+  {b:1, room:'Room B', title:'AI Impact on Technical Jobs', who:['asem'], mode:'In person', seats:25, booked:0, ok:true},
+  {b:1, room:'Room C', title:'Sales Tactics for Startups and Scaleups', who:['taylor'], mode:'Online', seats:25, booked:0, ok:true},
+  {b:2, room:'Room A', title:'From Vision to Execution: Turning Ideas into Results', who:['zyad'], mode:'In person', seats:25, booked:0, ok:true},
+  {b:3, room:'Room A', title:'Growing Against the Odds: Building Tech Companies in Uncertain Times', who:['tom','adam'], mode:'Online', seats:25, booked:0, ok:true},
+  {b:3, room:'Room B', title:'Lead Through Communication', who:['rania'], mode:'In person', seats:25, booked:0, ok:true},
+  {b:3, room:'Room C', title:'Personal Branding', who:['rajai'], mode:'In person', seats:25, booked:0, ok:true}
+];
+const FOCUS = {rand:'Founder and Career Conversations', alan:'Founder and Career Conversations', iyas:'Fundraising'};
+function slotsFor(who, room, start, mode){ const o = []; let m = toMin(start); for (let i = 0; i < 4; i++) { o.push({who, room, s:fmt(m), e:fmt(m+15), mode, status:'Open'}); m += 15; } return o; }
+let SLOTS = [].concat(slotsFor('rand','Small Room 1','11:00','In person'), slotsFor('alan','Small Room 1','12:00','In person'), slotsFor('iyas','Small Room 3','13:00','Online'));
+const PROGRAM = [
+  {s:'09:30', e:'10:00', title:'Registration', sub:'and Coffee', mode:'welcome'},
+  {s:'10:00', e:'10:30', title:'Opening', sub:'Main Hall', mode:'opening'},
+  {s:'10:30', e:'10:40', title:'Video Messages', sub:'Main Hall', mode:'video'},
+  {s:'10:40', e:'11:00', title:'Coffee Break', sub:'Pick your sessions', mode:'choose'},
+  {s:'11:00', e:'12:00', title:'Sessions', sub:'Rooms A, B and C', mode:'live'},
+  {s:'12:00', e:'13:00', title:'Sessions', sub:'Room A', mode:'live'},
+  {s:'13:00', e:'14:00', title:'Sessions', sub:'Rooms A, B and C', mode:'live'},
+  {s:'14:00', e:'15:00', title:'Lunch and Networking', sub:'Main Hall', mode:'lunch'}
+];
+const SPEAKERS = [
+  {s:'10:00', name:'Zaid Salem', org:'Market Access Lead, Gaza Sky Geeks', what:'Welcome and introduction'},
+  {s:'10:05', name:'Rand Safi', org:'Gaza Sky Geeks', what:'Opening remarks'},
+  {s:'10:15', name:'Alaa Alaaedein', org:'Palestine TechnoPark', what:'Opening remarks'}
+];
+const VIDEOS = ['Tareq Azza', 'KassimLegal'];
+
+/* ============ Time ============ */
+const P = new URLSearchParams(location.search);
+const speed = Math.max(1, +P.get('speed') || 1), t0 = Date.now();
+let base = null;
+if (P.get('t')) { const [h,m,s] = P.get('t').split(':').map(Number); const d = new Date(); d.setHours(h, m||0, s||0, 0); base = d.getTime(); }
+const now = () => (base === null && speed === 1) ? new Date() : new Date((base === null ? t0 : base) + (Date.now() - t0) * speed);
+function toMin(s){ const [h,m] = String(s).split(':').map(Number); return h*60 + m; }
+function fmt(m){ return String(Math.floor(m/60)).padStart(2,'0') + ':' + String(Math.round(m%60)).padStart(2,'0'); }
+function nowMin(){ const d = now(); return d.getHours()*60 + d.getMinutes() + d.getSeconds()/60 + d.getMilliseconds()/60000; }
+function mmss(sec){ sec = Math.max(0, Math.round(sec)); const h = Math.floor(sec/3600), m = Math.floor(sec%3600/60), s = sec%60; return (h ? h + ':' + String(m).padStart(2,'0') : String(m)) + ':' + String(s).padStart(2,'0'); }
+
+/* ============ State ============ */
+const S = {mode:null, override:P.get('mode'), demo:P.has('demo'), ann:'', speaker:null, live:false, checkedIn:null, poll:[], theme:P.get('theme') || CONFIG.theme, sheetScene:'', sheetTheme:'', sheetSpeaker:'', wifi:{name:'', pass:''}, plan:'', seen:new Set(), dataKey:'', momentKey:'', annShown:''};
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let U = 10;
+const adv = k => ADVISORS[k] || {name:k, role:'', photo:null};
+const initials = n => n.split(/\s+/).filter(Boolean).slice(0,2).map(w => w[0]).join('').toUpperCase();
+function av(k, size){ const a = adv(k); if (a.noPhoto) return ''; const st = `width:calc(var(--u)*${size});height:calc(var(--u)*${size});font-size:calc(var(--u)*${(size*0.36).toFixed(2)})`; return a.photo ? `<img class="av" style="${st}" src="${a.photo}" alt="">` : `<div class="av" style="${st}">${esc(initials(a.name))}</div>`; }
+const names = who => who.map(k => adv(k).name).join(' and ');
+const dl = m => `<span class="dl ${m === 'Online' ? 'on' : ''}">${m === 'Online' ? 'Online' : 'In person'}</span>`;
+const blockAt = m => BLOCKS.find(b => m >= toMin(b.s) && m < toMin(b.end));
+const nextBlock = m => BLOCKS.find(b => toMin(b.s) > m);
+function phase(m){ const b = blockAt(m); if (b) return m < toMin(b.e) ? {kind:'session', b} : {kind:'buffer', b, next:nextBlock(m)}; return {kind:'none', next:nextBlock(m)}; }
+const programAt = m => PROGRAM.find(p => m >= toMin(p.s) && m < toMin(p.e));
+function autoMode(m){ if (m < toMin('09:30')) return 'welcome'; const p = programAt(m); return p ? p.mode : 'close'; }
+function seatsLeft(s){ return Math.max(0, s.seats - s.booked); }
+function openSlots(m){ return SLOTS.filter(x => toMin(x.s) > m && x.status !== 'Booked'); }
+function advisorCount(){ return new Set(SESSIONS.flatMap(s => s.who).concat(SLOTS.map(x => x.who))).size; }
+const leafPad = s => `font-size:calc(var(--u)*${s});padding:calc(var(--u)*${(s*.45).toFixed(2)}) calc(var(--u)*${(s*.9).toFixed(2)})`;
+
+/* ============ Theme ============ */
+function wantedTheme(){ const t = S.sheetTheme || S.theme; return t === 'dark' ? 'dark' : 'light'; }
+function applyTheme(animate){
+  const t = wantedTheme(), root = document.documentElement;
+  if (root.dataset.theme === t) return;
+  const go = () => { root.dataset.theme = t; };
+  if (animate && document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const r = $('clock').getBoundingClientRect(), x = r.left + r.width * .3, y = r.top + r.height / 2, R = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+    const vt = document.startViewTransition(go);
+    vt.ready.then(() => root.animate({clipPath:[`circle(0px at ${x}px ${y}px)`, `circle(${R}px at ${x}px ${y}px)`]}, {duration:1300, easing:'cubic-bezier(.65,0,.25,1)', pseudoElement:'::view-transition-new(root)'})).catch(() => {});
+  } else go();
+}
+
+/* ============ Layout and scene plan ============ */
+const SETS = {
+  welcome: {p:['welcome'], s:['advisors','way','poll']},
+  opening: {p:['speaker'], s:[]},
+  video:   {p:['video'], s:[]},
+  choose:  {p:['choose'], s:['poll','board','spotlight','way']},
+  live:    {p:['rooms'], s:['meet','photos','poll','spotlight','board','pulse','way']},
+  lunch:   {p:['recap'], s:['photos','meet','poll','thanks']},
+  close:   {p:['recap'], s:['photos','thanks']}
+};
+const RAIL_HAS = ['board'];
+const LONG = {welcome:26, choose:26, rooms:26, recap:24, spotlight:21, meet:28, photos:28, poll:20, pulse:14, way:14, speaker:999, video:999};
+const dwell = id => LONG[id] || 16;
+const TITLES = {welcome:'Welcome', advisors:"Today's Advisors", poll:'Live Poll', board:'One to Ones', choose:'Choose Your Sessions', rooms:'Rooms', spotlight:'Advisor Spotlight', speaker:'Opening', video:'Video Messages', recap:'Lunch', thanks:'Our Advisors', survey:'Feedback', meet:'Networking Board', photos:'Photo Wall', pulse:'Live Numbers', way:'This Way'};
+function layout(){
+  U = Math.min(innerHeight / 100, innerWidth / 177.8);
+  const W = innerWidth / U, wide = W >= 262;
+  const nowW = wide ? 60 : 54, railW = wide ? 50 : 0;
+  const stageW = W - 6.8 - nowW - railW - (wide ? 6 : 3);
+  const r = document.documentElement.style; r.setProperty('--u', U + 'px'); r.setProperty('--nowW', nowW); r.setProperty('--railW', railW);
+  $('app').dataset.layout = wide ? 'wide' : 'standard';
+  return {wide, stageW, n: stageW >= 290 ? 3 : (stageW >= 125 ? 2 : 1)};
+}
+let L = {wide:false, stageW:100, n:1};
+function plan(){
+  const pin = P.get('scene') || S.pin; if (pin && R[pin]) return [[pin]];
+  const set = SETS[S.mode], sec = set.s.filter(id => !(L.wide && RAIL_HAS.includes(id)) && !(id === 'way' && !S.way));
+  if (!sec.length || L.n === 1) return [set.p.concat(sec)];
+  if (L.n === 2 || sec.length < 2) return [set.p, sec];
+  return [set.p, sec.filter((_, i) => i % 2 === 0), sec.filter((_, i) => i % 2 === 1)];
+}
+
+/* ============ Scenes ============ */
+const R = {};
+R.rooms = (c) => {
+  const m = nowMin(), ph = phase(m); let b, state, title;
+  if (ph.kind === 'session') { b = ph.b; state = 'live'; title = `On now, until ${b.e}`; }
+  else { b = ph.next || BLOCKS[BLOCKS.length - 1]; state = 'next'; title = ph.next ? `Up next at ${b.s}` : 'Sessions are done for today'; }
+  const cols = c.w >= 150 ? 4 : 2, cw = c.w / cols;
+  const cards = ROOMS.map(r => {
+    const s = SESSIONS.find(x => x.b === b.n && x.room === r);
+    if (!s) return `<div class="room free glass rv"><div class="top"><span class="pill mute leaf">${r}</span></div><div class="ttl">No session this hour. Book a one to one at the registration desk.</div></div>`;
+    const big = cw > 40, who = s.who.filter(k => !adv(k).noPhoto);
+    return `<div class="room glass ${state} rv"><div class="top"><span class="pill leaf ${state === 'live' ? '' : 'ghost'}">${r}</span>${state === 'live' ? '<em class="on">On now</em>' : `<em>Starts at ${b.s}</em>`}</div>
+      <div class="ttl" style="font-size:calc(var(--u)*${cw > 56 ? 3.4 : (big ? 3 : 2.4)})">${esc(s.title)}</div>
+      <div>${dl(s.mode)}</div>
+      <div class="who">${who.length ? `<div class="stack">${who.map(k => av(k, big ? 6.2 : 5.2)).join('')}</div>` : ''}<div><b>${esc(names(s.who))}</b><span>${esc(s.who.length === 1 ? adv(s.who[0]).role : '')}</span></div></div>
+      ${state === 'live' ? '' : `<div class="seats"><span>${seatsLeft(s)} of ${s.seats} seats left</span><div class="bar ${seatsLeft(s) < 6 ? 'hot' : ''}"><i style="width:${Math.round(100 * s.booked / s.seats)}%"></i></div></div>`}</div>`;
+  });
+  const cur = SLOTS.find(x => m >= toMin(x.s) && m < toMin(x.e)), up = SLOTS.filter(x => toMin(x.s) > m), ref = cur || up[0];
+  cards.push(ref ? `<div class="room glass ${cur ? 'live' : ''} rv"><div class="top"><span class="pill leaf blue ${cur ? '' : 'ghost'}">One to Ones</span>${cur ? `<em class="on">In session, until ${cur.e}</em>` : `<em>Next slot at ${ref.s}</em>`}</div>
+      <div class="ttl" style="font-size:calc(var(--u)*2.4)">${esc(FOCUS[ref.who] || 'One to One Conversations')}</div>
+      <div style="display:flex;gap:calc(var(--u)*1.4);flex-wrap:wrap">${dl(ref.mode)}<span class="dl on" style="color:var(--ink2)">${esc(ref.room)}</span></div>
+      <div class="who">${av(ref.who, 5.6)}<div><b>${esc(adv(ref.who).name)}</b><span>${openSlots(m).length} open slot${openSlots(m).length === 1 ? '' : 's'} left today</span></div></div></div>`
+    : `<div class="room free glass rv"><div class="top"><span class="pill mute leaf">One to Ones</span></div><div class="ttl">All one to one slots are done for today.</div></div>`);
+  return {title, html:`<div class="rooms" style="grid-template-columns:repeat(${cols},minmax(0,1fr))">${cards.join('')}</div>`};
+};
+
+R.choose = (c) => {
+  let h = `<div></div>${ROOMS.map(r => `<div class="hd rv"><span class="pill leaf">${r}</span></div>`).join('')}<div class="hd rv"><span class="pill leaf blue">One to Ones</span></div>`;
+  BLOCKS.forEach(b => {
+    h += `<div class="tm rv"><b>${b.s}</b></div>`;
+    ROOMS.forEach(r => { const s = SESSIONS.find(x => x.b === b.n && x.room === r);
+      if (!s) { h += `<div class="c free rv">No session</div>`; return; }
+      h += `<div class="c rv"><div class="s">${esc(s.title)}</div><div class="p">${av(s.who[0], 3.2)}<span>${esc(names(s.who))}</span></div><div class="m">${dl(s.mode)}<div class="bar ${seatsLeft(s) < 6 ? 'hot' : ''}"><i style="width:${Math.round(100 * s.booked / s.seats)}%"></i></div><span>${seatsLeft(s)} left</span></div></div>`; });
+    const sl = SLOTS.filter(x => toMin(x.s) >= toMin(b.s) && toMin(x.s) < toMin(b.end));
+    if (!sl.length) h += `<div class="c free rv">None</div>`;
+    else { const o = sl.filter(x => x.status !== 'Booked').length;
+      h += `<div class="c rv"><div class="s">${esc(FOCUS[sl[0].who] || 'One to Ones')}</div><div class="p">${av(sl[0].who, 3.2)}<span>${esc(adv(sl[0].who).name)}</span></div><div class="m">${dl(sl[0].mode)}<span style="margin-left:auto;font-weight:700;color:${o ? 'var(--teal)' : 'var(--ink3)'}">${o} of ${sl.length} open</span></div></div>`; }
+  });
+  return {title:'Choose Your Sessions', html:`<div class="cg" style="grid-template-columns:calc(var(--u)*9) repeat(4,minmax(0,1fr));grid-template-rows:auto repeat(3,minmax(0,1fr))">${h}</div>`};
+};
+
+function chipsHtml(m, compact){
+  const by = []; SLOTS.forEach(x => { let g = by.find(y => y.who === x.who && y.room === x.room); if (!g) { g = {who:x.who, room:x.room, mode:x.mode, list:[]}; by.push(g); } g.list.push(x); });
+  return `<div class="oo">${by.map(g => `<div class="oo-row rv"><div class="oo-who">${av(g.who, compact ? 3.6 : 4.4)}<div style="min-width:0"><b>${esc(compact ? adv(g.who).name.split(' ')[0] : adv(g.who).name)}</b><span>${compact ? esc(g.room) : esc(g.list[0].s) + ' to ' + esc(g.list[g.list.length - 1].e) + ', ' + esc(g.room)}</span></div></div>
+    <div class="chips${compact ? ' sm' : ''}">${g.list.map(x => { const s = toMin(x.s), e = toMin(x.e); const cls = m >= e ? 'done' : (m >= s ? 'now' : (x.status === 'Booked' ? 'taken' : '')); return `<div class="chp ${cls}">${x.s}</div>`; }).join('')}</div></div>`).join('')}</div>`;
+}
+const LEGEND = '<div class="legend"><span><i></i>Open</span><span><i class="t"></i>Taken</span><span><i class="n"></i>Happening now</span></div>';
+R.board = (c) => {
+  const m = nowMin(), o = openSlots(m).length;
+  return {title:'One to Ones', html:`<div style="display:flex;flex-direction:column;flex:1;gap:calc(var(--u)*2.4);justify-content:center">
+    <div class="rv" style="display:flex;align-items:baseline;gap:calc(var(--u)*1.4)"><b style="font-weight:300;font-size:calc(var(--u)*8);line-height:.8;color:var(--teal)">${o}</b><span style="font-size:calc(var(--u)*2.2);font-weight:700">open slot${o === 1 ? '' : 's'} left today</span></div>
+    ${chipsHtml(m, c.w < 60)}<div class="rv">${LEGEND}</div><div class="rv muted" style="font-size:calc(var(--u)*1.8)">15 minutes each. Book yours at the registration desk.</div></div>`};
+};
+
+function spotList(){
+  const m = nowMin(), items = [];
+  SESSIONS.forEach(s => s.who.forEach(k => { if (!adv(k).noPhoto) items.push({k, t:toMin(BLOCKS[s.b-1].s), e:toMin(BLOCKS[s.b-1].e), what:s.title, where:s.room, mode:s.mode}); }));
+  const seen = {}; SLOTS.forEach(x => { if (seen[x.who]) return; seen[x.who] = 1; const all = SLOTS.filter(y => y.who === x.who); items.push({k:x.who, t:toMin(all[0].s), e:toMin(all[all.length-1].e), what:'One to Ones on ' + (FOCUS[x.who] || 'request'), where:x.room, mode:x.mode, oo:true}); });
+  const up = items.filter(i => i.e > m).sort((a,b) => a.t - b.t); return up.length ? up : items;
+}
+let spotI = 0;
+R.spotlight = (c) => {
+  const list = spotList(), it = list[spotI % list.length], a = adv(it.k), m = nowMin(), live = m >= it.t && m < it.e;
+  const vertical = c.w < 70, d = vertical ? Math.min(c.w * .42, 22) : Math.min(c.w * .3, 30);
+  return {title:'Advisor Spotlight', html:`<div class="spot" style="grid-template-columns:${vertical ? '1fr' : 'auto minmax(0,1fr)'};${vertical ? 'text-align:center;justify-items:center' : ''}">
+    <div class="ph rv">${av(it.k, d)}<svg class="ring" viewBox="0 0 100 100"><circle cx="50" cy="50" r="49" stroke="var(--line)"/><circle cx="50" cy="50" r="49" stroke="var(--red)" stroke-dasharray="308" stroke-dashoffset="308" style="animation:ring 7s linear forwards"/></svg></div>
+    <div style="min-width:0;${vertical ? 'display:flex;flex-direction:column;align-items:center' : ''}"><div class="kick rv">${live ? 'On now' : 'Meet'}</div><div class="nm rv">${esc(a.name)}</div><div class="rule rv"></div>${a.role ? `<div class="rl rv">${esc(a.role)}</div>` : ''}<div class="ss rv">${esc(it.what)}</div>
+      <div class="meta rv" style="${vertical ? 'justify-content:center' : ''}"><span class="pill leaf ${it.oo ? 'blue' : ''}">${esc(it.where)}</span><b style="font-size:calc(var(--u)*2)">${fmt(it.t)}</b>${dl(it.mode)}</div>
+      <div class="count rv" style="${vertical ? 'justify-content:center' : ''}">${list.map((_, i) => `<i class="${i === spotI % list.length ? 'on' : ''}"></i>`).join('')}</div></div></div>`, tick:7, onTick:() => { spotI++; return true; }};
+};
+
+let wallI = 0;
+function wallKeys(){ return Object.keys(ADVISORS).filter(k => SESSIONS.some(s => s.who.includes(k)) || SLOTS.some(x => x.who === k)); }
+function nextTime(k){ const s = SESSIONS.find(x => x.who.includes(k)); if (s) return BLOCKS[s.b-1].s + ', ' + s.room; const x = SLOTS.find(y => y.who === k); return x ? x.s + ', one to ones' : ''; }
+function wallItem(k, size, i){ const a = adv(k); const pic = a.noPhoto ? `<div class="av" style="width:calc(var(--u)*${size});height:calc(var(--u)*${size});background:transparent;box-shadow:inset 0 0 0 2px var(--line)"></div>` : av(k, size); return `<div class="w rv" data-i="${i}">${pic}<b>${esc(a.name)}</b><span>${esc(nextTime(k))}</span></div>`; }
+R.advisors = (c) => {
+  const keys = wallKeys(), cols = Math.max(3, Math.min(Math.ceil(keys.length / 2), Math.floor(c.w / 14))), size = Math.min(12, c.w / cols * .6);
+  return {title:"Today's Advisors", html:`<div class="wall hl" style="grid-template-columns:repeat(${cols},1fr)">${keys.map((k, i) => wallItem(k, size, i).replace('class="w rv"', `class="w rv ${i === wallI % keys.length ? 'on' : ''}"`)).join('')}</div>`,
+    tick:2.6, onTick:(el) => { wallI++; const n = keys.length; el.querySelectorAll('.w').forEach(w => w.classList.toggle('on', +w.dataset.i === wallI % n)); return false; }};
+};
+R.thanks = (c) => { const keys = wallKeys(), cols = Math.max(3, Math.min(Math.ceil(keys.length / 2), Math.floor(c.w / 14))), size = Math.min(12, c.w / cols * .6);
+  return {title:'Thank You to Our Advisors', html:`<div class="wall" style="grid-template-columns:repeat(${cols},1fr)">${keys.map((k, i) => wallItem(k, size, i)).join('')}</div>`}; };
+
+function qrSvg(text){ try { const q = qrcode(0, 'M'); q.addData(text); q.make(); const n = q.getModuleCount(); let p = ''; for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) p += `M${c},${r}h1v1h-1z`; return `<svg viewBox="0 0 ${n} ${n}" shape-rendering="crispEdges"><path d="${p}" fill="#1F2E33"/></svg>`; } catch(e) { return ''; } }
+function qrBox(link, size, label){ return link ? `<div class="qr" style="width:calc(var(--u)*${size});height:calc(var(--u)*${size})">${qrSvg(link)}</div>` : `<div class="qrph" style="width:calc(var(--u)*${size});height:calc(var(--u)*${size})">${label}</div>`; }
+const CLOUD_COLORS = ['#DF6236','#2F9CC3','var(--ink)','#E78B3F'];
+R.poll = (c) => {
+  const vertical = c.w < 80, big = c.w >= 120, choice = S.pollType === 'choice', q = S.pollQ || 'The next poll opens soon';
+  const left = `<div class="rv" style="display:flex;flex-direction:${vertical ? 'row' : 'column'};gap:calc(var(--u)*2);align-items:${vertical ? 'center' : 'flex-start'};justify-content:center;max-width:calc(var(--u)*${vertical ? 64 : (big ? 46 : 34)})">${qrBox(CONFIG.join, vertical ? 12 : (big ? 22 : 17), '')}<div class="qrtxt"><b style="${big ? 'font-size:calc(var(--u)*3.2)' : ''}">${esc(q)}</b><span>${S.pollOpen ? 'Scan, answer, and watch your answer appear.' : 'This poll is closed. Thank you for answering.'}</span>${S.pollTotal ? `<span style="margin-top:calc(var(--u)*1.6);color:var(--ink)"><b style="font-weight:300;font-size:calc(var(--u)*4);display:inline">${S.pollTotal}</b> ${S.pollTotal === 1 ? 'answer' : 'answers'}</span>` : ''}</div></div>`;
+  const right = choice ? `<div class="pbars rv">${S.poll.map(([o, n]) => { const f = S.pollTotal ? n / S.pollTotal : 0; return `<div class="r"><b>${esc(o)}<span>${Math.round(f * 100)}%</span></b><div class="bar"><i style="width:${(f * 100).toFixed(1)}%"></i></div></div>`; }).join('')}</div>`
+    : `<div class="cloud rv" data-cloud>${S.poll.length ? '' : '<div class="empty" style="position:absolute;inset:0">The first answers will appear here.</div>'}</div>`;
+  return {title:'Live Poll', html:`<div class="poll" style="grid-template-${vertical ? 'rows:auto minmax(0,1fr)' : 'columns:auto minmax(0,1fr)'}">${left}${right}</div>`, after: choice ? null : layoutCloud};
+};
+function layoutCloud(el){
+  const box = el.querySelector('[data-cloud]'); if (!box || !S.poll.length) return;
+  const W = box.clientWidth, H = box.clientHeight; if (!W || !H) return;
+  const words = S.poll.slice(0, 40), max = words[0][1], cv = document.createElement('canvas').getContext('2d'), placed = [];
+  const scale = Math.min(1, Math.sqrt(W * H) / (U * 60)); let html = '';
+  words.forEach(([t, n], i) => {
+    const fs = U * (1.8 + 5.2 * Math.sqrt(n / max)) * scale; cv.font = `700 ${fs}px SS3`;
+    const w = cv.measureText(t).width + fs * .3, h = fs * 1.05; let x = W / 2, y = H / 2, ok = false;
+    for (let k = 0; k < 1400 && !ok; k++) { const a = k * .35, r = k * .9 * (U / 10); x = W / 2 + r * Math.cos(a) * 1.5; y = H / 2 + r * Math.sin(a) * .85;
+      if (x - w / 2 < 0 || x + w / 2 > W || y - h / 2 < 0 || y + h / 2 > H) continue;
+      ok = !placed.some(p => Math.abs(p.x - x) < (p.w + w) / 2 && Math.abs(p.y - y) < (p.h + h) / 2); }
+    if (!ok) return; placed.push({x, y, w, h});
+    const fresh = !S.seen.has(t); S.seen.add(t);
+    html += `<span class="${fresh ? 'new' : ''}" style="left:${x}px;top:${y}px;font-size:${fs.toFixed(1)}px;color:${CLOUD_COLORS[i % CLOUD_COLORS.length]};${fresh ? `animation-delay:${(i * .05).toFixed(2)}s` : ''}">${esc(t)}</span>`;
+  });
+  box.innerHTML = html;
+}
+
+R.welcome = (c) => {
+  const fs = Math.min(14, c.w / 7.6);
+  return {title:'Welcome', html:`<div class="hero"><div class="k rv">Welcome to</div><h1 class="rv" style="font-size:calc(var(--u)*${fs})">Mentorship Day</h1><div class="rule rv"></div>
+    <p class="rv">A full day of practical guidance, connecting tech professionals with experienced local and international advisors.</p>
+    <div class="feat rv"><span>Focused Sessions</span><span>One to One Conversations</span><span>Networking and Lunch</span></div></div>`};
+};
+R.speaker = (c) => {
+  const m = nowMin(); let i = S.speaker; if (i === null) { i = 0; SPEAKERS.forEach((s, j) => { if (m >= toMin(s.s)) i = j; }); }
+  const sp = SPEAKERS[Math.max(0, Math.min(SPEAKERS.length - 1, i))];
+  return {title:'Opening', html:`<div class="speaker"><div><div class="k rv">On stage</div><div class="nm rv" style="font-size:calc(var(--u)*${Math.min(12, c.w / 8.5)})">${esc(sp.name)}</div><div class="rule rv"></div><div class="org rv">${esc(sp.org)}</div><div class="what rv">${esc(sp.what)}</div></div>
+    <div class="sl glass rv">${SPEAKERS.map((s, j) => `<div class="${j < i ? 'past' : (j === i ? 'on' : '')}"><b>${s.s}</b><div><strong>${esc(s.name)}</strong><span>${esc(s.org)}</span></div></div>`).join('')}<div><b>10:30</b><div><strong>Video Messages</strong><span>${VIDEOS.map(esc).join(' and ')}</span></div></div></div></div>`};
+};
+R.video = () => ({title:'Video Messages', html:`<div class="hero"><div class="k rv">Up on screen</div><h1 class="rv" style="font-size:calc(var(--u)*11)">Video Messages</h1><div class="rule rv"></div><p class="rv">${VIDEOS.map(esc).join(' and ')}</p></div>`});
+R.recap = (c) => {
+  const m = nowMin(), close = S.mode === 'close', done = SESSIONS.filter(s => m >= toMin(BLOCKS[s.b-1].e)).length, booked = SLOTS.filter(x => x.status === 'Booked').length;
+  const k = [[done, 'sessions delivered'], [advisorCount(), 'advisors'], [booked || SLOTS.length, booked ? 'one to ones booked' : 'one to one slots']]; if (S.checkedIn) k.push([S.checkedIn, 'people joined']); if (S.photos.length) k.push([S.photos.length, 'photos shared']); if (S.profiles.length) k.push([S.profiles.length, 'on the Networking Board']); k.splice(4);
+  return {title: close ? 'Thank you' : 'Lunch', html:`<div class="recap hero"><div class="k rv">${close ? 'Mentorship Day' : 'Lunch is served'}</div><h1 class="rv" style="font-size:calc(var(--u)*${Math.min(12, c.w / 8.5)})">${close ? 'Thank you for joining us' : 'Keep connecting'}</h1><div class="rule rv"></div>
+    <p class="rv" style="text-align:left">${close ? 'See you at the next one.' : 'In the Main Hall until 15:00.'} Share your day with ${esc(CONFIG.hashtag)}</p>
+    <div class="kpis rv">${k.map(x => `<div class="kpi"><b data-count="${x[0]}">0</b><span>${x[1]}</span></div>`).join('')}</div></div>`};
+};
+R.survey = (c) => ({title:'Your Feedback', html:`<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:calc(var(--u)*2.4);text-align:center"><div class="rv">${qrBox(CONFIG.links.survey, Math.min(24, c.w * .5), 'Survey<br>QR code')}</div><div class="rv" style="font-weight:700;font-size:calc(var(--u)*3.6);color:var(--red)">Tell us how it went</div><div class="rv muted" style="font-size:calc(var(--u)*1.9)">Two minutes, on your phone</div></div>`});
+
+/* ============ Live system: phones and the operator remote ============ */
+const LIVE = {videos:[{id:'tareq', title:'Tareq Azza', src:'/videos/tareq-azza.mp4'}, {id:'kassim', title:'KassimLegal', src:'/videos/kassimlegal.mp4'}]};
+Object.assign(S, {photos:[], profiles:[], pollQ:'', pollType:'words', pollOpts:[], pollTotal:0, pollOpen:true, remoteMode:null, pin:null, way:null, cfgAt:null, videoAt:null, annAt:null, annUntil:0, liveOk:false, skew:0});
+function applyState(d){
+  if (d.t) S.skew = d.t - Date.now();
+  const p = d.poll;
+  if (p) { S.pollQ = p.q; S.pollType = p.type; S.pollOpen = !!p.open; S.pollTotal = p.total || 0; S.pollOpts = p.options || [];
+    if (p.type === 'choice') { const m = Object.fromEntries(p.words || []); S.poll = S.pollOpts.map(o => [o, m[o] || 0]); } else S.poll = p.words || []; }
+  else { S.pollQ = ''; S.poll = []; S.pollTotal = 0; S.pollType = 'words'; }
+  S.photos = d.photos || []; S.profiles = d.profiles || []; if (d.videos && d.videos.length) LIVE.videos = d.videos;
+  const c = d.cfg || {}; if (c.at === S.cfgAt) return;
+  const first = S.cfgAt === null, srv = Date.now() + S.skew; S.cfgAt = c.at;
+  const rm = c.mode && c.mode !== 'auto' ? c.mode : null;
+  if (!first && (rm !== S.remoteMode || (c.pin || null) !== S.pin)) S.override = null;
+  S.remoteMode = rm; S.pin = c.pin || null; S.way = c.way || null;
+  S.speaker = c.speaker == null ? null : c.speaker;
+  if (c.theme && c.theme !== S.theme) S.theme = c.theme;
+  setOverlay(c.overlay || null);
+  if (c.ann && c.ann.at !== S.annAt) { S.annAt = c.ann.at; S.ann = c.ann.text; const left = c.ann.at + c.ann.secs * 1000 - srv; S.annUntil = first ? (left > 0 ? Date.now() + left : 0) : Date.now() + c.ann.secs * 1000; }
+  if (!c.ann) { S.ann = ''; S.annUntil = 0; S.annAt = null; }
+  if (c.video && c.video.at !== S.videoAt) { S.videoAt = c.video.at; if (!first || srv - c.video.at < 20000) { if (c.video.id) playVideo(c.video.id); else stopVideo(); } }
+}
+async function pullState(){
+  try { const r = await fetch('/api/state', {cache:'no-store'}); if (!r.ok) throw 0; const d = await r.json(); applyState(d); S.liveOk = true; try { localStorage.setItem('md4_state', JSON.stringify(d)); } catch(e) {} }
+  catch(e) { S.liveOk = false; }
+  setConn(); loop(false);
+}
+function setConn(){ const ok = S.liveOk; $('conn').classList.toggle('live', ok); $('connTxt').innerHTML = (S.demo ? 'Demo data&nbsp; ' : '') + (ok ? 'Live' : 'Offline, saved data'); }
+function setOverlay(o){ S.overlay = o; $('black').classList.toggle('hide', o !== 'black'); $('logo').classList.toggle('hide', o !== 'logo'); if (o === 'check') renderCheck(); $('check').classList.toggle('hide', o !== 'check'); }
+
+/* video, started from the remote */
+function playVideo(id){
+  const v = LIVE.videos.find(x => x.id === id); if (!v) return;
+  const box = $('vid'), el = box.querySelector('video'), msg = box.querySelector('.vmsg');
+  msg.textContent = ''; box.classList.remove('hide'); el.muted = false; el.src = v.src;
+  el.play().catch(err => { if (err && err.name === 'NotAllowedError') { el.muted = true; el.play().catch(() => {}); toast('Click the screen once so videos can play with sound'); } });
+}
+function stopVideo(){ const box = $('vid'), el = box.querySelector('video'); el.pause(); el.removeAttribute('src'); el.load(); box.classList.add('hide'); }
+function initVideo(){ const box = $('vid'), el = box.querySelector('video'), msg = box.querySelector('.vmsg');
+  el.addEventListener('ended', stopVideo);
+  el.addEventListener('error', () => { if (!el.getAttribute('src')) return; msg.textContent = 'This video file is not on the screen yet'; setTimeout(stopVideo, 5000); }); }
+
+/* screen check for setting up the wall */
+function renderCheck(){
+  const dpr = devicePixelRatio || 1, W = innerWidth, H = innerHeight, g = [];
+  for (let i = 1; i < 10; i++) g.push(`<i style="left:${i * 10}%;top:0;bottom:0;width:1px"></i><i style="top:${i * 10}%;left:0;right:0;height:1px"></i>`);
+  const corner = (t, l) => `<b style="${t}:0;${l}:0;border-${t}:calc(var(--u)*1.2) solid #2F9CC3;border-${l}:calc(var(--u)*1.2) solid #2F9CC3"></b>`;
+  $('check').innerHTML = `<div class="grid">${g.join('')}</div><div class="edge"></div>${corner('top','left')}${corner('top','right')}${corner('bottom','left')}${corner('bottom','right')}<div class="cross"></div>
+    <div class="info glass"><strong>Screen check</strong><div>${W} x ${H} browser pixels</div><div>${Math.round(W * dpr)} x ${Math.round(H * dpr)} device pixels</div><div>Shape ${(W / H).toFixed(2)} to 1</div><div>Layout: ${L.wide ? 'ultra wide, with side panel' : (L.n > 1 ? L.n + ' columns' : 'one column')}</div>
+    <div>The red frame and blue corners should sit exactly on the edges of the wall.</div><div style="font-size:calc(var(--u)*1.3);margin-top:calc(var(--u)*1)">This is the smallest text the screen uses. Check it is readable from the back of the hall.</div></div>`;
+}
+
+/* shared pieces */
+function emptyJoin(title, text, c){ const col = c.w < 70;
+  return `<div style="flex:1;display:flex;align-items:center;justify-content:center;gap:calc(var(--u)*4);${col ? 'flex-direction:column;text-align:center' : ''}"><div class="rv">${qrBox(CONFIG.join, Math.min(24, Math.max(14, c.w * .3)), '')}</div>
+    <div class="rv" style="max-width:calc(var(--u)*54)"><div style="font-weight:700;font-size:calc(var(--u)*${col ? 3.6 : 4.6});line-height:1.05;color:var(--red);text-wrap:balance">${esc(title)}</div><div style="height:calc(var(--u)*.45);background:var(--teal);width:calc(var(--u)*12);margin:calc(var(--u)*1.8) ${col ? 'auto' : '0'} 0"></div><p style="font-size:calc(var(--u)*2.1);color:var(--ink2);line-height:1.4;margin-top:calc(var(--u)*1.8)">${esc(text)}</p></div></div>`; }
+function joinBlock(){ const el = $('join'); if (L.wide) { el.style.display = 'none'; return; } el.style.display = ''; el.innerHTML = `${qrBox(CONFIG.join, 9, '')}<div><b>Scan to join</b><span>Live poll, photo wall and the Networking Board</span></div>`; }
+
+/* Networking Board */
+function tagBalance(){ const m = {}; (S.profiles || []).forEach(p => { (p.looking || []).forEach(t => { (m[t] = m[t] || {t, lk:0, of:0}).lk++; }); (p.offer || []).forEach(t => { (m[t] = m[t] || {t, lk:0, of:0}).of++; }); }); return Object.values(m).sort((a, b) => (b.lk + b.of) - (a.lk + a.of)); }
+function matchesFor(p){ const out = []; (S.profiles || []).forEach(q => { if (q.id === p.id) return; const a = (q.offer || []).filter(t => (p.looking || []).includes(t)), b = (q.looking || []).filter(t => (p.offer || []).includes(t)); if (a.length || b.length) out.push({q, n:a.length + b.length}); }); return out.sort((x, y) => y.n - x.n).slice(0, 3); }
+let meetI = 0;
+R.meet = (c) => {
+  const list = S.profiles || [];
+  if (!list.length) return {title:'Networking Board', html:emptyJoin('Join the Networking Board', 'Add your name, company and what you are looking for. Your card appears here and helps the right people find you.', c)};
+  const p = list[meetI % list.length], mt = matchesFor(p), wide = c.w >= 76, bal = tagBalance().slice(0, wide ? 7 : 4), mx = Math.max(1, ...bal.map(x => Math.max(x.lk, x.of)));
+  const card = `<div class="card glass rv"><div style="display:flex;align-items:center;gap:calc(var(--u)*2)"><div class="ini">${esc(initials(p.name))}</div><div style="min-width:0"><div class="nm">${esc(p.name)}</div><div class="co">${esc([p.role, p.company].filter(Boolean).join(', '))}</div></div></div>
+    ${(p.looking || []).length ? `<div class="tagrow"><em>Looking for</em>${p.looking.map(t => `<span class="tg lk">${esc(t)}</span>`).join('')}</div>` : ''}
+    ${(p.offer || []).length ? `<div class="tagrow"><em>Can help with</em>${p.offer.map(t => `<span class="tg of">${esc(t)}</span>`).join('')}</div>` : ''}
+    <div class="match">${mt.length ? `Good people to meet: ${mt.map(x => `<b>${esc(x.q.name)}</b>`).join(', ')}` : 'Scan the code to add yourself and find your matches.'}</div></div>`;
+  const balH = `<div class="bal rv"><h4>Who is looking for what</h4>${bal.map(x => `<div class="r"><b>${esc(x.t)}</b><div class="bars"><i class="lk" style="width:${(x.lk / mx * 100).toFixed(0)}%"></i><i class="of" style="width:${(x.of / mx * 100).toFixed(0)}%"></i></div></div>`).join('')}
+    <div class="legend" style="margin-top:calc(var(--u)*.8)"><span><i class="n"></i>Looking for</span><span><i style="background:var(--teal);border-color:var(--teal)"></i>Can help</span></div></div>`;
+  const others = list.filter(x => x.id !== p.id).slice(0, wide ? 12 : 5);
+  const names = `<div class="names rv"><b>${list.length} ${list.length === 1 ? 'person' : 'people'} on the board</b>${others.map(x => `<span>${esc(x.name)}</span>`).join('')}</div>`;
+  return {title:'Networking Board', html: wide
+    ? `<div class="meet" style="grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);grid-template-rows:auto auto;align-content:center">${card}${balH}<div style="grid-column:1/-1">${names}</div></div>`
+    : `<div class="meet" style="grid-template-rows:auto minmax(0,1fr)">${card}${balH}</div>`, tick:7, onTick:() => { meetI++; return list.length > 1; }};
+};
+
+/* Photo Wall */
+let photoI = 0;
+const phUrl = id => '/api/photo/' + encodeURIComponent(id);
+function phCap(x){ if (!x.caption && !x.name) return ''; return `<div class="cap">${x.caption ? `<b>${esc(x.caption)}</b>` : ''}${x.name ? `<span>${x.caption ? 'Shared by ' : 'Shared by '}${esc(x.name)}</span>` : ''}</div>`; }
+R.photos = (c) => {
+  const list = S.photos || [];
+  if (!list.length) return {title:'Photo Wall', html:emptyJoin('Share your photos of the day', 'Scan the code, take a photo and send it. The team approves every photo before it appears here.', c)};
+  const f = list[photoI % list.length], tick = {tick:7, onTick:() => { photoI++; return list.length > 1; }};
+  if (c.w < 76 || list.length < 3) return {title:'Photo Wall', html:`<div class="pw"><div class="ph big rv"><img src="${phUrl(f.id)}" alt="">${phCap(f)}</div></div>`, ...tick};
+  const n = Math.min(4, list.length - 1), others = []; for (let i = 1; i <= n; i++) others.push(list[(photoI + i) % list.length]);
+  const cols = n >= 3 ? '2fr 1fr 1fr' : '2fr 1fr';
+  return {title:'Photo Wall', html:`<div class="pw" style="grid-template-columns:${cols};grid-template-rows:1fr 1fr"><div class="ph big rv" style="grid-row:1/3"><img src="${phUrl(f.id)}" alt="">${phCap(f)}</div>${others.map(x => `<div class="ph rv"><img src="${phUrl(x.id)}" alt="">${x.name ? `<div class="cap sm"><span>${esc(x.name)}</span></div>` : ''}</div>`).join('')}</div>`, ...tick};
+};
+
+/* Live Numbers */
+R.pulse = (c) => {
+  const booked = SESSIONS.reduce((a, s) => a + (s.booked || 0), 0), oo = SLOTS.filter(x => x.status === 'Booked').length, k = [];
+  if (S.checkedIn) k.push([S.checkedIn, 'people checked in']);
+  if (booked) k.push([booked, 'session seats booked']);
+  if (oo) k.push([oo, 'one to ones booked']);
+  k.push([S.pollTotal || 0, 'poll answers']);
+  k.push([(S.photos || []).length, 'photos shared']);
+  k.push([(S.profiles || []).length, 'on the Networking Board']);
+  if (k.length < 6) k.push([advisorCount(), 'advisors today']);
+  if (k.length < 6) k.push([SESSIONS.length, 'sessions today']);
+  const cols = c.w >= 76 ? 3 : 2;
+  return {title:'Live Numbers', html:`<div class="pulse" style="grid-template-columns:repeat(${cols},minmax(0,1fr))">${k.slice(0, cols * 2).map(x => `<div class="kpi rv"><b data-count="${x[0]}">0</b><span>${x[1]}</span><i></i></div>`).join('')}</div>`};
+};
+
+/* This Way */
+const DEG = {'right':0, 'down right':45, 'down':90, 'down left':135, 'left':180, 'up left':225, 'up':270, 'up right':315};
+const ARROW = '<svg viewBox="0 0 100 100" aria-hidden="true"><path d="M18,50 H78 M56,27 L79,50 L56,73" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const WAYS = [{k:'registration', t:'Registration', s:'Badges and one to one bookings'}, {k:'rooms', t:'Rooms A, B and C', s:'Sessions'}, {k:'oneToOnes', t:'One to Ones', s:'Small Rooms 1 and 3', blue:true}];
+R.way = (c) => {
+  const items = WAYS.filter(w => S.way && S.way[w.k]), row = c.w >= 165;
+  return {title:'This Way', html:`<div class="way" style="grid-template-columns:${row ? `repeat(${items.length},minmax(0,1fr))` : '1fr'}"><div class="here rv" style="grid-column:1/-1">You are in the Main Hall</div>${items.map(w => `<div class="wy glass rv"><div class="arr leaf ${w.blue ? 'blue' : ''}"><i style="rotate:${DEG[S.way[w.k]] || 0}deg">${ARROW}</i></div><div style="min-width:0"><b>${esc(w.t)}</b><span>${esc(w.s)}</span></div></div>`).join('')}</div>`};
+};
+
+/* ============ Rail ============ */
+function renderRail(){
+  if (!L.wide) return;
+  const m = nowMin(), o = openSlots(m).length, booked = SLOTS.filter(x => x.status === 'Booked').length, kp = [];
+  if (S.checkedIn) kp.push([S.checkedIn, 'checked in']);
+  kp.push([booked, 'one to ones booked']);
+  if (S.pollTotal) kp.push([S.pollTotal, 'poll answers']);
+  if (S.profiles.length) kp.push([S.profiles.length, 'on the Networking Board']);
+  kp.push([SESSIONS.length, 'sessions today']);
+  if (kp.length < 4) kp.push([advisorCount(), 'advisors']);
+  const wifi = S.wifi.name ? `<div class="mod glass"><h3>WiFi</h3><div style="font-size:calc(var(--u)*2);font-weight:700">${esc(S.wifi.name)}</div><div class="muted" style="font-size:calc(var(--u)*1.7);margin-top:calc(var(--u)*.4)">Password ${esc(S.wifi.pass)}</div></div>` : '';
+  $('rail').innerHTML = `<div class="mod glass"><h3>One to Ones <em>${o}</em></h3>${chipsHtml(m, true)}<div class="foot">${o} open. Book at the registration desk.</div></div>
+    <div class="mod glass"><h3>Right now</h3><div class="kpis">${kp.slice(0, 4).map(x => `<div class="kpi"><b data-count="${x[0]}">${x[0]}</b><span>${x[1]}</span></div>`).join('')}</div></div>
+    <div class="mod glass"><div class="qrrow">${qrBox(CONFIG.join, 11.5, '')}<div class="qrtxt"><b>Scan to join</b><span>Live poll, photo wall and the Networking Board</span></div></div></div>${wifi}`;
+  $('rail').querySelectorAll('.rv').forEach(e => e.classList.remove('rv'));
+  countUps($('rail'));
+}
+
+/* ============ Rendering engine ============ */
+const slotState = [];
+function buildStage(){
+  const p = plan(), key = S.mode + '|' + L.n + '|' + L.wide + '|' + p.map(a => a.join(',')).join('/');
+  if (key === S.plan) return false; S.plan = key;
+  const stage = $('stage'), mom = $('moment');
+  stage.querySelectorAll('.slot').forEach(s => s.remove()); slotState.length = 0;
+  p.forEach((scenes, i) => {
+    const el = document.createElement('section'); el.className = 'slot'; el.style.flex = i === 0 ? (p.length > 1 ? '1.55 1 0' : '1 1 0') : '1 1 0';
+    el.innerHTML = `<div class="sh"><h2></h2><div class="pager"></div></div><div class="shrule"></div><div class="sb"></div>`;
+    stage.insertBefore(el, mom);
+    slotState.push({el, scenes, idx:0, since:Date.now(), sub:Date.now(), id:null});
+  });
+  slotState.forEach(s => showScene(s, true));
+  return true;
+}
+function ctxFor(st){ return {w: st.el.clientWidth / U, h: st.el.clientHeight / U}; }
+function showScene(st, animate){
+  const id = st.scenes[st.idx % st.scenes.length]; st.id = id; st.sub = Date.now();
+  const res = R[id](ctxFor(st)); st.res = res;
+  const h2 = st.el.querySelector('h2'), pg = st.el.querySelector('.pager'), sb = st.el.querySelector('.sb');
+  const bare = ['welcome','speaker','video','recap'].includes(id);
+  st.el.querySelector('.sh').style.visibility = bare && st.scenes.length === 1 ? 'hidden' : '';
+  st.el.querySelector('.shrule').style.display = bare ? 'none' : '';
+  h2.textContent = res.title; pg.style.setProperty('--dwell', dwell(id) + 's');
+  pg.innerHTML = st.scenes.length > 1 ? st.scenes.map((s, i) => `<span class="${i === st.idx % st.scenes.length ? 'on' : ''}">${TITLES[s]}</span>`).join('') : '';
+  const paint = () => { sb.innerHTML = res.html; if (res.after) res.after(sb); countUps(sb); reveal(sb, animate); };
+  if (animate && sb.children.length) { sb.classList.add('out'); setTimeout(() => { sb.classList.remove('out'); paint(); }, 380); } else paint();
+}
+function reveal(root, animate){
+  root.querySelectorAll('.rv').forEach((e, i) => { if (!animate || matchMedia('(prefers-reduced-motion: reduce)').matches) { e.style.opacity = 1; return; }
+    e.animate([{opacity:0, transform:`translateY(${U * 2.4}px)`, filter:'blur(4px)'}, {opacity:1, transform:'none', filter:'blur(0)'}], {duration:820, delay:Math.min(i, 14) * 65, easing:'cubic-bezier(.2,.8,.2,1)', fill:'forwards'}); });
+}
+function refreshScenes(){ slotState.forEach(st => { const res = R[st.id](ctxFor(st)); st.res = res; st.el.querySelector('h2').textContent = res.title; const sb = st.el.querySelector('.sb'); sb.innerHTML = res.html; if (res.after) res.after(sb); countUps(sb); reveal(sb, false); }); renderRail(); }
+const COUNT_MEM = {};
+function countUps(root){
+  root.querySelectorAll('[data-count]').forEach(el => { const to = +el.dataset.count, key = el.nextElementSibling ? el.nextElementSibling.textContent : ''; const from = COUNT_MEM[key] != null ? COUNT_MEM[key] : 0; COUNT_MEM[key] = to;
+    if (from === to) { el.textContent = to; return; } const t1 = performance.now(), d = 1400;
+    const step = t => { const f = Math.min(1, (t - t1) / d), e = 1 - Math.pow(1 - f, 3); el.textContent = Math.round(from + (to - from) * e); if (f < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); });
+}
+function dataSig(){ return [Math.floor(nowMin()), S.checkedIn, S.speaker, S.wifi.name, S.wifi.pass, SESSIONS.map(s => s.booked + s.title + s.ok + s.room + s.mode).join(), SLOTS.map(x => x.status + x.s + x.who).join(''), S.poll.map(w => w[0] + w[1]).join(), S.pollQ, S.pollOpen, S.pollTotal, S.photos.map(p => p.id).join(), S.profiles.map(p => p.id + p.at).join(), JSON.stringify(S.way), S.pin].join('|'); }
+
+/* ============ Now zone, garden, moments ============ */
+function nowZone(){
+  const d = now(), m = nowMin(), ph = phase(m), mode = S.mode;
+  $('clock').innerHTML = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0') + `<sup>${String(d.getSeconds()).padStart(2,'0')}</sup>`;
+  let label, cdTo, cdTxt, pFrom, pTo, next = '', live = false;
+  const P0 = programAt(m), nx = PROGRAM.find(p => toMin(p.s) > m);
+  if (m < toMin('09:30')) { label = 'Doors open soon'; cdTo = '09:30'; cdTxt = 'until registration'; pFrom = '08:30'; pTo = '09:30'; }
+  else if (ph.kind === 'session') { label = 'Sessions on now'; live = true; cdTo = ph.b.e; cdTxt = 'left in this session'; pFrom = ph.b.s; pTo = ph.b.e; }
+  else if (ph.kind === 'buffer' && ph.next) { label = 'Short break'; cdTo = ph.next.s; cdTxt = `until the ${ph.next.s} sessions`; pFrom = ph.b.e; pTo = ph.next.s; }
+  else if (ph.kind === 'buffer') { label = 'Short break'; cdTo = '14:00'; cdTxt = 'until lunch'; pFrom = ph.b.e; pTo = '14:00'; }
+  else if (P0) { label = P0.title; live = ['opening', 'video'].includes(P0.mode); cdTo = P0.e; cdTxt = nx ? `until ${nx.mode === 'live' ? 'sessions start' : nx.title.toLowerCase()}` : 'until we close'; pFrom = P0.s; pTo = P0.e; }
+  else { label = 'Thank you for coming'; cdTo = null; }
+  if (nx) next = `Next at <b>${nx.s}</b>, ${esc(nx.title)}${nx.mode === 'live' ? ` in ${esc(nx.sub)}` : ''}`;
+  if (mode === 'opening') { let i = S.speaker; if (i === null) { i = 0; SPEAKERS.forEach((s, j) => { if (m >= toMin(s.s)) i = j; }); } next = `On stage, <b>${esc(SPEAKERS[i].name)}</b>`; }
+  $('stLabel').className = 'st-label' + (live ? ' on' : '');
+  $('stLabel').innerHTML = (live ? '<span class="live-dot"></span>' : '') + esc(label);
+  $('stCd').textContent = cdTo ? mmss((toMin(cdTo) - m) * 60) : '';
+  $('stCdTxt').textContent = cdTo ? cdTxt : '';
+  $('stProg').style.width = cdTo ? (Math.max(0, Math.min(1, (m - toMin(pFrom)) / (toMin(pTo) - toMin(pFrom)))) * 100).toFixed(2) + '%' : '0';
+  $('stNext').innerHTML = next;
+}
+const T0 = toMin(PROGRAM[0].s), T1 = toMin(PROGRAM[PROGRAM.length - 1].e);
+const FLOWER = `<svg viewBox="0 0 100 240" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linecap="round"><g stroke-width="2.2"><path d="M39,58 L44.5,48.5 M61,58 L55.5,48.5 M39,58 L44.5,67.5 M61,58 L55.5,67.5 M39,38.9 L44.5,29.4 M61,38.9 L55.5,29.4 M39,38.9 L44.5,48.5 M61,38.9 L55.5,48.5 M39,77.1 L44.5,67.5 M61,77.1 L55.5,67.5 M39,77.1 L44.5,86.6 M61,77.1 L55.5,86.6 M22.5,48.5 L28,38.9 M44.5,48.5 L39,38.9 M22.5,48.5 L28,58 M44.5,48.5 L39,58 M55.5,48.5 L61,38.9 M77.5,48.5 L72,38.9 M55.5,48.5 L61,58 M77.5,48.5 L72,58 M22.5,67.5 L28,58 M44.5,67.5 L39,58 M22.5,67.5 L28,77.1 M44.5,67.5 L39,77.1 M55.5,67.5 L61,58 M77.5,67.5 L72,58 M55.5,67.5 L61,77.1 M77.5,67.5 L72,77.1 M50,86.6 L50,240"/></g><g stroke-width="5.4"><path d="M46.5,29.4 L53.5,29.4 M30,38.9 L37,38.9 M63,38.9 L70,38.9 M46.5,48.5 L53.5,48.5 M30,58 L37,58 M63,58 L70,58 M46.5,67.5 L53.5,67.5 M30,77.1 L37,77.1 M63,77.1 L70,77.1 M46.5,86.6 L53.5,86.6"/></g></g><g fill="currentColor"><path d="M50,168 C58,147 70,137 86,128 C82,149 69,163 50,168 Z M50,168 C42,147 30,137 14,128 C18,149 31,163 50,168 Z M50,208 C58,187 70,177 86,168 C82,189 69,203 50,208 Z M50,208 C42,187 30,177 14,168 C18,189 31,203 50,208 Z"/></g></svg>`;
+let gardenKey = '';
+function garden(){
+  const m = nowMin(), g = $('garden'), W = g.clientWidth, pad = U * 4.2, span = W - pad * 2;
+  const xOf = t => pad + (t - T0) / (T1 - T0) * span;
+  const cur = PROGRAM.findIndex(p => m >= toMin(p.s) && m < toMin(p.e));
+  const key = W + '|' + cur + '|' + S.mode;
+  if (key !== gardenKey) {
+    gardenKey = key;
+    g.innerHTML = PROGRAM.map((p, i) => {
+      const x = xOf(toMin(p.s)), nxt = PROGRAM[i + 1], room = (nxt ? xOf(toMin(nxt.s)) : W - pad) - x;
+      const st = i < cur || (cur < 0 && m >= toMin(p.e)) ? 'past' : (i === cur ? 'on' : '');
+      const color = st === 'on' ? '#DF6236' : '#2F9CC3';
+      const need = (p.s.length + 2 + p.title.length) * U * .92 + U * 4.5;
+      const full = st === 'on' || room > need, timeOnly = !full && room > U * 8.5;
+      const lab = full ? `<b>${p.s}  ${esc(p.title)}</b><span>${esc(p.sub)}</span>` : (timeOnly ? `<b>${p.s}</b>` : '');
+      return `<div class="fl ${st}" style="left:${(x - U * 1.7).toFixed(1)}px;color:${color}">${FLOWER}</div>` + (lab ? `<div class="fl-l ${st}" style="left:${(x + U * 2.2).toFixed(1)}px;${room < need ? `max-width:${Math.max(U * 6, room - U * 3.4).toFixed(0)}px;overflow:hidden` : ''}">${lab}</div>` : '');
+    }).join('');
+  }
+  const f = Math.max(0, Math.min(1, (m - T0) / (T1 - T0)));
+  const nx = m < T0 ? pad : (m > T1 ? W - pad : xOf(m));
+  $('dayfill').style.width = nx + 'px';
+  $('needle').style.left = nx + 'px';
+}
+function moments(){
+  const list = [{at:'09:55', dur:25, k:'In 5 minutes', t:'Opening in the Main Hall', p:'Please take your seats.'}];
+  list.push({at:'10:40', dur:18, k:'Coffee break', t:'Pick your sessions', p:'One to one slots are booked at the registration desk.'});
+  BLOCKS.forEach(b => { list.push({at:fmt(toMin(b.s) - 5), dur:25, k:'In 5 minutes', t:`The ${b.s} sessions start`, p:'Head to your room now.', rooms:b.n});
+    list.push({at:b.s, dur:12, k:'Starting now', t:'Sessions are on', p:'Find your room, the advisors are ready.', rooms:b.n}); });
+  list.push({at:'14:00', dur:18, k:'Lunch is served', t:'Lunch and Networking', p:'In the Main Hall until 15:00.'});
+  const m = nowMin();
+  let act = list.find(x => m * 60 >= toMin(x.at) * 60 && m * 60 < toMin(x.at) * 60 + x.dur);
+  if (S.annUntil && Date.now() < S.annUntil) act = {at:'ann' + S.annAt, k:'Announcement', t:S.ann, p:''};
+  if (S.annUntil && Date.now() >= S.annUntil) S.annUntil = 0;
+  const key = act ? act.at + act.t : '';
+  if (key === S.momentKey) return; S.momentKey = key;
+  const el = $('moment');
+  if (!act) { el.animate([{opacity:1}, {opacity:0}], {duration:500, easing:'ease'}).onfinish = () => { el.classList.remove('show'); el.innerHTML = ''; }; return; }
+  const rooms = act.rooms ? `<div class="mr">${ROOMS.map(r => { const s = SESSIONS.find(x => x.b === act.rooms && x.room === r); return s ? `<div class="rv"><span class="pill leaf ${act.k === 'Starting now' ? '' : 'ghost'}">${r}</span><strong>${esc(s.title)}</strong></div>` : ''; }).join('')}</div>` : '';
+  el.innerHTML = `<div class="k rv"><span class="live-dot"></span>${esc(act.k)}</div><h1 class="rv" style="font-size:calc(var(--u)*${String(act.at).startsWith('ann') ? 7 : 10.5})">${esc(act.t)}</h1><div class="rule rv"></div>${act.p ? `<p class="rv">${esc(act.p)}</p>` : ''}${rooms}<div class="wipe"></div>`;
+  el.classList.add('show');
+  el.querySelector('.wipe').animate([{transform:'scaleX(0)', transformOrigin:'left'}, {transform:'scaleX(1)', transformOrigin:'left', offset:.45}, {transform:'scaleX(1)', transformOrigin:'right', offset:.55}, {transform:'scaleX(0)', transformOrigin:'right'}], {duration:1100, easing:'cubic-bezier(.7,0,.3,1)', fill:'forwards'});
+  el.querySelectorAll('.rv').forEach(e => e.style.opacity = 0);
+  setTimeout(() => reveal(el, true), 520);
+  burst(6);
+}
+
+/* ============ Ticker ============ */
+let tkHtml = '', tkX = 0, tkW = 0, tkT = performance.now();
+function tickerItems(){
+  const m = nowMin(), o = [], ph = phase(m), nb = nextBlock(m);
+  if (S.ann) o.push(`<span class="ann">${esc(S.ann)}</span>`);
+  if (ph.kind === 'session') SESSIONS.filter(s => s.b === ph.b.n).forEach(s => o.push(`<span>On now in ${esc(s.room)}: ${esc(s.title)} with ${esc(names(s.who))}</span>`));
+  if (nb && toMin(nb.s) - m <= 25) SESSIONS.filter(s => s.b === nb.n).forEach(s => o.push(`<span>${nb.s} in ${esc(s.room)}: ${esc(s.title)}</span>`));
+  const op = openSlots(m); if (op.length) o.push(`<span>${op.length} one to one slots still open, next at ${op[0].s} with ${esc(adv(op[0].who).name)}. Book at the registration desk.</span>`);
+  o.push('<span>Scan the code on screen to answer the poll, share photos and join the Networking Board</span>');
+  const tb = tagBalance().filter(x => x.lk); if (tb.length) o.push(`<span>On the Networking Board: ${tb.slice(0, 3).map(x => `${x.lk} looking for ${esc(x.t)}`).join(', ')}</span>`);
+  if (S.wifi.name) o.push(`<span>WiFi: ${esc(S.wifi.name)}, password ${esc(S.wifi.pass)}</span>`);
+  if (m < toMin('14:00')) o.push('<span>Lunch and networking at 14:00 in the Main Hall</span>');
+  o.push(`<span>Share your day on LinkedIn with ${esc(CONFIG.hashtag)}</span>`);
+  o.push('<span>Gaza Sky Geeks, a program of Mercy Corps, with the support of Sweden, at the Palestine Innovation Summit</span>');
+  return o;
+}
+function updateTicker(){ const h = tickerItems().join('<i></i>') + '<i></i>'; if (h === tkHtml) return; tkHtml = h; const el = $('tkIn'); el.innerHTML = h + h; tkW = el.scrollWidth / 2; }
+function tickerLoop(t){ const dt = Math.min(64, t - tkT); tkT = t; tkX -= dt * U * .0085; if (tkW && -tkX >= tkW) tkX += tkW; $('tkIn').style.transform = `translate3d(${tkX.toFixed(1)}px,0,0)`; requestAnimationFrame(tickerLoop); }
+
+/* ============ Live data ============ */
+function parseCSV(t){ const rows = []; let row = [], f = '', q = false;
+  for (let i = 0; i < t.length; i++) { const c = t[i]; if (q) { if (c === '"') { if (t[i+1] === '"') { f += '"'; i++; } else q = false; } else f += c; } else if (c === '"') q = true; else if (c === ',') { row.push(f); f = ''; } else if (c === '\n' || c === '\r') { if (c === '\r' && t[i+1] === '\n') i++; row.push(f); rows.push(row); row = []; f = ''; } else f += c; }
+  if (f || row.length) { row.push(f); rows.push(row); } return rows; }
+function table(rows, must){ const hi = rows.findIndex(r => must.every(k => r.map(x => x.trim().toLowerCase()).includes(k))); if (hi < 0) return [];
+  const h = rows[hi].map(x => x.trim().toLowerCase()); const out = [];
+  for (const r of rows.slice(hi + 1)) { if (!r.some(x => x.trim())) break; const o = {}; h.forEach((k, i) => o[k] = (r[i] || '').trim()); out.push(o); } return out; }
+function keyFor(name){ const n = name.toLowerCase().replace(/\(.*?\)/g, '').trim(); const k = Object.keys(ADVISORS).find(k => { const a = ADVISORS[k].name.toLowerCase(); return a === n || a.split(' ')[0] === n.split(' ')[0]; }); if (k) return k;
+  const nk = n.replace(/[^a-z]/g, ''); if (!ADVISORS[nk]) ADVISORS[nk] = {name:name.replace(/\(.*?\)/g, '').trim(), role:'', photo:null}; return nk; }
+function normTime(t){ const m = String(t).match(/(\d{1,2}):(\d{2})\s*(am|pm)?/i); if (!m) return ''; let h = +m[1]; if (m[3]) { const pm = /pm/i.test(m[3]); if (pm && h < 12) h += 12; if (!pm && h === 12) h = 0; } return String(h).padStart(2,'0') + ':' + m[2]; }
+function applySessions(rows){ const t = table(rows, ['block','room','session topic']); const nx = [];
+  t.forEach(r => { const b = parseInt(r.block); if (!b || !r['session topic']) return; nx.push({b, room:r.room, title:r['session topic'], who:r.advisor.split(/\s+and\s+/i).map(keyFor), mode:/online/i.test(r.delivery) ? 'Online' : 'In person', seats:parseInt(r.seats) || 25, booked:parseInt(r.booked) || 0, ok:/confirmed/i.test(r['host status'])}); });
+  if (nx.length) SESSIONS = nx; }
+function applySlots(rows){ const t = table(rows, ['slot','room','start','advisor']);
+  const nx = t.filter(r => normTime(r.start) && r.advisor && !/to confirm/i.test(r.advisor)).map(r => { const k = keyFor(r.advisor), s = normTime(r.start); return {who:k, room:r.room, s, e:normTime(r.end) || fmt(toMin(s) + 15), mode:/online/i.test(r.delivery) ? 'Online' : 'In person', status:/booked|taken|assigned/i.test(r.status) ? 'Booked' : 'Open'}; });
+  if (nx.length) SLOTS = nx; }
+function applyStats(rows){ rows.forEach(r => { const k = (r[0] || '').trim().toLowerCase(), v = (r[1] || '').trim();
+  if (k === 'checked in') { const n = parseInt(v); S.checkedIn = n > 0 ? n : null; }
+  else if (k === 'announcement') S.ann = v;
+  else if (k === 'scene') S.sheetScene = /^(welcome|opening|video|choose|live|lunch|close)$/i.test(v) ? v.toLowerCase() : '';
+  else if (k === 'theme') S.sheetTheme = /^(light|dark)$/i.test(v) ? v.toLowerCase() : '';
+  else if (k === 'speaker') S.sheetSpeaker = /^[1-9]$/.test(v) ? v : '';
+  else if (k === 'wifi name') S.wifi.name = v;
+  else if (k === 'wifi password') S.wifi.pass = v; }); }
+const STOP = new Set('the a an and to of in for on with my more how i be get some new better want leave today'.split(' '));
+function applyPoll(rows){ if (rows.length < 2) return; const counts = {};
+  rows.slice(1).forEach(r => { const ans = (r[r.length - 1] || '').toLowerCase().replace(/[^\p{L}\p{N}\s']/gu, ' ').trim(); if (!ans) return; const w = ans.split(/\s+/).filter(x => x.length > 1 && !STOP.has(x)); const term = w.length <= 2 ? w.join(' ') : w[0]; if (term) counts[term] = (counts[term] || 0) + 1; });
+  S.poll = Object.entries(counts).sort((a, b) => b[1] - a[1]); }
+function feedUrl(k){ return (P.has('offline') || !location.protocol.startsWith('http')) ? '' : '/api/sheet/' + k; }
+async function getCSV(url){ const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 12000); try { const r = await fetch(url + (url.includes('?') ? '&' : '?') + 'cb=' + Date.now(), {signal:ctl.signal, cache:'no-store'}); if (!r.ok) throw 0; return parseCSV(await r.text()); } finally { clearTimeout(to); } }
+const JOBS = [['sessions', applySessions], ['slots', applySlots], ['stats', applyStats]];
+async function refresh(){ let ok = 0, tried = 0;
+  for (const [k, fn] of JOBS) { const u = feedUrl(k); if (!u) continue; tried++; try { const rows = await getCSV(u); fn(rows); ok++; try { localStorage.setItem('md4_' + k, JSON.stringify(rows)); } catch(e) {} } catch(e) {} }
+  S.live = tried > 0 && ok === tried;
+  loop(true); }
+function restore(){ try { const v = localStorage.getItem('md4_state'); if (v) applyState(JSON.parse(v)); } catch(e) {} JOBS.forEach(([k, fn]) => { if (!feedUrl(k)) return; try { const v = localStorage.getItem('md4_' + k); if (v) fn(JSON.parse(v)); } catch(e) {} }); }
+
+/* ============ Demo ============ */
+const DEMO_WORDS = ['clients','funding','confidence','network','clarity','growth','mentors','sales','strategy','leadership','visibility','pitch','focus','partners','ideas','direction','courage','markets','branding','skills','connections','execution','feedback','vision','momentum','investors'];
+function demo(){ if (!S.demo) return; const m = nowMin();
+  S.checkedIn = Math.max(0, Math.min(104, Math.round((m - toMin('09:25')) * 2.6))) || null;
+  const f = Math.max(0, Math.min(1, (m - 575) / 90)); SESSIONS.forEach((s, i) => { s.booked = Math.round(s.seats * f * (.42 + .08 * i)); });
+  SLOTS.forEach((x, i) => { x.status = (i % 3 !== 2 && m > 600 + i * 2) ? 'Booked' : 'Open'; });
+  const n = Math.max(0, Math.min(DEMO_WORDS.length, Math.floor((m - 570) / 4))); if (!S.pollTotal) S.poll = DEMO_WORDS.slice(0, n).map((w, i) => [w, Math.max(1, Math.round(16 / (1 + i * .42)))]); }
+
+/* ============ Background: drifting network of light, like the Summit artwork ============ */
+const cv = $('bg'), cx = cv.getContext('2d'); let nodes = [], orbs = [], pulses = [], lastTotal = -1, lastFrame = 0;
+function initBg(){
+  const k = Math.min(1, 1600 / innerWidth); cv.width = innerWidth * k; cv.height = innerHeight * k; cx.setTransform(k, 0, 0, k, 0, 0);
+  const n = Math.round(Math.max(10, Math.min(26, innerWidth / 160)));
+  nodes = Array.from({length:n}, () => ({x:Math.random() * innerWidth, y:Math.random() * innerHeight * .9, vx:(Math.random() - .5) * .12, vy:(Math.random() - .5) * .08, r:Math.random() * U * 2.2 + U * .8, ph:Math.random() * 6.28}));
+  orbs = Array.from({length:4}, (_, i) => ({x:innerWidth * (.15 + i * .25), y:innerHeight * (.2 + (i % 2) * .4), r:Math.max(innerWidth, innerHeight) * (.12 + Math.random() * .08), ph:Math.random() * 6.28}));
+}
+function bgLoop(t){
+  requestAnimationFrame(bgLoop); if (t - lastFrame < 33) return; lastFrame = t;
+  const W = innerWidth, H = innerHeight, s = t / 1000, dark = document.documentElement.dataset.theme === 'dark';
+  cx.clearRect(0, 0, W, H);
+  const lc = dark ? '120,190,215' : '255,255,255';
+  orbs.forEach(o => { const a = (dark ? .05 : .55) * (.7 + .3 * Math.sin(s * .3 + o.ph)); const g = cx.createRadialGradient(o.x, o.y, 0, o.x, o.y, o.r); g.addColorStop(0, `rgba(${dark ? '48,157,196' : '255,255,255'},${a})`); g.addColorStop(1, `rgba(${dark ? '48,157,196' : '255,255,255'},0)`); cx.fillStyle = g; cx.fillRect(o.x - o.r, o.y - o.r, o.r * 2, o.r * 2); });
+  nodes.forEach(p => { p.x += p.vx; p.y += p.vy; if (p.x < -50 || p.x > W + 50) p.vx *= -1; if (p.y < -50 || p.y > H * .95) p.vy *= -1; });
+  const D = Math.max(W, H) * .42; cx.lineWidth = Math.max(1.5, U * .25);
+  for (let i = 0; i < nodes.length; i++) for (let j = i + 1; j < nodes.length; j++) { const a = nodes[i], b = nodes[j], d = Math.hypot(a.x - b.x, a.y - b.y); if (d < D) { cx.strokeStyle = `rgba(${lc},${((1 - d / D) * (dark ? .25 : .9)).toFixed(3)})`; cx.beginPath(); cx.moveTo(a.x, a.y); cx.lineTo(b.x, b.y); cx.stroke(); } }
+  nodes.forEach(p => { const r = p.r * (1 + .25 * Math.sin(s * .8 + p.ph)); const g = cx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r * 2.2); g.addColorStop(0, `rgba(255,255,255,${dark ? .5 : 1})`); g.addColorStop(.35, `rgba(255,255,255,${dark ? .25 : .7})`); g.addColorStop(1, 'rgba(255,255,255,0)'); cx.fillStyle = g; cx.beginPath(); cx.arc(p.x, p.y, r * 2.2, 0, 6.29); cx.fill(); });
+  pulses = pulses.filter(q => q.t < 1);
+  pulses.forEach(q => { q.t += .01; const a = nodes[q.a], b = nodes[q.b]; if (!a || !b) return; const x = a.x + (b.x - a.x) * q.t, y = a.y + (b.y - a.y) * q.t; const g = cx.createRadialGradient(x, y, 0, x, y, U * 2.4); g.addColorStop(0, q.c); g.addColorStop(1, 'rgba(255,255,255,0)'); cx.fillStyle = g; cx.beginPath(); cx.arc(x, y, U * 2.4, 0, 6.29); cx.fill(); });
+}
+function burst(n){ for (let i = 0; i < n && nodes.length > 2; i++) { const a = Math.floor(Math.random() * nodes.length); let b = (a + 1 + Math.floor(Math.random() * (nodes.length - 1))) % nodes.length; pulses.push({a, b, t:0, c: Math.random() < .5 ? 'rgba(223,98,54,.9)' : 'rgba(47,156,195,.9)'}); } }
+function checkSparks(){ const total = SESSIONS.reduce((a, s) => a + s.booked, 0) + SLOTS.filter(x => x.status === 'Booked').length + (S.checkedIn || 0) + (S.pollTotal || 0) + S.photos.length + S.profiles.length; if (lastTotal >= 0 && total > lastTotal) burst(1 + Math.floor((total - lastTotal) / 5)); lastTotal = total; if (Math.random() < .12) burst(1); }
+
+/* ============ Operator keys ============ */
+const KEYMODES = {'1':'welcome','2':'opening','3':'video','4':'choose','5':'live','6':'lunch','7':'close'};
+function toast(t){ const el = $('toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toast.h); toast.h = setTimeout(() => el.classList.remove('show'), 2600); }
+function help(){ const h = $('help'); h.innerHTML = `<table>${[['F','Full screen'],['0','Automatic, follows the clock'],['1 to 7','Welcome, Opening, Videos, Coffee break, Sessions, Lunch, Thank you'],['Left, Right','Previous or next opening speaker'],['N','Next scene now'],['T','Light or dark'],['A','Type an announcement'],['C','Clear the announcement'],['L','Logo screen'],['B','Black screen'],['K','Screen check, for setting up the wall'],['V','Stop a playing video'],['D','Demo data on or off'],['H','Show or hide this help']].map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('')}</table>`; h.classList.toggle('hide'); }
+addEventListener('keydown', e => { const k = e.key.toLowerCase();
+  if (KEYMODES[k]) { S.override = KEYMODES[k]; S.speaker = null; loop(true); toast('Held on ' + ({welcome:'welcome', opening:'opening', video:'videos', choose:'coffee break', live:'sessions', lunch:'lunch', close:'thank you'}[S.override]) + ', press 0 to follow the clock'); }
+  else if (k === '0') { S.override = null; S.speaker = null; loop(true); toast('Automatic, following the clock'); }
+  else if (k === 'arrowright' || k === 'arrowleft') { const m = nowMin(); let i = S.speaker; if (i === null) { i = 0; SPEAKERS.forEach((s, j) => { if (m >= toMin(s.s)) i = j; }); } S.speaker = Math.max(0, Math.min(SPEAKERS.length - 1, i + (k === 'arrowright' ? 1 : -1))); slotState.forEach(st => { if (st.id === 'speaker') showScene(st, true); }); }
+  else if (k === 'n') { slotState.forEach(st => { if (st.scenes.length > 1) { st.idx++; st.since = Date.now(); showScene(st, true); } }); }
+  else if (k === 't') { S.theme = S.theme === 'dark' ? 'light' : 'dark'; applyTheme(true); toast(S.theme === 'dark' ? 'Dark' : 'Light'); }
+  else if (k === 'a') { const t = prompt('Announcement for the screen', S.ann); if (t !== null) { S.ann = t.trim(); S.annAt = Date.now(); S.annUntil = S.ann ? Date.now() + 20000 : 0; updateTicker(); } }
+  else if (k === 'k') { setOverlay(S.overlay === 'check' ? null : 'check'); }
+  else if (k === 'v') stopVideo();
+  else if (k === 'c') { S.ann = ''; S.annUntil = 0; updateTicker(); }
+  else if (k === 'l') $('logo').classList.toggle('hide');
+  else if (k === 'b') $('black').classList.toggle('hide');
+  else if (k === 'f') { if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {}); else document.exitFullscreen(); }
+  else if (k === 'd') { S.demo = !S.demo; if (!S.demo) { if (!S.pollTotal) S.poll = []; S.checkedIn = null; SESSIONS.forEach(s => s.booked = 0); SLOTS.forEach(x => x.status = 'Open'); } refresh(); }
+  else if (k === 'h' || k === '?') help(); });
+
+/* ============ Main loop ============ */
+function loop(force){
+  demo();
+  const mode = S.override || S.remoteMode || S.sheetScene || autoMode(nowMin());
+  const modeChanged = mode !== S.mode; S.mode = mode;
+  applyTheme(!!S.started);
+  const rebuilt = buildStage() || modeChanged;
+  const dk = dataSig();
+  if (!rebuilt && (force || dk !== S.dataKey)) refreshScenes(); else if (rebuilt) renderRail();
+  S.dataKey = dk;
+  slotState.forEach(st => {
+    if (st.res && st.res.tick && Date.now() - st.sub > st.res.tick * 1000) { st.sub = Date.now(); if (st.res.onTick(st.el.querySelector('.sb'))) showScene(st, true); }
+    if (st.scenes.length > 1 && Date.now() - st.since > dwell(st.id) * 1000) { st.idx++; st.since = Date.now(); showScene(st, true); }
+  });
+  nowZone(); garden(); moments(); updateTicker(); checkSparks();
+}
+function logos(){
+  const h = U;
+  $('logos').innerHTML = `<div><img src="${A.mc}" style="height:${h * 4.2}px" alt="Mercy Corps"><img src="${A.gsg}" style="height:${h * 3.4}px" alt="Gaza Sky Geeks"><img src="${A.sida}" style="height:${h * 3.3}px" alt="Sweden Sverige"></div><div style="justify-content:flex-start;gap:${h * 3}px"><img src="${A.tp}" style="height:${h * 6.6}px" alt="Palestine TechnoPark"><img src="${A.pis}" style="height:${h * 4.8}px" alt="Palestine Innovation Summit"></div>`;
+  $('logo').innerHTML = `<div style="display:flex;align-items:center;gap:${h * 6}px"><img src="${A.mc}" style="height:${h * 9}px"><img src="${A.gsg}" style="height:${h * 7.5}px"><img src="${A.sida}" style="height:${h * 7}px"><img src="${A.tp}" style="height:${h * 15}px"><img src="${A.pis}" style="height:${h * 10}px"></div>`;
+}
+function resize(){ L = layout(); S.plan = ''; gardenKey = ''; initBg(); logos(); joinBlock(); tkHtml = ''; if (S.overlay === 'check') renderCheck(); loop(true); }
+
+restore(); S.mode = S.override || autoMode(nowMin()); document.documentElement.dataset.theme = wantedTheme();
+resize(); S.started = true;
+addEventListener('resize', resize);
+setInterval(() => loop(false), 1000);
+setInterval(nowZone, 250);
+initVideo(); setConn(); refresh(); setInterval(refresh, CONFIG.refreshSeconds * 1000);
+if (location.protocol.startsWith('http')) { pullState(); setInterval(pullState, CONFIG.stateSeconds * 1000); }
+requestAnimationFrame(bgLoop); requestAnimationFrame(tickerLoop);
+if (!P.has('quiet')) setTimeout(() => toast('Press F for full screen and H for controls'), 1200);
+})();
+</script>
+</body>
+</html>

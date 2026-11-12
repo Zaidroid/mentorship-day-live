@@ -1,0 +1,8 @@
+{
+  "name": "mentorship-day-live",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@netlify/blobs": "^11.1.9"
+  }
+}
