@@ -899,7 +899,9 @@ function applyState(d, cached){
 // request is timed from the start of the last one, so the rate holds however long an answer takes.
 const POLL = {t:0, h:0, gaps:[]};
 const stateGap = () => (S.rx && S.rx.on ? CONFIG.rxStateSeconds : CONFIG.stateSeconds) * 1000;
-async function pollState(){ const t = Date.now(); if (POLL.t) { POLL.gaps.push(t - POLL.t); if (POLL.gaps.length > 40) POLL.gaps.shift(); } POLL.t = t; await pullState(); clearTimeout(POLL.h); POLL.h = setTimeout(pollState, Math.max(250, stateGap() - (Date.now() - t))); }
+// The next request is set in a finally, so one failed answer or one render fault can never stop the asking.
+async function pollState(){ const t = Date.now(); if (POLL.t) { POLL.gaps.push(t - POLL.t); if (POLL.gaps.length > 40) POLL.gaps.shift(); } POLL.t = t;
+  try { await pullState(); } catch(e) { S.liveOk = false; } finally { clearTimeout(POLL.h); POLL.h = setTimeout(pollState, Math.max(250, stateGap() - (Date.now() - t))); } }
 async function pullState(){
   try { const r = await fetch('/api/state', {cache:'no-store'}); if (!r.ok) throw 0; const d = await r.json(); applyState(d); S.liveOk = true; try { localStorage.setItem('md4_state', JSON.stringify(d)); } catch(e) {} if (d.snapV && d.snapV !== S.snapV) pullSnap(d.snapV); }
   catch(e) { S.liveOk = false; }
