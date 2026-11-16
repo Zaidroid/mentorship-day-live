@@ -149,7 +149,7 @@ Storage is one Netlify Blobs store `md26` with strong consistency. Shared JSON b
 * Not built on the wall at the time of writing: the Networking Board constellation, Voices of the Day, the Lunch Finale loop, the poll word fly in and the poll result moment, the Photo Wall "New" tag and crossfade, and the growing garden. The remote's Lunch finale controls are hidden. Reactions and the group photo countdown are on the wall since 16 November. `public/screen/fit.html?shape=2` is the wall for a display that stretches a 16 to 9 picture. `scripts/deploy.sh` deploys and rolls back.
 * `scripts/e2e.cjs` is still the version 1 story. Plan WP7 task 1 (one story from import to export) is not done.
 * Opening videos: add `public/videos/tareq-azza.mp4` and `public/videos/kassimlegal.mp4` once Zaid sends them.
-* This Way directions: set in the remote on site. The scene and the arrows stay hidden until then.
+* This Way directions (16 November, from Zaid): Room A on the right, Room B on the left, Room C upstairs on the 3rd Floor. These are the defaults on the wall, each room with its own arrow. Registration and One to Ones directions are still unknown and stay hidden until set in the remote. Confirm on site that right and left hold from where the wall stands.
 * Speaker card titles for Rand Safi and Alaa Alaaedein, and Alan's title.
 * Screen signal and resolution from Rose at TechnoPark. Confirm with the screen check on site.
 * Drafts for Zaid to approve: the topic to session table (`topicMap` in `day.js`), the networking tags and the suggestions from registration topics (`TAGS` and `TOPIC_TAGS` in `store.mjs`). The poll questions and times are approved.

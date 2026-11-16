@@ -58,5 +58,5 @@ for c in "Coffee in the Main Hall" "Room A session" "Networking at lunch" "One t
   id=$(curl -s -X POST $B/api/photo -H 'content-type: image/jpeg' -H 'x-dev: photodev0001' -H 'x-name: Test%20Photographer' -H "x-caption: $(python3 -c 'import sys,urllib.parse;print(urllib.parse.quote(sys.argv[1]))' "$c")" --data-binary @"$(dirname "$0")/sample.jpg" | js "d['id']")
   op "{\"action\":\"approvePhoto\",\"id\":\"$id\"}"
 done
-op '{"action":"way","way":{"registration":"left","rooms":"up right","oneToOnes":"right"}}'
+op '{"action":"way","way":{"roomA":"right","roomB":"left","roomC":"up","registration":"left","oneToOnes":"right"}}'
 echo seeded

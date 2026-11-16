@@ -60,6 +60,7 @@ globalThis.MD_DAY = {
     { s: "10:15", name: "Alaa Alaaedein", org: "Palestine TechnoPark", what: "Opening remarks" }
   ],
   videos: [
+    { id: "gsg", title: "Gaza Sky Geeks", src: "/videos/gsg.mp4" },
     { id: "tareq", title: "Tareq Azza", src: "/videos/tareq-azza.mp4" },
     { id: "kassim", title: "KassimLegal", src: "/videos/kassimlegal.mp4" }
   ],

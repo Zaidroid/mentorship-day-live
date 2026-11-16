@@ -36,7 +36,7 @@ export const DEFAULT_CFG = {
   overlay: null,         // black, logo, check, or null
   ann: null,             // { text, at, secs }, at in the time base of state.t
   video: null,           // { id, at }, at in the time base of state.t; id null means stop
-  way: null,             // { registration, rooms, oneToOnes } arrow directions
+  way: { roomA: "right", roomB: "left", roomC: "up" }, // arrows as seen from the screen; Room C is upstairs on the 3rd Floor. Also registration and oneToOnes, once known
   poll: { id: null, open: false, manual: false }, // manual false: the poll follows MD_DAY.pollPlan (rules.mjs)
   rx: "auto",            // reactions: auto (by MD_DAY.reactionWindows), on or off. Never public; state says rx.on
   hidden: [],            // poll words hidden by the operator. Never public

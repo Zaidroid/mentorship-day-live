@@ -391,6 +391,11 @@ m-w{display:inline}
 @keyframes nudge{0%,100%{transform:translateX(0)}50%{transform:translateX(calc(var(--u)*.9))}}
 .wy b{display:block;font-weight:700;font-size:calc(var(--u)*3.4);line-height:1.05;text-wrap:balance}
 .wy span{display:block;font-size:calc(var(--u)*1.8);color:var(--ink2);margin-top:calc(var(--u)*.6)}
+.way.many{gap:calc(var(--u)*1.1)}
+.way.many .wy{padding:calc(var(--u)*1.1) calc(var(--u)*1.8);gap:calc(var(--u)*1.8)}
+.way.many .wy .arr{width:calc(var(--u)*6.2);height:calc(var(--u)*6.2)}
+.way.many .wy b{font-size:calc(var(--u)*2.7)}
+.way.many .wy span{font-size:calc(var(--u)*1.5);margin-top:calc(var(--u)*.3)}
 .here{display:flex;align-items:center;gap:calc(var(--u)*1.2);font-size:calc(var(--u)*2.2);font-weight:700;margin-bottom:calc(var(--u)*.6)}
 .here:before{content:"";width:calc(var(--u)*1.4);height:calc(var(--u)*1.4);border-radius:50%;background:var(--red);box-shadow:0 0 0 calc(var(--u)*.5) var(--redsoft)}
 /* poll bars */
@@ -482,6 +487,7 @@ let SLOTS = [].concat(...DAY.ones.map(o => slotsFor(o.who, o.room, o.s, o.e, o.m
 const PROGRAM = DAY.program.map(p => ({s:p.s, e:p.e, title:p.title, sub:p.sub, mode:p.mode, where:p.where || ''}));
 const SPEAKERS = DAY.speakers.map(x => Object.assign({}, x));
 const VIDEOS = DAY.videos.map(v => v.title);
+const listOf = a => a.length > 1 ? a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1] : (a[0] || '');
 
 /* ============ Time ============ */
 // The wall shows venue time (MD_DAY.tz), whatever time zone the computer is set to.
@@ -838,9 +844,9 @@ R.speaker = (c) => {
   const m = nowMin(); let i = S.speaker; if (i === null) { i = 0; SPEAKERS.forEach((s, j) => { if (m >= toMin(s.s)) i = j; }); }
   const sp = SPEAKERS[Math.max(0, Math.min(SPEAKERS.length - 1, i))];
   return {title:'Opening', html:`<div class="speaker"><div><div class="k tx">On stage</div><div class="nm tx" style="font-size:calc(var(--u)*${Math.min(12, c.w / 8.5)})">${esc(sp.name)}</div><div class="rule dr"></div><div class="org tx">${esc(sp.org)}</div><div class="what tx">${esc(sp.what)}</div></div>
-    <div class="sl glass rv">${SPEAKERS.map((s, j) => `<div class="${j < i ? 'past' : (j === i ? 'on' : '')}"><b>${s.s}</b><div><strong>${esc(s.name)}</strong><span>${esc(s.org)}</span></div></div>`).join('')}<div><b>10:30</b><div><strong>Video Messages</strong><span>${VIDEOS.map(esc).join(' and ')}</span></div></div></div></div>`};
+    <div class="sl glass rv">${SPEAKERS.map((s, j) => `<div class="${j < i ? 'past' : (j === i ? 'on' : '')}"><b>${s.s}</b><div><strong>${esc(s.name)}</strong><span>${esc(s.org)}</span></div></div>`).join('')}<div><b>10:30</b><div><strong>Video Messages</strong><span>${listOf(VIDEOS.map(esc))}</span></div></div></div></div>`};
 };
-R.video = () => ({title:'Video Messages', html:`<div class="hero"><div class="k tx">Up on screen</div><h1 class="tx" style="font-size:calc(var(--u)*11)">Video Messages</h1><div class="rule dr"></div><p class="tx">${VIDEOS.map(esc).join(' and ')}</p></div>`});
+R.video = () => ({title:'Video Messages', html:`<div class="hero"><div class="k tx">Up on screen</div><h1 class="tx" style="font-size:calc(var(--u)*11)">Video Messages</h1><div class="rule dr"></div><p class="tx">${listOf(VIDEOS.map(esc))}</p></div>`});
 R.recap = (c) => {
   const m = nowMin(), close = S.mode === 'close', done = SESSIONS.filter(s => m >= toMin(BLOCKS[s.b-1].e)).length, booked = SLOTS.filter(x => x.status === 'Booked').length;
   const k = [[done, 'sessions delivered'], [advisorCount(), 'advisors'], [booked || SLOTS.length, booked ? 'one to ones booked' : 'one to one slots']]; if (S.checkedIn) k.push([S.checkedIn, 'people joined']); if (S.photos.length) k.push([S.photos.length, 'photos shared']); if (S.profiles.length) k.push([S.profiles.length, 'on the Networking Board']); k.splice(4);
@@ -922,10 +928,19 @@ function setConn(){ const ok = S.liveOk; $('conn').classList.toggle('live', ok);
 function setOverlay(o){ S.overlay = o; $('black').classList.toggle('hide', o !== 'black'); $('logo').classList.toggle('hide', o !== 'logo'); if (o === 'check') renderCheck(); $('check').classList.toggle('hide', o !== 'check'); }
 
 /* video, started from the remote */
+// Videos are fetched whole a little after the wall loads and kept in memory, so a video starts at once and
+// plays to the end even if the hall network drops. A file that is not there yet is skipped; a video that has
+// not finished loading plays straight from the network as before.
+const VCACHE = {};
+async function warmVideos(){
+  for (const v of LIVE.videos) { if (VCACHE[v.id]) continue;
+    try { const r = await fetch(v.src); if (!r.ok || !/video|octet/.test(r.headers.get('content-type') || '')) continue; VCACHE[v.id] = URL.createObjectURL(await r.blob()); } catch(e) {} }
+}
+if (location.protocol.startsWith('http')) { setTimeout(warmVideos, 20000); setInterval(warmVideos, 600000); }
 function playVideo(id){
   const v = LIVE.videos.find(x => x.id === id); if (!v) return;
   const box = $('vid'), el = box.querySelector('video'), msg = box.querySelector('.vmsg');
-  msg.textContent = ''; box.classList.remove('hide'); el.muted = false; el.src = v.src;
+  msg.textContent = ''; box.classList.remove('hide'); el.muted = false; el.src = VCACHE[v.id] || v.src;
   el.play().catch(err => { if (err && err.name === 'NotAllowedError') { el.muted = true; el.play().catch(() => {}); toast('Click the screen once so videos can play with sound'); } });
 }
 function stopVideo(){ const box = $('vid'), el = box.querySelector('video'); el.pause(); el.removeAttribute('src'); el.load(); box.classList.add('hide'); }
@@ -1024,8 +1039,9 @@ R.pulse = (c) => {
 const DEG = {'right':0, 'down right':45, 'down':90, 'down left':135, 'left':180, 'up left':225, 'up':270, 'up right':315};
 const ARROW = '<svg viewBox="0 0 100 100" aria-hidden="true"><path d="M18,50 H78 M56,27 L79,50 L56,73" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 R.way = (c) => {
-  const items = wayItems(), row = c.w >= 165;
-  return {title:'This Way', html:`<div class="way" style="grid-template-columns:${row ? `repeat(${items.length},minmax(0,1fr))` : '1fr'}"><div class="here rv" style="grid-column:1/-1">You are in the Main Hall</div>${items.map(w => `<div class="wy glass rv"><div class="arr leaf lf ${w.blue ? 'blue' : ''}"><i style="rotate:${DEG[S.way[w.k]] || 0}deg">${ARROW}</i></div><div style="min-width:0"><b>${esc(w.t)}</b><span>${esc(w.s)}</span></div></div>`).join('')}</div>`};
+  // Up to five places. A wide slot lays them out three to a row; a narrow slot stacks them, smaller once there are more than three.
+  const items = wayItems(), row = c.w >= 165, many = !row && items.length > 3;
+  return {title:'This Way', html:`<div class="way ${many ? 'many' : ''}" style="grid-template-columns:${row ? `repeat(${Math.min(items.length, 3)},minmax(0,1fr))` : '1fr'}"><div class="here rv" style="grid-column:1/-1">You are in the Main Hall</div>${items.map(w => `<div class="wy glass rv"><div class="arr leaf lf ${w.blue ? 'blue' : ''}"><i style="rotate:${DEG[S.way[w.k]] || 0}deg">${ARROW}</i></div><div style="min-width:0"><b>${esc(w.t)}</b><span>${esc(w.s)}</span></div></div>`).join('')}</div>`};
 };
 
 /* ============ Rail ============ */
@@ -1117,7 +1133,7 @@ function setTitle(h2, text, animate){
 // It never shows a scene without content. Dwell follows content: photos 4 seconds a photo within 20 to 45,
 // the poll longer while answers arrive.
 const DIR = {log:[], last:{}, photoIds:null, links:null, tkIds:null, ans:[], pollId:null, pollTotal:0};
-const WAYS = [{k:'registration', t:'Registration', s:'Badges and one to one bookings'}, {k:'rooms', t:'Rooms A, B and C', s:'Sessions'}, {k:'oneToOnes', t:'One to Ones', s:'Small Rooms 1 and 3', blue:true}];
+const WAYS = [{k:'roomA', t:'Room A', s:'Sessions'}, {k:'roomB', t:'Room B', s:'Sessions'}, {k:'roomC', t:'Room C', s:'Upstairs, 3rd Floor'}, {k:'registration', t:'Registration', s:'Badges and one to one bookings'}, {k:'oneToOnes', t:'One to Ones', s:'Small Rooms 1 and 3', blue:true}];
 const wayItems = () => WAYS.filter(w => S.way && S.way[w.k]);
 // Numbers that grow during the day, above zero only. Live Numbers needs three of them.
 function liveNumbers(){
@@ -1390,8 +1406,9 @@ function momentList(){
 }
 // The rooms of a block as cards. With directions set, each card carries the arrow to the rooms.
 function momentRooms(n, on, way){
-  const dir = way && S.way && S.way.rooms, list = ROOMS.map(r => SESSIONS.find(x => x.b === n && x.room === r)).filter(Boolean);
-  return `<div class="mr">${list.map(s => `<div class="mrc rv">${dir ? `<div class="arr leaf lf"><i style="rotate:${DEG[dir] || 0}deg">${ARROW}</i></div>` : ''}<div class="mrt"><span class="pill leaf lf ${on ? '' : 'ghost'}">${esc(s.room)}</span><strong class="tx">${esc(s.title)}</strong><span class="who">${esc(names(s.who))}</span></div></div>`).join('')}</div>`;
+  // Each room has its own direction (roomA, roomB, roomC), as seen from the screen.
+  const dirOf = r => way && S.way ? S.way['room' + String(r).slice(-1)] : '', list = ROOMS.map(r => SESSIONS.find(x => x.b === n && x.room === r)).filter(Boolean);
+  return `<div class="mr">${list.map(s => `<div class="mrc rv">${dirOf(s.room) ? `<div class="arr leaf lf"><i style="rotate:${DEG[dirOf(s.room)] || 0}deg">${ARROW}</i></div>` : ''}<div class="mrt"><span class="pill leaf lf ${on ? '' : 'ghost'}">${esc(s.room)}</span><strong class="tx">${esc(s.title)}</strong><span class="who">${esc(names(s.who))}</span></div></div>`).join('')}</div>`;
 }
 function moments(){
   if (!S.started) return;

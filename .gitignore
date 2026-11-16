@@ -5,3 +5,4 @@ data
 dev
 .claude/
 .playwright-mcp/
+public/videos/*.mp4

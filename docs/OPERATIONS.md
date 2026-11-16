@@ -88,7 +88,7 @@ The QR code on the wall is made from the wall's own address. Opened as `localhos
 5. Videos with sound, once Zaid has added the files.
 6. Unplug the network for 2 minutes: the wall keeps running and comes back by itself.
 7. The laptop fallback starts with `npm start` and serves the wall (see section 8).
-8. Set the This Way directions in the remote, as seen from the wall.
+8. Check the This Way directions in the remote, as seen from the wall: Room A on the right, Room B on the left, Room C upstairs on the 3rd Floor. Add Registration and One to Ones once their directions are known.
 9. Stop the rehearsal. Wipe Test Data. It is blocked from 08:00 to 16:00 on Tuesday, so Monday is the last chance before the event. The wipe also puts the feature switches and screen controls back to their defaults; set any you changed again.
 
 ## 3. Event Morning, Tuesday 17 November
@@ -146,7 +146,7 @@ Open the remote, type your name (the log shows who did what) and the team PIN. I
 * Videos: Play Tareq Azza, Play KassimLegal, Stop video. A video plays full screen and returns by itself.
 * Announcement: up to 140 characters, shown for 15 seconds, 30 seconds or 1 minute. Send or Clear.
 * Screen: Live screen, Black, Logos, Screen check. Light or Dark.
-* This Way directions: an arrow for Registration, Rooms A, B and C, and One to Ones, as seen from the wall. Save directions. The This Way scene and the arrows in the 5 minute calls show only once directions are set.
+* This Way directions: an arrow each for Room A, Room B, Room C, Registration and One to Ones, as seen from the wall. Save directions. The This Way scene and the arrows in the 5 minute calls show only once directions are set.
 * Survey link: a full https address, shown on the phone's page after the event.
 * Reset screen controls: mode, scene, speaker, video, announcement, overlay and theme go back to automatic. Polls, directions, hidden words and switches stay.
 

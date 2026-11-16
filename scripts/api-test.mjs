@@ -301,7 +301,7 @@ describe("state", () => {
     assert.deepEqual(d.interest, {}); assert.deepEqual(d.hello, []);
     assert.match(d.snapV, /^\d+\.\d+$/);
     assert.ok(d.tags.includes("Funding"));
-    assert.deepEqual(d.videos.map(v => v.id), ["tareq", "kassim"]);
+    assert.deepEqual(d.videos.map(v => v.id), ["gsg", "tareq", "kassim"]);
     assert.equal(r.headers.get("cache-control"), "public, max-age=0, must-revalidate");
     assert.equal(r.headers.get("x-content-type-options"), "nosniff");
     await op(S.base, { action: "showWord", word: "secretword" });
@@ -680,7 +680,7 @@ describe("wipe", () => {
     const ph = await upload(W.base, d); await op(W.base, { action: "approvePhoto", id: ph.json.id });
     const pr = await call(W.base, "POST", "/api/profile", { body: { name: "Yousef Amin", company: "CloudBridge", role: "CTO", looking: ["Hiring"], offer: ["Mentoring"], consent: true }, headers: { "x-dev": d } });
     await op(W.base, { action: "approveProfile", id: pr.json.id });
-    await op(W.base, { action: "way", way: { registration: "left", rooms: "up right" } });
+    await op(W.base, { action: "way", way: { registration: "left", roomA: "up right" } });
     await op(W.base, { action: "pollAdd", q: "What did you learn today?", type: "words" });
     await op(W.base, { action: "mode", mode: "lunch" });
     await op(W.base, { action: "hideWord", word: "growth" });
@@ -699,7 +699,7 @@ describe("wipe", () => {
     assert.deepEqual(keys.filter(k => !k.startsWith("log/")).sort(), ["cfg", "people", "polls", "snap"]);
     const g = (await opGet(W.base)).json;
     assert.deepEqual(g.log.map(l => l.what), ["Wiped the test data"]);
-    assert.deepEqual(g.cfg.way, { registration: "left", rooms: "up right" });
+    assert.deepEqual(g.cfg.way, { roomA: "up right", registration: "left" });
     assert.equal(g.cfg.mode, "auto"); assert.deepEqual(g.cfg.hidden, []); assert.equal(g.cfg.rehearsal, null);
     assert.deepEqual(g.cfg.flags, ALL_FLAGS);
     assert.ok(g.polls.some(x => x.q === "What did you learn today?"));
@@ -758,7 +758,7 @@ describe("operator actions", () => {
     await ok({ action: "theme", theme: "dark" }, c => assert.equal(c.theme, "dark"));
     await ok({ action: "overlay", overlay: "check" }, c => assert.equal(c.overlay, "check"));
     await ok({ action: "overlay", overlay: "nonsense" }, c => assert.equal(c.overlay, null));
-    await ok({ action: "way", way: { registration: "left", rooms: "sideways" } }, c => assert.deepEqual(c.way, { registration: "left" }));
+    await ok({ action: "way", way: { registration: "left", roomA: "sideways" } }, c => assert.deepEqual(c.way, { registration: "left" }));
     await ok({ action: "ann", text: "Lunch is ready in the Main Hall", secs: 500 }, c => { assert.equal(c.ann.text, "Lunch is ready in the Main Hall"); assert.equal(c.ann.secs, 120); });
     await ok({ action: "reset" }, c => { assert.equal(c.mode, "auto"); assert.equal(c.theme, "light"); assert.equal(c.ann, null); assert.deepEqual(c.way, { registration: "left" }); });
     const log = (await opGet(S.base)).json.log.map(l => l.what);

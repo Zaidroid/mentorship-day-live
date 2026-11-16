@@ -135,7 +135,7 @@ async function act(s, b) {
     return text ? `Announced: ${text}` : "Cleared the announcement";
   }
   if (a === "way") {
-    const w = {}; for (const k of ["registration", "rooms", "oneToOnes"]) { const d = String((b.way || {})[k] || ""); if (DIRS.includes(d) && d) w[k] = d; }
+    const w = {}; for (const k of ["roomA", "roomB", "roomC", "registration", "oneToOnes"]) { const d = String((b.way || {})[k] || ""); if (DIRS.includes(d) && d) w[k] = d; }
     await updateCfg(s, c => { c.way = Object.keys(w).length ? w : null; });
     return "Updated the This Way directions";
   }

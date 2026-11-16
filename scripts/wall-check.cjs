@@ -540,8 +540,8 @@ check('moment-call-arrows', async () => {
   await sleep(800);
   const b = await md(e.p, () => [...document.querySelectorAll('#moment .mrc')].map(c => ({ room: c.querySelector('.pill').textContent, arrow: !!c.querySelector('.arr') })));
   await e.close();
-  const st = await state(), dir = st.cfg.way && st.cfg.way.rooms, deg = { 'right': 0, 'down right': 45, 'down': 90, 'down left': 135, 'left': 180, 'up left': 225, 'up': 270, 'up right': 315 }[dir];
-  const ok = a.cards.length === 3 && a.cards.every(c => c.arrow === deg + 'deg') && a.dot && b.length === 1 && b[0].room === 'Room A' && !b[0].arrow;
+  const st = await state(), way = st.cfg.way || {}, DEGS = { 'right': 0, 'down right': 45, 'down': 90, 'down left': 135, 'left': 180, 'up left': 225, 'up': 270, 'up right': 315 }, dir = ['A', 'B', 'C'].map(r => way['room' + r]).join(', '), degOf = room => DEGS[way['room' + room.slice(-1)]];
+  const ok = a.cards.length === 3 && a.cards.every(c => c.arrow === degOf(c.room) + 'deg') && a.dot && b.length === 1 && b[0].room === 'Room A' && !b[0].arrow;
   return [ok, `10:55 call with directions (rooms "${dir}"): ${a.cards.map(c => c.room + ' ' + c.arrow).join(', ')}; live dot shows ${a.dot}; 11:55 call without directions: ${b.map(c => c.room + (c.arrow ? ' with arrow' : ' no arrow')).join(', ')}`];
 });
 
