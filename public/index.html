@@ -277,7 +277,7 @@ footer.wrap{padding:28px 16px calc(var(--dock-h) + var(--pad-h) + 16px)}
 .foot{margin-top:12px;text-align:center;font-size:13px;color:var(--ink2)}
 
 /* bottom tabs */
-.tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#F6F6F6;border-top:1px solid var(--line);padding:5px max(6px,env(safe-area-inset-right)) calc(5px + env(safe-area-inset-bottom)) max(6px,env(safe-area-inset-left));display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)}
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#F6F6F6;border-top:1px solid var(--line);padding:5px max(6px,env(safe-area-inset-right)) calc(5px + env(safe-area-inset-bottom) + var(--host-h,0px)) max(6px,env(safe-area-inset-left));display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)}
 .tabs button{border:0;background:none;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:13px;font-weight:700;color:var(--ink2);position:relative}
 .tabs .ic{width:48px;height:30px;display:grid;place-items:center;border-radius:6px 16px 0 16px;transition:background .24s var(--ease),color .24s}
 .tabs svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
@@ -1527,6 +1527,16 @@ if (window.visualViewport) {
   const onVV = () => { const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop); root.style.setProperty('--kb', (kb > 60 ? kb : 0) + 'px'); };
   vv.addEventListener('resize', onVV); vv.addEventListener('scroll', onVV);
 }
+// The host can place its own badge in the bottom right corner (Netlify does on its free plan). The badge stays
+// as it is; the tab bar moves up by its height, so no tab ever sits under it. Without a badge nothing changes.
+(() => { let n = 0; const look = () => {
+  const f = document.getElementById('nl-badge-frame') || document.getElementById('nl-hud-frame');
+  if (f) { const r = f.getBoundingClientRect(), h = Math.round(innerHeight - r.top); root.style.setProperty('--host-h', (h > 0 && h <= 120 && r.width > 0 ? h : 0) + 'px'); }
+  else if (n > 20) root.style.setProperty('--host-h', '0px');
+  // The dock height is watched by content size, which padding does not change, so it is measured again here.
+  requestAnimationFrame(() => root.style.setProperty('--dock-h', Math.round($('tabs').getBoundingClientRect().height) + 'px'));
+  if (++n < 30) setTimeout(look, n < 12 ? 500 : 3000); };
+  look(); })();
 if (window.ResizeObserver) new ResizeObserver(([e]) => root.style.setProperty('--dock-h', Math.round(e.target.getBoundingClientRect().height) + 'px')).observe($('tabs'));
 
 /* ---------- the clock ticks ---------- */
