@@ -25,7 +25,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 /* ---------- arguments ---------- */
-const FLAGS = new Set(["load", "allow-remote", "wipe-first", "help"]);
+const FLAGS = new Set(["load", "allow-remote", "wipe-first", "help", "demo"]);
 function parseArgs(argv) {
   const o = {};
   for (let i = 0; i < argv.length; i++) {
@@ -411,7 +411,10 @@ async function runDay() {
   const g = await opGet(); polls = g.ok ? g.data.polls : [];
   people = makePeople(PEOPLE);
   guests = GUESTS.slice(0, Math.max(2, Math.min(GUESTS.length, Math.round(PEOPLE * 0.04)))).map((name, k) => ({ i: -k - 1, name, first: name.split(" ")[0], last4: "", company: "Guest Co", title: "Guest", dev: `sim${RUN}g${String(k).padStart(3, "0")}`, kind: "guest", signed: false, pub: null, hello: chance(0.5), stars: {}, card: false, code: null, lastRx: 0, rxN: 0, arrive: 0, wrongFirst: 0, present: false }));
-  const imp = await op({ action: "peopleImport", people: people.map(p => ({ name: p.name, last4: p.last4, company: p.company, title: p.title, topics: p.topics, advisorPref: p.advisorPref, photoOk: p.photoOk })) });
+  // --demo adds three fixed test people that the simulator does not play, so a person can sign in as one of them
+  // on a real phone: Demo Tester One 1111, Demo Tester Two 2222, Demo Tester Three 3333.
+  const demo = A.demo ? [["Demo Tester One", "1111"], ["Demo Tester Two", "2222"], ["Demo Tester Three", "3333"]].map(([name, last4], k) => ({ name, last4, company: "Test Company", title: "Tester", topics: [TOPICS[k % TOPICS.length]], advisorPref: "", photoOk: true })) : [];
+  const imp = await op({ action: "peopleImport", people: people.map(p => ({ name: p.name, last4: p.last4, company: p.company, title: p.title, topics: p.topics, advisorPref: p.advisorPref, photoOk: p.photoOk })).concat(demo) });
   if (!imp.ok) { console.error("People import failed: " + (imp.data && imp.data.error)); process.exit(1); }
   console.log(`Imported ${imp.data.count} sample people (${(imp.data.skipped || []).length} skipped).`);
   const rh = await setRehearsal(FROM);
