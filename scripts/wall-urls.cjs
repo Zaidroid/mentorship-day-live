@@ -10,8 +10,8 @@ const SCENES = ['rooms', 'choose', 'board', 'meet', 'photos', 'poll', 'pulse', '
 const SCENE_TIME = '11:20';
 
 const timeTag = t => 't' + t.replace(/:/g, '');
-// The Welcome scene has two variants for the look gate (WP4 task 5): b is the default, a is ?v=a.
-const VARIANT_VIEWS = [{ t: '09:40', v: 'a' }];
+// The Welcome scene has two variants for the look gate (WP4 task 5): a is the default (Zaid's pick), b is ?v=b.
+const VARIANT_VIEWS = [{ t: '09:40', v: 'b' }];
 const wallUrl = (opts) => {
   const p = ['t=' + opts.t, 'quiet'];
   if (opts.scene) p.push('scene=' + opts.scene);

@@ -425,8 +425,11 @@ let DEV = store.get('md_dev');
 if (!DEV || !/^[a-z0-9]{8,40}$/.test(DEV)) { DEV = Array.from(crypto.getRandomValues(new Uint8Array(12)), b => (b % 36).toString(36)).join(''); store.set('md_dev', DEV); }
 const P = new URLSearchParams(location.search);
 // Two looks for the sign in sheet and the My Day top card, for the owner to choose: ?v=a or ?v=b, kept for the session.
-const V = (() => { const q = (P.get('v') || '').toLowerCase(); if (q === 'a' || q === 'b') { sess.set('md_v', q); return q; } return sess.get('md_v') || 'a'; })();
-document.body.dataset.v = V;
+// Zaid's look picks (16 November): the sign in is B, a full page; the My Day top card is A, the card.
+// ?v=a or ?v=b still forces one variant for both, which the tests use.
+const VQ = (() => { const q = (P.get('v') || '').toLowerCase(); if (q === 'a' || q === 'b') { sess.set('md_v', q); return q; } return sess.get('md_v') || ''; })();
+const VS = VQ || 'b', VM = VQ || 'a';
+document.body.dataset.v = VS;
 const PLACE = 'Palestine TechnoPark, Birzeit';
 // Vibration only after the person has touched the page, as browsers require.
 const vib = n => { try { if (navigator.vibrate && (!navigator.userActivation || navigator.userActivation.hasBeenActive)) navigator.vibrate(n); } catch(e) {} };
@@ -689,7 +692,7 @@ function openSheet(byHand){
   ['main', 'tabs', 'hd', 'pad'].forEach(id => $(id).inert = true);
   $('foot').inert = true;
   document.body.classList.add('lock');
-  $('scrim').hidden = V !== 'a'; $('sheet').hidden = false; $('sheet').className = 'sheet v' + V;
+  $('scrim').hidden = VS !== 'a'; $('sheet').hidden = false; $('sheet').className = 'sheet v' + VS;
   if (byHand) { history.pushState({sheet:1}, ''); sheetPushed = true; }
   renderSheet();
   if (byHand) setTimeout(() => { const i = $('siQ'); if (i) i.focus(); }, 60);
@@ -727,7 +730,7 @@ function renderSheet(){
   const el = $('sheet');
   const hello = helloOn();
   let h;
-  if (V === 'a') {
+  if (VS === 'a') {
     // A: a sheet from the bottom, three steps. The field sits low, above the keyboard; results grow upward from it.
     const stepN = {find:1, code:2, hello:3, guest:1, locked:2, ok:3}[SI.step];
     const steps = `<div class="steps" aria-label="Step ${stepN} of 3">${[1, 2, 3].map(i => `<i class="${i <= stepN ? 'on' : ''}"></i>`).join('')}</div>`;
@@ -810,7 +813,7 @@ function siDigits(v){
   const bx = $('siBoxes');
   if (bx) { bx.querySelectorAll('i').forEach((i, k) => { i.textContent = v[k] || ''; i.classList.toggle('on', k === Math.min(v.length, 3)); }); bx.classList.remove('bad'); }
   const btn = document.querySelector('[data-act=si-claim]'); if (btn) btn.disabled = v.length !== 4 || SI.busy;
-  if (v.length === 4 && V === 'a') { SI.err = ''; if (helloOn()) { SI.step = 'hello'; renderSheet(); } else siClaim(); }
+  if (v.length === 4 && VS === 'a') { SI.err = ''; if (helloOn()) { SI.step = 'hello'; renderSheet(); } else siClaim(); }
 }
 async function siClaim(){
   if (SI.busy || SI.digits.length !== 4) return;
@@ -1014,7 +1017,7 @@ function renderToday(){
   if (!d) return;
   const md = topModel();
   // The top card
-  const html = md ? (V === 'b' ? topB(md) : topA(md)) : '';
+  const html = md ? (VM === 'b' ? topB(md) : topA(md)) : '';
   const el = $('top');
   if (md && md.key !== lastTopKey) { put(el, html); const a = el.firstElementChild; if (a && lastTopKey !== null) a.classList.add('rise'); lastTopKey = md.key; }
   else put(el, html);
@@ -1511,7 +1514,7 @@ document.addEventListener('keydown', e => {
   if (e.key !== 'Enter') return;
   const t = e.target;
   if (t.id === 'word') { e.preventDefault(); answer(t.value); }
-  else if (t.id === 'siD' && V === 'b' && SI.digits.length === 4) { e.preventDefault(); const h = $('siH'); if (h) SI.hello = h.checked; siClaim(); }
+  else if (t.id === 'siD' && VS === 'b' && SI.digits.length === 4) { e.preventDefault(); const h = $('siH'); if (h) SI.hello = h.checked; siClaim(); }
   else if (t.id === 'siN') { e.preventDefault(); const h = $('siH'); if (h) SI.hello = h.checked; siGuest(); }
   else if (t.id === 'mCode') { e.preventDefault(); ACT['meet-go'](); }
   else if (t.dataset.tk) { e.preventDefault(); tkSend(+t.dataset.tk); }

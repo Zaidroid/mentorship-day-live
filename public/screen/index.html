@@ -307,6 +307,9 @@ m-w{display:inline}
 /* the countdown clip is exactly one line tall; the old and the new number stack in it and move up together */
 #moment .cd m-l{height:.84em;padding:.1em 0 .06em;margin:-.1em 0 -.06em;box-sizing:content-box}
 #moment .cd m-i{display:block}
+/* the last 10 seconds sit in the middle of the panel: the line above, the numeral under it */
+#moment.cnt{align-items:center;text-align:center}
+#moment.cnt .cd m-l{min-width:1.2em}
 #moment .mr{display:flex;gap:calc(var(--u)*3.4);margin-top:calc(var(--u)*4);flex-wrap:wrap}
 #moment .mrc{display:flex;align-items:flex-start;gap:calc(var(--u)*1.8);flex:1 1 0;min-width:calc(var(--u)*24);max-width:calc(var(--u)*50)}
 #moment .mrt{display:flex;flex-direction:column;align-items:flex-start;gap:calc(var(--u)*1);min-width:0}
@@ -748,7 +751,7 @@ function layoutCloud(el){
         is a large line of type ("Welcome," and the name in orange) rising from behind its edge.
    The number and the hellos change in place (hereTick, helloTick), so a repaint never cuts a hello short.
    With nobody here yet the count is left out and the welcome line of version 1 shows instead. */
-const VARIANT = P.get('v') === 'a' ? 'a' : 'b'; // b is the recommendation; a stays one URL option away
+const VARIANT = P.get('v') === 'b' ? 'b' : 'a'; // a is Zaid's pick (16 November); b stays one URL option away
 const WELCOME_P = 'A full day of practical guidance, connecting tech professionals with experienced local and international advisors.';
 const FEAT = '<div class="feat rv"><span>Focused Sessions</span><span>One to One Conversations</span><span>Networking and Lunch</span></div>';
 R.welcome = (c) => {
@@ -1286,26 +1289,61 @@ function nowZone(){
 }
 const T0 = toMin(PROGRAM[0].s), T1 = toMin(PROGRAM[PROGRAM.length - 1].e);
 const FLOWER = `<svg viewBox="0 0 100 240" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linecap="round"><g stroke-width="2.2"><path d="M39,58 L44.5,48.5 M61,58 L55.5,48.5 M39,58 L44.5,67.5 M61,58 L55.5,67.5 M39,38.9 L44.5,29.4 M61,38.9 L55.5,29.4 M39,38.9 L44.5,48.5 M61,38.9 L55.5,48.5 M39,77.1 L44.5,67.5 M61,77.1 L55.5,67.5 M39,77.1 L44.5,86.6 M61,77.1 L55.5,86.6 M22.5,48.5 L28,38.9 M44.5,48.5 L39,38.9 M22.5,48.5 L28,58 M44.5,48.5 L39,58 M55.5,48.5 L61,38.9 M77.5,48.5 L72,38.9 M55.5,48.5 L61,58 M77.5,48.5 L72,58 M22.5,67.5 L28,58 M44.5,67.5 L39,58 M22.5,67.5 L28,77.1 M44.5,67.5 L39,77.1 M55.5,67.5 L61,58 M77.5,67.5 L72,58 M55.5,67.5 L61,77.1 M77.5,67.5 L72,77.1 M50,86.6 L50,240"/></g><g stroke-width="5.4"><path d="M46.5,29.4 L53.5,29.4 M30,38.9 L37,38.9 M63,38.9 L70,38.9 M46.5,48.5 L53.5,48.5 M30,58 L37,58 M63,58 L70,58 M46.5,67.5 L53.5,67.5 M30,77.1 L37,77.1 M63,77.1 L70,77.1 M46.5,86.6 L53.5,86.6"/></g></g><g fill="currentColor"><path d="M50,168 C58,147 70,137 86,128 C82,149 69,163 50,168 Z M50,168 C42,147 30,137 14,128 C18,149 31,163 50,168 Z M50,208 C58,187 70,177 86,168 C82,189 69,203 50,208 Z M50,208 C42,187 30,177 14,168 C18,189 31,203 50,208 Z"/></g></svg>`;
-let gardenKey = '';
+let gardenKey = '', gardenX = null, gardenCv = null;
+// The timeline gives every label the room it needs. Each part of the day starts from its share of the
+// strip by its length; a part whose label needs more takes it from the parts with room to spare, so no
+// label is cut or touches the next flower. The needle moves through each part at that part's own pace.
+// When the strip is too narrow for every full label, the shortest parts fall back to their time alone,
+// never the current one.
+function gardenText(font, t){ gardenCv = gardenCv || document.createElement('canvas').getContext('2d'); gardenCv.font = font; return gardenCv.measureText(t).width; }
+function gardenPlan(W, pad, cur){
+  const n = PROGRAM.length, span = W - pad * 2, fam = 'SS3, NotoAr, system-ui, sans-serif';
+  const st = PROGRAM.map(p => toMin(p.s)).concat(T1);
+  const nat = PROGRAM.map((p, i) => (st[i + 1] - st[i]) / (T1 - T0) * span);
+  const lead = U * 2.2, gap = U * 3.2; // label start after its flower, and the clear space before the next flower
+  const fullW = PROGRAM.map(p => Math.max(gardenText(`700 ${U * 1.7}px ${fam}`, p.s + ' ' + p.title), gardenText(`400 ${U * 1.35}px ${fam}`, p.sub || '')) * 1.03);
+  const timeW = PROGRAM.map(p => gardenText(`700 ${U * 1.7}px ${fam}`, p.s) * 1.03);
+  const full = PROGRAM.map(() => true);
+  const need = i => lead + (full[i] ? fullW[i] : timeW[i]) + (i < n - 1 ? gap : 0);
+  const total = () => PROGRAM.reduce((a, p, i) => a + need(i), 0);
+  const order = PROGRAM.map((p, i) => i).filter(i => i !== cur).sort((x, y) => nat[x] - nat[y]);
+  while (total() > span && order.length) full[order.shift()] = false;
+  const fits = total() <= span;
+  // Parts shorter than their label are set to what the label needs; the rest share what is left by length.
+  let w = nat.slice();
+  if (fits) {
+    const fixed = PROGRAM.map(() => false);
+    for (let pass = 0; pass < n; pass++) {
+      const used = PROGRAM.reduce((a, p, i) => a + (fixed[i] ? need(i) : 0), 0), free = PROGRAM.reduce((a, p, i) => a + (fixed[i] ? 0 : nat[i]), 0);
+      w = PROGRAM.map((p, i) => fixed[i] ? need(i) : nat[i] * (span - used) / (free || 1));
+      const short = PROGRAM.map((p, i) => i).filter(i => !fixed[i] && w[i] < need(i));
+      if (!short.length) break;
+      short.forEach(i => fixed[i] = true);
+    }
+  }
+  const x = [pad]; w.forEach(v => x.push(x[x.length - 1] + v));
+  return {x, st, full, fits, fullW, timeW, lead, gap};
+}
 function garden(){
-  const m = nowMin(), g = $('garden'), W = g.clientWidth, pad = U * 4.2, span = W - pad * 2;
-  const xOf = t => pad + (t - T0) / (T1 - T0) * span;
+  const m = nowMin(), g = $('garden'), W = g.clientWidth, pad = U * 4.2;
   const cur = PROGRAM.findIndex(p => m >= toMin(p.s) && m < toMin(p.e));
-  const key = W + '|' + cur + '|' + S.mode;
-  if (key !== gardenKey) {
+  const key = W + '|' + cur + '|' + S.mode + '|' + (document.fonts ? document.fonts.status : '');
+  if (key !== gardenKey || !gardenX) {
     gardenKey = key;
+    const G = gardenX = gardenPlan(W, pad, cur);
     g.innerHTML = PROGRAM.map((p, i) => {
-      const x = xOf(toMin(p.s)), nxt = PROGRAM[i + 1], room = (nxt ? xOf(toMin(nxt.s)) : W - pad) - x;
+      const x = G.x[i], room = G.x[i + 1] - x - G.lead - (i < PROGRAM.length - 1 ? G.gap : 0);
       const st = i < cur || (cur < 0 && m >= toMin(p.e)) ? 'past' : (i === cur ? 'on' : '');
       const color = st === 'on' ? '#DF6236' : '#2F9CC3';
-      const need = (p.s.length + 2 + p.title.length) * U * .92 + U * 4.5;
-      const full = st === 'on' || room > need, timeOnly = !full && room > U * 8.5;
-      const lab = full ? `<b>${p.s}  ${esc(p.title)}</b><span>${esc(p.sub)}</span>` : (timeOnly ? `<b>${p.s}</b>` : '');
-      return `<div class="fl ${st}" style="left:${(x - U * 1.7).toFixed(1)}px;color:${color}">${FLOWER}</div>` + (lab ? `<div class="fl-l ${st}" style="left:${(x + U * 2.2).toFixed(1)}px;${room < need ? `max-width:${Math.max(U * 6, room - U * 3.4).toFixed(0)}px;overflow:hidden` : ''}">${lab}</div>` : '');
+      const wide = G.full[i], lw = wide ? G.fullW[i] : G.timeW[i], show = wide || room >= lw;
+      const lab = !show ? '' : (wide ? `<b>${p.s}  ${esc(p.title)}</b><span>${esc(p.sub)}</span>` : `<b>${p.s}</b>`);
+      return `<div class="fl ${st}" style="left:${(x - U * 1.7).toFixed(1)}px;color:${color}">${FLOWER}</div>` + (lab ? `<div class="fl-l ${st}" style="left:${(x + G.lead).toFixed(1)}px;${room < lw ? `max-width:${Math.max(U * 6, room).toFixed(0)}px;overflow:hidden` : ''}">${lab}</div>` : '');
     }).join('');
   }
-  const f = Math.max(0, Math.min(1, (m - T0) / (T1 - T0)));
-  const nx = m < T0 ? pad : (m > T1 ? W - pad : xOf(m));
+  const G = gardenX;
+  let nx = pad;
+  if (m > T1) nx = W - pad;
+  else if (m > T0) { let i = 0; while (i < PROGRAM.length - 1 && m >= G.st[i + 1]) i++; nx = G.x[i] + (m - G.st[i]) / (G.st[i + 1] - G.st[i]) * (G.x[i + 1] - G.x[i]); }
   $('dayfill').style.width = nx + 'px';
   $('needle').style.left = nx + 'px';
 }
@@ -1348,9 +1386,10 @@ function moments(){
   if (act.count) {
     const h = el.clientHeight / U, fs = Math.min(44, h * .56);
     el.innerHTML = `<div class="k"><span class="live-dot"></span><span class="tx">${esc(act.k)}</span></div><div class="cd" style="font-size:calc(var(--u)*${fs.toFixed(1)})"><m-l class="ln"><m-i class="li"></m-i></m-l></div>`;
-    el.dataset.n = '';
+    el.dataset.n = ''; el.classList.add('cnt');
     countTick(act, sec);
   } else {
+    el.classList.remove('cnt');
     const size = act.ann ? 7 : (act.big ? 13 : 10.5);
     el.innerHTML = `<div class="k"><span class="live-dot"></span><span class="tx">${esc(act.k)}</span></div><h1 class="tx" ${act.ann ? 'dir="auto"' : ''} style="font-size:calc(var(--u)*${size})">${esc(act.t)}</h1><div class="rule dr"></div>${act.p ? `<p class="tx">${esc(act.p)}</p>` : ''}${act.rooms ? momentRooms(act.rooms, act.on, act.way) : ''}`;
   }
