@@ -893,6 +893,10 @@ function applyState(d, cached){
   setOverlay(c.overlay || null);
   if (c.ann && c.ann.at !== S.annAt) { S.annAt = c.ann.at; S.ann = c.ann.text; const left = c.ann.at + c.ann.secs * 1000 - srv; S.annUntil = first ? (left > 0 ? Date.now() + left : 0) : Date.now() + c.ann.secs * 1000; }
   if (!c.ann) { S.ann = ''; S.annUntil = 0; S.annAt = null; }
+  // Group photo countdown from the remote: photoAt is in the server's time base, so its end is moved to this clock.
+  const gp = c.photoAt && c.photoAt.at ? c.photoAt : null;
+  if (!gp) { S.gpAt = null; S.gpEnd = 0; }
+  else if (gp.at !== S.gpAt) { S.gpAt = gp.at; S.gpEnd = Date.now() + (gp.at + gp.secs * 1000 - srv); }
   if (c.video && c.video.at !== S.videoAt) { S.videoAt = c.video.at; if (!first || srv - c.video.at < 20000) { if (c.video.id) playVideo(c.video.id); else stopVideo(); } }
 }
 // State is asked for every 3 seconds, every 2 while reactions are on (docs/PLAN.md 5.12 and WP4 task 9). The next
@@ -1393,6 +1397,11 @@ function moments(){
   if (!S.started) return;
   const sec = nowMin() * 60;
   let act = momentList().find(x => sec >= x.from && sec < x.from + x.dur);
+  // The group photo countdown takes the wall: the seconds counted in large numerals, then a held line.
+  if (S.gpEnd) { const left = (S.gpEnd - Date.now()) / 1000;
+    if (left > 0) act = {key:'gp' + S.gpAt, gp:true, count:true, k:'Group photo in'};
+    else if (left > -8) act = {key:'gps' + S.gpAt, k:'Group photo', t:'Smile', p:'Thank you for today.', big:true};
+    else S.gpEnd = 0; }
   if (S.annUntil && Date.now() < S.annUntil) act = {key:'ann' + S.annAt, k:'Announcement', t:S.ann, ann:true};
   if (S.annUntil && Date.now() >= S.annUntil) S.annUntil = 0;
   const key = act ? (act.key || act.from + '|' + (act.t || act.k)) : '';
@@ -1419,7 +1428,7 @@ function moments(){
 // The countdown numeral rolls: the last number rises out of its clip as the new one rises in, in lockstep
 // (same duration and curve, one line apart), so the two never overlap.
 function countTick(act, sec){
-  const el = $('moment'), n = Math.max(1, Math.ceil(act.from + act.dur - sec));
+  const el = $('moment'), n = Math.max(1, Math.ceil(act.gp ? (S.gpEnd - Date.now()) / 1000 : act.from + act.dur - sec));
   if (el.dataset.n === String(n)) return; el.dataset.n = n;
   const ln = el.querySelector('.cd m-l'); if (!ln) return;
   ln.querySelectorAll('m-i.old').forEach(x => x.remove()); // a roll still running on a slow machine ends here

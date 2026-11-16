@@ -265,9 +265,7 @@ const tsv = rows => rows.map(r => r.map(c => /[\t\n"]/.test(c) ? '"' + c.replace
   await page.click('#rxBtns [data-m=on]'); await page.waitForFunction(() => /Held on/.test(document.getElementById('rxNow').textContent), null, { timeout: 8000 });
   check((await state()).rx.on === true, 'reactions held on');
   await page.click('#rxBtns [data-m=auto]'); await page.waitForFunction(() => /Following the clock/.test(document.getElementById('rxNow').textContent), null, { timeout: 8000 });
-  await page.click('#finBtns [data-step=numbers]'); await page.waitForFunction(() => /Held on Day in Numbers/.test(document.getElementById('finNow').textContent), null, { timeout: 8000 });
-  check((await state()).cfg.finale.step === 'numbers', 'finale step shown');
-  await page.click('#finBtns [data-step=""]'); await page.waitForFunction(() => /Runs by itself/.test(document.getElementById('finNow').textContent), null, { timeout: 8000 });
+  check(!(await page.locator('#finBtns').isVisible()), 'the finale controls are hidden while the wall has no finale loop');
   await page.click('[data-do=gpStart]'); check(/60 second/.test(await page.textContent('#askB')), 'the group photo asks first and says 60 seconds'); await yes();
   await page.waitForFunction(() => /Countdown running/.test(document.getElementById('gpNow').textContent), null, { timeout: 8000 });
   await page.click('[data-do=gpStop]'); await page.waitForFunction(() => !/Countdown running/.test(document.getElementById('gpNow').textContent), null, { timeout: 8000 });
