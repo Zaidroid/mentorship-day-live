@@ -301,7 +301,7 @@ describe("state", () => {
     assert.deepEqual(d.interest, {}); assert.deepEqual(d.hello, []);
     assert.match(d.snapV, /^\d+\.\d+$/);
     assert.ok(d.tags.includes("Funding"));
-    assert.deepEqual(d.videos.map(v => v.id), ["gsg", "tareq", "kassim"]);
+    assert.deepEqual(d.videos.map(v => v.id), ["gsg"]);
     assert.equal(r.headers.get("cache-control"), "public, max-age=0, must-revalidate");
     assert.equal(r.headers.get("x-content-type-options"), "nosniff");
     await op(S.base, { action: "showWord", word: "secretword" });
@@ -554,7 +554,7 @@ describe("clock", () => {
     assert.equal(g.json.reh, true); assert.equal(g.json.cfg.rehearsal.hhmm, "10:55");
     // announcements and videos carry times in the same clock as t
     await op(S.base, { action: "ann", text: "Rehearsal check", secs: 10 });
-    await op(S.base, { action: "video", id: "tareq" });
+    await op(S.base, { action: "video", id: "gsg" });
     d = (await state(S.base)).json;
     assert.ok(Math.abs(d.cfg.ann.at - d.t) < 5000 && Math.abs(d.cfg.video.at - d.t) < 5000);
     await op(S.base, { action: "ann", text: "" }); await op(S.base, { action: "video", id: null });
@@ -862,7 +862,7 @@ describe("poll schedule", () => {
     assert.equal(a.now, "10:20"); assert.equal(a.date, "2026-11-17"); assert.equal(a.phase, "day");
     assert.deepEqual(a.poll, { id: "p2", open: true, manual: false, until: "10:40", next: { id: "p1", at: "10:40" } });
     assert.deepEqual(a.rx, { mode: "auto", on: true, until: "10:40", next: "14:00" });
-    assert.deepEqual(a.program, { now: { title: "Opening", s: "10:00", e: "10:30" }, next: { title: "Video Messages", s: "10:30" } });
+    assert.deepEqual(a.program, { now: { title: "Opening", s: "10:00", e: "10:30" }, next: { title: "Gaza Sky Geeks Film", s: "10:30" } });
     assert.deepEqual(a.takeaways, []);
     await at("11:42");
     a = (await opGet(P.base)).json.auto;

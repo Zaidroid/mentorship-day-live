@@ -244,7 +244,7 @@ async function signInUI(p, person, v) {
       ['before', '', 'seedphone0001', 'See you on'],
       ['morning', '09:40', 'seedphone0001', 'Good morning, Layla'],
       ['stage_speaker', '10:10', 'seedphone0001', 'Rand Safi'],
-      ['stage_video', '10:35', 'seedphone0001', 'Video Messages'],
+      ['stage_video', '10:35', 'seedphone0001', 'Gaza Sky Geeks Film'],
       ['pick_auto', '10:45', devs.alpha, 'Picked for you'],
       ['pick_none', '11:50', 'seedphone0001', 'Pick your 12:00 session'],
       ['pick_own', '10:45', 'seedphone0001', 'Room A at 11:00'],

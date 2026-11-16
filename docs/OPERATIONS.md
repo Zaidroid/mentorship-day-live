@@ -138,7 +138,7 @@ Open the remote, type your name (the log shows who did what) and the team PIN. I
 
 ### Screen
 
-* What the screen shows: Automatic, or hold Welcome, Opening, Video Messages, Coffee Break, Lounge and Sessions, Lunch, Thank You.
+* What the screen shows: Automatic, or hold Welcome, Opening, Gaza Sky Geeks Film, Coffee Break, Lounge and Sessions, Lunch, Thank You.
 * Hold one scene: Rooms now, Next Up, One to Ones, Networking Board, Photo Wall, Live Poll, Live Numbers, This Way, Advisor Spotlight, Today's Advisors. Rotate scenes lets go.
 * Reactions: Auto (follows the clock), On, Off. This opens or closes the reaction buttons on the phones.
 * Group photo: "Group photo in 60 seconds" starts a countdown that takes the whole wall, then holds "Smile" for a moment. "Stop countdown" ends it. The Lunch finale controls are hidden, because the wall has no finale loop yet (section 6).
@@ -181,7 +181,7 @@ The server decides by the clock each time a phone, the wall or the remote asks. 
 | What | When |
 | --- | --- |
 | Phase | Before the day until 09:00 on 17 November, the day from 09:00, after the event from 15:00 |
-| Wall mode | Welcome until 10:00, Opening 10:00, Video Messages 10:30, Coffee Break 10:40, Lounge and Sessions 11:00 to 14:00, Lunch 14:00, Thank You from 15:00 |
+| Wall mode | Welcome until 10:00, Opening 10:00, Gaza Sky Geeks Film 10:30, Coffee Break 10:40, Lounge and Sessions 11:00 to 14:00, Lunch 14:00, Thank You from 15:00 |
 | Polls | 09:00 "What brought you here today?" (choices), 10:40 "In one word, what do you need most to grow?", 12:00 "In one word, how is your day going?", 13:40 "In one word, what will you do differently after today?". Closed after 15:00 |
 | Reactions on phones | 10:00 to 10:40 and 14:00 to 15:00 |
 | Takeaway windows | Block 1 from 11:40 to 12:20, block 2 from 12:40 to 13:20, block 3 from 13:40 to 15:00 |

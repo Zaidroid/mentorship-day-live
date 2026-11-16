@@ -15,7 +15,7 @@ Decisions from Zaid's interview on 12 November 2026. Everything down to "Not in 
 | --- | --- | --- |
 | 09:30 | Welcome | Title, live clock, countdown to the opening, check in counter, QR code, This Way |
 | 10:00 | Opening | Speaker name cards (Zaid Salem, Rand Safi, Alaa Alaaedein), moved forward from the remote |
-| 10:30 | Video Messages | Tareq Azza and KassimLegal videos, started from the remote, full screen, returning by themselves |
+| 10:30 | Gaza Sky Geeks Film | One film (since 16 November, in place of the two video messages), started from the remote, full screen, returning by itself |
 | 10:40 | Coffee Break | What starts at 11:00 with seats left, first poll, One to Ones |
 | 11:00 to 14:00 | Lounge and Sessions | Rooms now, Next Up with seats left, One to Ones, Networking Board, Photo Wall, Live Poll, Advisor Spotlight, Live Numbers, This Way |
 | 14:00 | Lunch | Best photos, Networking Board, final word cloud, thanks to the advisors |

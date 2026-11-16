@@ -487,6 +487,9 @@ let SLOTS = [].concat(...DAY.ones.map(o => slotsFor(o.who, o.room, o.s, o.e, o.m
 const PROGRAM = DAY.program.map(p => ({s:p.s, e:p.e, title:p.title, sub:p.sub, mode:p.mode, where:p.where || ''}));
 const SPEAKERS = DAY.speakers.map(x => Object.assign({}, x));
 const VIDEOS = DAY.videos.map(v => v.title);
+// The video part of the program (one film since 16 November). Titles that only repeat its name are left out.
+const VIDEO_ROW = DAY.program.find(p => p.mode === 'video') || {title:'Video', where:''};
+const VIDEO_SUB = VIDEOS.filter(t => t !== VIDEO_ROW.title);
 const listOf = a => a.length > 1 ? a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1] : (a[0] || '');
 
 /* ============ Time ============ */
@@ -589,7 +592,7 @@ const SETS = {
 const RAIL_HAS = ['board'];
 const LONG = {welcome:26, choose:26, rooms:26, recap:24, spotlight:21, meet:28, photos:28, poll:20, pulse:14, way:14, speaker:999, video:999};
 const dwell = id => LONG[id] || 16;
-const TITLES = {welcome:'Welcome', advisors:"Today's Advisors", poll:'Live Poll', board:'One to Ones', choose:'Choose Your Sessions', rooms:'Rooms', spotlight:'Advisor Spotlight', speaker:'Opening', video:'Video Messages', recap:'Lunch', thanks:'Our Advisors', survey:'Feedback', meet:'Networking Board', photos:'Photo Wall', pulse:'Live Numbers', way:'This Way'};
+const TITLES = {welcome:'Welcome', advisors:"Today's Advisors", poll:'Live Poll', board:'One to Ones', choose:'Choose Your Sessions', rooms:'Rooms', spotlight:'Advisor Spotlight', speaker:'Opening', video:VIDEO_ROW.title, recap:'Lunch', thanks:'Our Advisors', survey:'Feedback', meet:'Networking Board', photos:'Photo Wall', pulse:'Live Numbers', way:'This Way'};
 function layout(){
   U = Math.min(innerHeight / 100, innerWidth / 177.8);
   const W = innerWidth / U, wide = W >= 262;
@@ -844,9 +847,9 @@ R.speaker = (c) => {
   const m = nowMin(); let i = S.speaker; if (i === null) { i = 0; SPEAKERS.forEach((s, j) => { if (m >= toMin(s.s)) i = j; }); }
   const sp = SPEAKERS[Math.max(0, Math.min(SPEAKERS.length - 1, i))];
   return {title:'Opening', html:`<div class="speaker"><div><div class="k tx">On stage</div><div class="nm tx" style="font-size:calc(var(--u)*${Math.min(12, c.w / 8.5)})">${esc(sp.name)}</div><div class="rule dr"></div><div class="org tx">${esc(sp.org)}</div><div class="what tx">${esc(sp.what)}</div></div>
-    <div class="sl glass rv">${SPEAKERS.map((s, j) => `<div class="${j < i ? 'past' : (j === i ? 'on' : '')}"><b>${s.s}</b><div><strong>${esc(s.name)}</strong><span>${esc(s.org)}</span></div></div>`).join('')}<div><b>10:30</b><div><strong>Video Messages</strong><span>${listOf(VIDEOS.map(esc))}</span></div></div></div></div>`};
+    <div class="sl glass rv">${SPEAKERS.map((s, j) => `<div class="${j < i ? 'past' : (j === i ? 'on' : '')}"><b>${s.s}</b><div><strong>${esc(s.name)}</strong><span>${esc(s.org)}</span></div></div>`).join('')}<div><b>${esc(VIDEO_ROW.s || '')}</b><div><strong>${esc(VIDEO_ROW.title)}</strong><span>${esc(VIDEO_SUB.length ? listOf(VIDEO_SUB) : VIDEO_ROW.where)}</span></div></div></div></div>`};
 };
-R.video = () => ({title:'Video Messages', html:`<div class="hero"><div class="k tx">Up on screen</div><h1 class="tx" style="font-size:calc(var(--u)*11)">Video Messages</h1><div class="rule dr"></div><p class="tx">${listOf(VIDEOS.map(esc))}</p></div>`});
+R.video = () => ({title:VIDEO_ROW.title, html:`<div class="hero"><div class="k tx">Up on screen</div><h1 class="tx" style="font-size:calc(var(--u)*11)">${esc(VIDEO_ROW.title)}</h1><div class="rule dr"></div><p class="tx">${esc(VIDEO_SUB.length ? listOf(VIDEO_SUB) : (VIDEO_ROW.where ? 'In the ' + VIDEO_ROW.where : ''))}</p></div>`});
 R.recap = (c) => {
   const m = nowMin(), close = S.mode === 'close', done = SESSIONS.filter(s => m >= toMin(BLOCKS[s.b-1].e)).length, booked = SLOTS.filter(x => x.status === 'Booked').length;
   const k = [[done, 'sessions delivered'], [advisorCount(), 'advisors'], [booked || SLOTS.length, booked ? 'one to ones booked' : 'one to one slots']]; if (S.checkedIn) k.push([S.checkedIn, 'people joined']); if (S.photos.length) k.push([S.photos.length, 'photos shared']); if (S.profiles.length) k.push([S.profiles.length, 'on the Networking Board']); k.splice(4);
@@ -1315,7 +1318,7 @@ function nowZone(){
   else if (ph.kind === 'session') { label = 'Sessions on now'; live = true; cdTo = ph.b.e; cdTxt = 'left in this session'; pFrom = ph.b.s; pTo = ph.b.e; }
   else if (ph.kind === 'buffer' && ph.next) { label = 'Short break'; cdTo = ph.next.s; cdTxt = `until the ${ph.next.s} sessions`; pFrom = ph.b.e; pTo = ph.next.s; }
   else if (ph.kind === 'buffer') { label = 'Short break'; cdTo = '14:00'; cdTxt = 'until lunch'; pFrom = ph.b.e; pTo = '14:00'; }
-  else if (P0) { label = P0.title; live = ['opening', 'video'].includes(P0.mode); cdTo = P0.e; cdTxt = nx ? `until ${nx.mode === 'live' ? 'sessions start' : nx.title.toLowerCase()}` : 'until we close'; pFrom = P0.s; pTo = P0.e; }
+  else if (P0) { label = P0.title; live = ['opening', 'video'].includes(P0.mode); cdTo = P0.e; cdTxt = nx ? `until ${nx.mode === 'live' ? 'sessions start' : (nx.mode === 'video' ? 'the film' : nx.title.toLowerCase())}` : 'until we close'; pFrom = P0.s; pTo = P0.e; }
   else { label = 'Thank you for coming'; cdTo = null; }
   if (nx) next = `Next at <b>${nx.s}</b>, ${esc(nx.title)}${nx.mode === 'live' ? ` in ${esc(nx.sub)}` : ''}`;
   if (mode === 'opening') { let i = S.speaker; if (i === null) { i = 0; SPEAKERS.forEach((s, j) => { if (m >= toMin(s.s)) i = j; }); } next = `On stage, <b>${esc(SPEAKERS[i].name)}</b>`; }

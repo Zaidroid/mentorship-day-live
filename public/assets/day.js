@@ -47,7 +47,7 @@ globalThis.MD_DAY = {
   program: [
     { s: "09:30", e: "10:00", title: "Registration", sub: "and Coffee", mode: "welcome", where: "Registration desk", name: "Registration and Coffee" },
     { s: "10:00", e: "10:30", title: "Opening", sub: "Main Hall", mode: "opening", where: "Main Hall" },
-    { s: "10:30", e: "10:40", title: "Video Messages", sub: "Main Hall", mode: "video", where: "Main Hall" },
+    { s: "10:30", e: "10:40", title: "Gaza Sky Geeks Film", sub: "Main Hall", mode: "video", where: "Main Hall" },
     { s: "10:40", e: "11:00", title: "Coffee Break", sub: "Pick your sessions", mode: "choose", where: "Main Hall" },
     { s: "11:00", e: "12:00", title: "Sessions", sub: "Rooms A, B and C", mode: "live", where: "Rooms A, B and C" },
     { s: "12:00", e: "13:00", title: "Sessions", sub: "Room A", mode: "live", where: "Room A" },
@@ -60,9 +60,7 @@ globalThis.MD_DAY = {
     { s: "10:15", name: "Alaa Alaaedein", org: "Palestine TechnoPark", what: "Opening remarks" }
   ],
   videos: [
-    { id: "gsg", title: "Gaza Sky Geeks", src: "/videos/gsg.mp4" },
-    { id: "tareq", title: "Tareq Azza", src: "/videos/tareq-azza.mp4" },
-    { id: "kassim", title: "KassimLegal", src: "/videos/kassimlegal.mp4" }
+    { id: "gsg", title: "Gaza Sky Geeks Film", src: "/videos/gsg.mp4" }
   ],
   pollPlan: [
     { id: "p2", from: "09:00", to: "10:40" },

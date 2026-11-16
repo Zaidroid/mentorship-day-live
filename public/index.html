@@ -920,7 +920,7 @@ function stageModel(mode, prog){
   if (mode === 'video') {
     const c = ST && ST.cfg && ST.cfg.video, vids = (ST && ST.videos) || DAY.videos || [];
     const playing = c && c.id && ST && Math.abs(ST.t - c.at) < 10 * 60000 ? vids.find(x => x.id === c.id) : null;
-    return {kind:'stage', key:'video' + (playing ? playing.id : ''), tone:'now', live:1, eyebrow:'On stage now', title:prog.title, lines:[playing ? playing.title : vids.map(x => x.title).join(' and ')], until:prog.e, prog:{s:prog.s, e:prog.e}, acts};
+    return {kind:'stage', key:'video' + (playing ? playing.id : ''), tone:'now', live:1, eyebrow:'On stage now', title:prog.title, lines:[playing ? playing.title : vids.map(x => x.title).join(' and ')].filter(x => x && x !== prog.title), until:prog.e, prog:{s:prog.s, e:prog.e}, acts};
   }
   const sp = DAY.speakers || [], m = venue().min;
   let i = ST && ST.cfg && ST.cfg.speaker != null ? ST.cfg.speaker : null;
