@@ -31,7 +31,7 @@ The event: Tuesday 17 November 2026, 09:30 to 15:00, Palestine TechnoPark, Birze
 | --- | --- |
 | `public/index.html` | Phone page (QR target): sign in, then the tabs My Day, Live, People, Photos. After the event: Keepsake, People, Photos |
 | `public/screen/index.html` | The wall. Self contained HTML, CSS and JS |
-| `public/remote/index.html` | Team remote, PIN protected: Status, People, Screen, Approve, Polls, Export, Log |
+| `public/remote/index.html` | Team remote, PIN protected. Show is the first tab (what is on the wall, go to next, stay, follow the clock, the day, one card per live control); then Status, People, Screen, Approve, Polls, Export, Log |
 | `public/assets/day.js` | The schedule, written once: date, rooms, blocks, advisors, sessions, one to ones, program, speakers, videos, poll plan, reaction windows, topic map. The wall and the phone load it with a script tag; the server imports it through `netlify/lib/day.mjs` |
 | `public/assets/` | Also logos, advisor photos, Source Sans 3 and Noto Sans Arabic fonts, the QR library |
 | `public/manifest.json`, `public/icons/` | Web manifest and icons for the phone page |
@@ -113,6 +113,8 @@ Storage is one Netlify Blobs store `md26` with strong consistency. Shared JSON b
 * People: the registration response sheet. The remote reads its CSV in the browser and sends only name, company, job title, LinkedIn, topics, advisor preference, photo consent, rooms, slot and the last 4 digits. Never copy rows from it into the repo, a test, a log, a commit or a screenshot.
 
 ## Deploy
+
+* Two homes since 16 November, with separate data: Netlify (below, with the Free plan's badge) and a self hosted copy on Zaid's main-server (`/opt/stacks/mentorship-day`, port 8493 on localhost, for `mentorship.zaidlab.xyz` through the Cloudflare tunnel). `scripts/deploy.sh` deploys the committed code to both; `scripts/deploy.sh self` or `netlify` to one. The real people import goes to the home whose address is on the wall and the QR.
 
 * Netlify project `mentorship-day-live`, site id `735074f3-356c-4013-be49-6b660c8f482a`, on Zaid's Netlify account (GitHub login Zaidroid). URL https://mentorship-day-live.netlify.app. Deploy only with Zaid's go.
 * `REMOTE_PIN` is already set on the Netlify project. Ask Zaid for the value; never commit it. Optional alerts: `ALERT_TELEGRAM_BOT` and `ALERT_TELEGRAM_CHAT` (both, or nothing is sent).

@@ -113,6 +113,16 @@ Each import replaces the whole list on the server. To add someone, add the row t
 
 ## 4. The Remote, Tab by Tab
 
+### Show (the first tab, opens after the PIN)
+
+The one screen a team member needs during the day.
+
+* On the Wall Now: is the wall online, the wall clock, the part of the day, and whether the wall follows the clock or is held. Three buttons: Go to the next part now (moves the wall on early), Stay on this part (the wall does not move on when the clock passes, for a day running late), Follow the Clock (lets go of any hold). A hold stays until someone taps Follow the Clock.
+* The Day: every part of the program with a tag (Past, Now, Next, Held) and a Show Now button.
+* Live Controls: one card each for the speaker on stage, the film (Play, Stop), the poll, reactions (Auto, On, Off), the group photo countdown, an announcement, what waits for approval, and the screen (Live, Logo, Black, Screen Check).
+
+The other tabs are the detailed tools.
+
 Open the remote, type your name (the log shows who did what) and the team PIN. It updates every 8 seconds while the page is open; Refresh updates it now. During a rehearsal a blue banner on every tab shows the rehearsal time, with Stop. Small numbers on the tabs show what waits: Status (things that need you), People (people locked out), Approve (items waiting). Actions that change a lot say what will happen and ask you to confirm or cancel first.
 
 ### Status

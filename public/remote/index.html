@@ -145,6 +145,76 @@ details.dz summary{color:#b8432a}
 #ask h3{font-size:19px;margin:0 0 8px}
 #ask p{font-size:15px;margin-bottom:14px}
 #ask .row .b{min-height:52px}
+/* show: the home tab */
+nav button.home{flex:none;padding:9px 18px;font-size:15px}
+nav .sep{flex:none;width:1px;background:rgba(255,255,255,.28);margin:7px 4px}
+.b{position:relative}
+.b.sending{opacity:.7}
+.b.sending::after{content:'';position:absolute;left:12px;right:12px;bottom:5px;height:3px;border-radius:2px;background:currentColor;opacity:.55;transform-origin:left;animation:snd .8s ease-in-out infinite alternate}
+@keyframes snd{from{transform:scaleX(.15)}to{transform:scaleX(1)}}
+.sect{font-size:18px;color:var(--red);margin:20px 2px 8px;display:block}
+.sect:first-child{margin-top:4px}
+.wn-top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;font-size:14px;font-weight:600}
+.wn-clock{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:var(--ink2)}
+.wn-clock b{font-size:22px;color:var(--ink);font-variant-numeric:tabular-nums}
+.tag{display:inline-block;font-weight:700;font-size:12px;line-height:1.2;padding:3px 8px;border-radius:4px 12px 0 12px;background:#eee;color:var(--ink2);white-space:nowrap;vertical-align:middle}
+.tag.reh{background:var(--teal);color:#fff}
+.tag.now{background:var(--teal);color:#fff}
+.tag.next{background:var(--infobg);color:#1d6f8c}
+.tag.held{background:#E78B3F;color:#fff}
+.tag.past{background:transparent;color:var(--ink2);padding-left:0;padding-right:0}
+.wn-sec{margin-top:12px}
+.wn-sec .k{font-size:13px;color:var(--ink2);font-weight:600}
+.wn-sec .big{font-size:24px;margin-top:1px}
+.wn-sec .muted{margin-top:2px}
+.wn-state{margin-top:10px;padding:10px 12px;border-radius:8px;font-size:15px;background:var(--okbg)}
+.wn-state.held{background:#FCEBDD}
+.wn-note{margin-top:8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:9px 12px;border-radius:8px;background:var(--infobg);font-size:15px}
+.wn-note.bad{background:var(--warnbg)}
+.wn-note span{flex:1 1 180px;min-width:0}
+.wn-note .b{flex:1 0 auto;min-height:48px;padding:8px 14px}
+.wn-btns{display:grid;grid-template-columns:1fr;gap:8px;margin-top:12px}
+.bb{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;text-align:left;width:100%;min-height:64px;padding:11px 14px;font-size:17px;line-height:1.2;border-radius:10px}
+.bb small{display:block;font-weight:400;font-size:13.5px;line-height:1.3;margin-top:3px;opacity:.85}
+.bb.go{font-size:19px;min-height:72px}
+.bb.stay[aria-pressed=true]{background:#E78B3F;border-color:#E78B3F;color:#fff}
+.bb.clock[aria-pressed=true]{background:var(--okbg);border-color:var(--ok)}
+.bb.clock[aria-pressed=true]::before,.bb.stay[aria-pressed=true]::before{content:'';position:absolute;right:14px;top:50%;width:10px;height:10px;margin-top:-5px;border-radius:50%;background:var(--ok)}
+.bb.stay[aria-pressed=true]::before{background:#fff}
+.bb.hint{box-shadow:0 0 0 3px rgba(47,156,195,.35);border-color:var(--teal)}
+.go-why{font-size:14px;color:var(--ink2);margin-top:-2px;padding:0 2px}
+@media (min-width:600px){.wn-btns{grid-template-columns:1fr 1fr}.wn-btns .go,.wn-btns .go-why{grid-column:1/-1}}
+.day{padding:4px 14px}
+.dr{display:grid;grid-template-columns:46px minmax(0,1fr) auto;gap:10px;align-items:center;padding:7px 0;border-top:1px solid var(--line);min-height:62px}
+.dr:first-child{border-top:0}
+.dr time{font-weight:700;font-size:15px;font-variant-numeric:tabular-nums}
+.dr .tt{min-width:0}
+.dr .tt b{font-size:16px;margin-right:4px;overflow-wrap:anywhere}
+.dr .tt .muted{font-size:13px;display:block}
+.dr .b{min-height:48px;padding:6px 12px;font-size:14px;white-space:nowrap}
+.dr .onw{font-size:13px;font-weight:700;color:var(--teal);text-align:center;min-width:76px}
+.dr.past time,.dr.past .tt{opacity:.55}
+.dr.cur .tt b{color:var(--red)}
+.dr.cur{box-shadow:inset 4px 0 0 var(--teal);margin:0 -14px;padding-left:14px;padding-right:14px;background:#F2F8FB}
+.dr.held{box-shadow:inset 4px 0 0 #E78B3F;margin:0 -14px;padding-left:14px;padding-right:14px;background:#FDF3EA}
+.dr.held .onw{color:var(--warn)}
+.lc h2{margin-bottom:4px}
+.lc .state{font-size:15px;margin-bottom:10px;overflow-wrap:anywhere}
+.lc .help{font-size:13.5px;color:var(--ink2);margin-top:8px}
+.lc .q{font-weight:700;font-size:17px;margin-bottom:2px}
+.g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.g4{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+@media (min-width:600px){.g4{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.g3 .b,.g2 .b,.g4 .b{padding:10px 6px;min-height:52px}
+.lc details{margin-top:10px}
+.lc details summary::after{content:'Show';margin-left:auto;font-size:14px;color:var(--teal)}
+.lc details[open] summary::after{content:'Hide'}
+.lc details .grid1{margin-top:8px}
+.wt{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.wt .tile b{font-size:24px}
+.wt .tile.hot{background:var(--warnbg)}
+.wt .tile.hot b{color:var(--warn)}
 </style>
 </head>
 <body>
@@ -166,7 +236,9 @@ details.dz summary{color:#b8432a}
   <div id="rehBanner" hidden><div class="wrap"><p id="rehTxt"></p><button type="button" data-do="rhStop">Stop</button></div></div>
   <div class="wrap">
     <nav role="tablist">
-      <button role="tab" data-t="status" aria-selected="true">Status<em id="sbadge" hidden></em></button>
+      <button role="tab" data-t="show" aria-selected="true" class="home">Show</button>
+      <span class="sep" aria-hidden="true"></span>
+      <button role="tab" data-t="status" aria-selected="false">Status<em id="sbadge" hidden></em></button>
       <button role="tab" data-t="people" aria-selected="false">People<em id="pbadge" hidden></em></button>
       <button role="tab" data-t="screen" aria-selected="false">Screen</button>
       <button role="tab" data-t="approve" aria-selected="false">Approve<em id="badge" hidden></em></button>
@@ -178,7 +250,50 @@ details.dz summary{color:#b8432a}
 </header>
 <main class="wrap">
 
-  <section id="status">
+  <section id="show">
+    <h2 class="sect">On the Wall Now</h2>
+    <div class="box" id="shWall">
+      <div class="wn-top"><span id="shOnline"></span><span class="wn-clock" id="shClockBox"></span></div>
+      <div class="wn-sec" id="shNow"></div>
+      <p class="wn-state" id="shState"></p>
+      <div id="shNotes"></div>
+      <div class="wn-btns" id="shBtns"></div>
+    </div>
+
+    <h2 class="sect">The Day</h2>
+    <div class="box day" id="shDay"></div>
+
+    <h2 class="sect">Live Controls</h2>
+    <div class="box lc"><h2>Speaker on Stage</h2><p class="state" id="shSpk"></p>
+      <div class="g3"><button class="b" id="shSpPrev" data-do="spPrev">Previous</button><button class="b" id="shSpNext" data-do="spNext">Next</button><button class="b blue" id="shSpAuto" data-do="spAuto">By the Clock</button></div>
+      <p class="help">Previous and Next also hold the wall on the Opening.</p></div>
+    <div class="box lc"><h2>Video</h2><p class="state" id="shVid"></p>
+      <div class="grid1" id="shVids"></div>
+      <p class="help">Plays full screen with sound. The wall goes back by itself when it ends.</p></div>
+    <div class="box lc"><h2>Poll</h2><div class="state" id="shPoll"></div>
+      <div id="shPollBtns"></div>
+      <details id="shPollMore"><summary>Switch to Another Poll</summary><div class="grid1" id="shPollList"></div></details>
+      <p class="help">To hide a word, close the poll or add one, open the Polls tab.</p>
+      <button class="b" data-go="polls" style="width:100%;margin-top:8px">Open Polls</button></div>
+    <div class="box lc"><h2>Reactions</h2><p class="state" id="shRx"></p>
+      <div class="g3" id="shRxBtns"></div>
+      <p class="help" id="shRxHelp"></p></div>
+    <div class="box lc"><h2>Group Photo</h2><p class="state" id="shGp"></p>
+      <div class="g2"><button class="b go" data-do="gpStart">Group Photo in 60 Seconds</button><button class="b" id="shGpStop" data-do="gpStop">Stop Countdown</button></div>
+      <p class="help">The wall counts down on the full screen, then shows Smile for a few seconds.</p></div>
+    <div class="box lc"><h2>Announcement</h2><p class="state" id="shAnn"></p>
+      <div class="grid1" id="shAnnQuick"></div>
+      <label for="shAnnTxt">Or write your own</label><input type="text" id="shAnnTxt" maxlength="140" placeholder="A short line for the wall" autocomplete="off">
+      <div class="g2" style="margin-top:8px"><button class="b go" id="shAnnGo" data-do="shAnnGo">Send</button><button class="b" id="shAnnClear" data-do="annClear">Clear</button></div>
+      <p class="help">Shows on the wall and in the ticker for 30 seconds.</p></div>
+    <div class="box lc"><h2>Waiting for You</h2><div class="wt" id="shWait"></div>
+      <button class="b go" data-go="approve" style="width:100%">Open Approve</button></div>
+    <div class="box lc"><h2>Screen</h2><p class="state" id="shScr"></p>
+      <div class="g4" id="shOvs"></div>
+      <p class="help">Logo and Black cover the wall until you tap Live Screen. Screen Check shows the edges and a circle, to set up the display.</p></div>
+  </section>
+
+  <section id="status" hidden>
     <div class="box" id="stBanner"></div>
     <div class="box hold" id="stHeld" hidden></div>
     <div class="box"><h2>The Wall <small id="wallAge"></small></h2><dl class="kv" id="wallKv"></dl></div>
@@ -296,9 +411,11 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const ls = { get(k){ try { return localStorage.getItem(k) || ''; } catch(e) { return ''; } }, set(k, v){ try { localStorage.setItem(k, v); } catch(e) {} }, del(k){ try { localStorage.removeItem(k); } catch(e) {} } };
 const DAYX = window.MD_DAY || null;
-let PIN = ls.get('md_pin'), WHO = ls.get('md_who'), D = null, busy = false, lastOk = 0, TAB = 'status', refreshing = false, seq = 0;
+let PIN = ls.get('md_pin'), WHO = ls.get('md_who'), D = null, busy = false, lastOk = 0, TAB = 'show', refreshing = false, seq = 0;
 
-const MODES = [['auto','Automatic'],['welcome','Welcome'],['opening','Opening'],['video','Video Messages'],['choose','Coffee Break'],['live','Lounge and Sessions'],['lunch','Lunch'],['close','Thank You']];
+// The label of the film part of the day comes from its program row in day.js.
+const FILM = (DAYX && (DAYX.program.find(p => p.mode === 'video') || {}).title) || 'Film';
+const MODES = [['auto','Automatic'],['welcome','Welcome'],['opening','Opening'],['video',FILM],['choose','Coffee Break'],['live','Lounge and Sessions'],['lunch','Lunch'],['close','Thank You']];
 const SCENES = [['rooms','Rooms now'],['choose','Next Up'],['board','One to Ones'],['meet','Networking Board'],['photos','Photo Wall'],['poll','Live Poll'],['pulse','Live Numbers'],['way','This Way'],['spotlight','Advisor Spotlight'],['advisors',"Today's Advisors"]];
 const SPEAKERS = DAYX ? DAYX.speakers.map(s => s.name) : ['Zaid Salem', 'Rand Safi', 'Alaa Alaaedein'];
 const WAYS = [['roomA','Room A'],['roomB','Room B'],['roomC','Room C, 3rd Floor'],['registration','Registration'],['oneToOnes','One to Ones']];
@@ -376,15 +493,16 @@ $('gWho').value = WHO;
 $('gGo').onclick = async () => {
   WHO = $('gWho').value.trim(); PIN = $('gPin').value.trim();
   if (!WHO) { $('gErr').textContent = 'Add your name so the log shows who did what.'; return; }
-  try { D = await get(); ls.set('md_pin', PIN); ls.set('md_who', WHO); start(); } catch(e) { if (!$('gErr').textContent) $('gErr').textContent = 'Could not reach the screen service.'; }
+  try { D = await get(); ls.set('md_pin', PIN); ls.set('md_who', WHO); start(true); } catch(e) { if (!$('gErr').textContent) $('gErr').textContent = 'Could not reach the screen service.'; }
 };
 $('gPin').addEventListener('keydown', e => { if (e.key === 'Enter') $('gGo').click(); });
 
 /* tabs */
-const TABS = ['status','people','screen','approve','polls','export','log'];
+// Show is the home tab. The saved tab uses a new key, so a tab saved before Show existed does not win over it.
+const TABS = ['show','status','people','screen','approve','polls','export','log'];
 function showTab(t){
-  if (!TABS.includes(t)) t = 'status';
-  TAB = t; ls.set('md_tab', t);
+  if (!TABS.includes(t)) t = 'show';
+  TAB = t; ls.set('md_tab2', t);
   document.querySelectorAll('nav button').forEach(x => { const on = x.dataset.t === t; x.setAttribute('aria-selected', String(on)); if (on) { try { x.scrollIntoView({inline:'nearest', block:'nearest'}); } catch(e) {} } });
   TABS.forEach(n => $(n).hidden = n !== t);
   if (D) render();
@@ -697,6 +815,149 @@ function renderPolls(){
 function renderExport(){ setHtml($('exList'), EXPORTS.map(([k, n, d]) => `<button class="b left" data-x="${k}" data-do="export">${n}<br><span class="muted" style="font-weight:400">${esc(d)}</span></button>`).join('')); }
 function renderLog(){ setHtml($('logList'), D.log.length ? D.log.map(l => `<div><span class="muted">${fmt(l.at)}</span><span><b>${esc(l.who)}</b> ${esc(l.what)}</span></div>`).join('') : '<p class="muted">No actions yet.</p>'); }
 
+/* ---------- show: the home tab ---------- */
+// The wall picks its mode by the venue clock alone: before the first row Welcome, then each program row,
+// and Thank You from the close. ROWS is that run of show; the last row is the Thank You the wall shows after the close.
+const toM = hhmm => { const p = String(hhmm || '').split(':'); return p.length === 2 ? (+p[0]) * 60 + (+p[1]) : NaN; };
+const ROWS = (DAYX ? DAYX.program : []).map(r => ({s:r.s, e:r.e, title:r.name || r.title, sub:r.name ? '' : (r.sub || ''), mode:r.mode}))
+  .concat([{s:(DAYX && DAYX.close) || '15:00', e:'', title:'Thank You', sub:'', mode:'close'}]);
+const SPK = DAYX ? DAYX.speakers : [];
+const secName = mode => { const r = ROWS.find(x => x.mode === mode); return r ? r.title : modeName(mode); };
+let tOff = 0, tOffFor = null; // the server clock minus this device's clock, at the last answer
+const wallNow = () => Date.now() + tOff;
+function showCtx(){
+  const c = D.cfg, A = D.auto || {}, m = toM(A.now);
+  const ci = ROWS.findIndex(r => m >= toM(r.s) && (!r.e || m < toM(r.e)));
+  const clockMode = ci >= 0 ? ROWS[ci].mode : 'welcome';
+  const held = c.mode && c.mode !== 'auto' ? c.mode : null;
+  const wallMode = held || clockMode;
+  // the row on the wall: the clock row, or for a hold the row of that mode nearest the clock
+  let cur = ci;
+  if (held && !(ci >= 0 && ROWS[ci].mode === held)) {
+    let k = -1; ROWS.forEach((r, i) => { if (r.mode === held && toM(r.s) <= m) k = i; });
+    cur = k >= 0 ? k : ROWS.findIndex(r => r.mode === held);
+  }
+  const nx = cur + 1 < ROWS.length ? cur + 1 : -1;
+  return {c, A, m, ci, clockMode, held, wallMode, cur, nx, row:cur >= 0 ? ROWS[cur] : null, next:nx >= 0 ? ROWS[nx] : null, clockRow:ci >= 0 ? ROWS[ci] : null};
+}
+// The speaker card the wall shows by the clock: the last one whose time has come.
+const spClock = () => { const m = toM((D.auto || {}).now); let i = 0; SPK.forEach((s, j) => { if (m >= toM(s.s)) i = j; }); return i; };
+// The card Previous and Next step from: the held one, the clock's one during the Opening, or before the first card otherwise.
+const spBase = () => D.cfg.speaker != null ? D.cfg.speaker : (showCtx().wallMode === 'opening' ? spClock() : -1);
+const ago = s => s < 5 ? 'just now' : (s >= 120 ? Math.round(s / 60) + ' minutes' : s + ' seconds') + ' ago';
+function gpLeft(){ const g = D.cfg.photoAt; return g ? Math.ceil((g.at + g.secs * 1000 - wallNow()) / 1000) : 0; }
+function rxWords(){
+  const c = D.cfg, rx = (D.auto || {}).rx || {}, mode = c.rx || 'auto';
+  let s = mode === 'on' ? '<b>On</b>, held by you.' : mode === 'off' ? '<b>Off</b>, held by you.'
+    : rx.on ? `<b>On</b> by the clock until ${esc(rx.until || '')}.` : rx.next ? `<b>Off</b>. They open by the clock at ${esc(rx.next)}.` : '<b>Off</b> for the rest of the day.';
+  if (D.rx && D.rx.total) s += ` ${plural(D.rx.total, 'reaction', 'reactions')} so far.`;
+  return s;
+}
+function renderShow(){
+  const x = showCtx(), c = x.c, A = x.A, sc = D.screen;
+  if (tOffFor !== D) { tOff = D.t - Date.now(); tOffFor = D; }
+  // the wall: online, clock, section
+  const on = sc && sc.age <= 150;
+  setHtml($('shOnline'), `<span class="dot ${on ? 'on' : (sc || A.phase === 'day' ? 'bad' : '')}"></span>${on ? 'Wall online' : (sc ? 'Wall offline, last seen ' + ago(sc.age) : 'Wall not seen yet')}`);
+  setHtml($('shClockBox'), `${D.reh ? '<span class="tag reh">Rehearsal</span>' : ''}<span>Wall clock</span><b id="shClock">${esc(fmt(wallNow()))}</b>`);
+  const r = x.row;
+  setHtml($('shNow'), r
+    ? `<div class="k">${x.held ? 'Held on' : 'Now'}</div><div class="big">${esc(r.title)}</div><div class="muted">${esc(r.s)}${r.e ? ' to ' + esc(r.e) : ''}${r.sub ? ', ' + esc(r.sub) : ''}</div>`
+    : `<div class="k">Now</div><div class="big">Before the Doors Open</div><div class="muted">The wall shows the welcome screen until ${esc(ROWS[0] ? ROWS[0].s : '')}.</div>`);
+  // one line: following the clock, or held
+  const st = $('shState');
+  st.className = 'wn-state' + (x.held || c.pin ? ' held' : '');
+  let line;
+  if (!x.held) line = `<b>Following the clock.</b> ${x.next ? `Next: ${esc(x.next.title)} at ${esc(x.next.s)}.` : 'This is the last part of the day.'}`;
+  else if (x.clockMode !== x.held) line = `<b>Held on ${esc(secName(x.held))}.</b> By the clock it would show ${esc(x.clockRow ? x.clockRow.title : 'the welcome screen')} now. Tap Follow the Clock to go back to the times.`;
+  else line = `<b>Held on ${esc(secName(x.held))}.</b> ${x.clockRow && x.clockRow.e ? `At ${esc(x.clockRow.e)} the wall stays here until you tap Follow the Clock.` : 'It stays here until you tap Follow the Clock.'}`;
+  if (c.pin) line += ` Only the ${esc(sceneName(c.pin))} scene shows.`;
+  setHtml(st, line);
+  // notes: a cover on the wall, the wall offline, the film and the speakers when it is their time
+  const notes = [];
+  if (c.overlay) notes.push(`<div class="wn-note bad"><span><b>${esc(OVERLAY[c.overlay] || 'A cover')} is on the wall.</b> People do not see the program.</span><button class="b go" data-do="overlay" data-o="">Show the Live Screen</button></div>`);
+  if (!on && (sc || A.phase === 'day')) notes.push(`<div class="wn-note bad"><span>The wall is not reporting. Look at the wall; if it is frozen, reload it there.</span></div>`);
+  if (!D.reh && DAYX && A.date && A.date !== DAYX.date) notes.push(`<div class="wn-note"><span>Today is not the event day. To try a moment of the day, start a rehearsal in Status, under Tools.</span></div>`);
+  const vids = D.videos || [];
+  if (x.wallMode === 'video' && vids.length) {
+    const v = c.video, recent = v && v.id && wallNow() - v.at < 5 * 60000, vt = recent ? (vids.find(y => y.id === v.id) || {}).title : '';
+    notes.push(recent
+      ? `<div class="wn-note"><span>${esc(vt || 'The video')} started at ${esc(fmt(v.at))}.</span><button class="b warn" data-do="video" data-v="">Stop Video</button></div>`
+      : `<div class="wn-note"><span>The film plays only when you tap Play.</span>${vids.map(y => `<button class="b go" data-do="shVideo" data-v="${esc(y.id)}">Play ${esc(y.title)}</button>`).join('')}</div>`);
+  }
+  if (x.wallMode === 'opening' && SPK.length) {
+    const i = spBase();
+    notes.push(`<div class="wn-note"><span>On stage: <b>${esc((SPK[i] || {}).name || '')}</b>${c.speaker == null ? ', by the clock' : ''}.</span><button class="b" data-do="spNext" ${i >= SPK.length - 1 ? 'disabled' : ''}>Next Speaker</button></div>`);
+  }
+  setHtml($('shNotes'), notes.join(''));
+  // the three big buttons
+  const stayOn = !!x.held, clockOn = !x.held && !c.pin && c.speaker == null;
+  const stayName = r ? r.title : 'Welcome';
+  const goSame = x.next && x.next.mode === x.wallMode;
+  let btns = '';
+  if (x.next) {
+    btns += `<button class="b go bb" id="shGo" data-do="shGo" data-m="${esc(x.next.mode)}" data-title="${esc(x.next.title)}" ${goSame ? 'disabled' : ''}>Go to ${esc(x.next.title)} Now<small>${goSame ? 'Same screen as now' : 'Moves the wall now. It stays there until you tap Follow the Clock.'}</small></button>`;
+    if (goSame) btns += `<p class="go-why">${x.next.mode === 'live' ? `The next sessions start by the clock at ${esc(x.next.s)}, on the same screen.` : `${esc(x.next.title)} starts by the clock at ${esc(x.next.s)}, on the same screen.`}</p>`;
+  } else btns += `<p class="go-why">This is the last part of the day.</p>`;
+  btns += `<button class="b bb stay" id="shStay" data-do="shStay" data-m="${esc(x.wallMode)}" data-title="${esc(stayName)}" aria-pressed="${stayOn}">${stayOn ? 'Staying on ' : 'Stay on '}${esc(stayName)}<small>${stayOn ? 'Held. The wall does not move on by itself.' : (r && r.e ? `The wall does not move on at ${esc(r.e)}.` : 'The wall does not move on by itself.')}</small></button>`;
+  btns += `<button class="b bb clock${!clockOn && x.held && x.clockMode !== x.held ? ' hint' : ''}" id="shClockBtn" data-do="shClock" aria-pressed="${clockOn}">${clockOn ? 'Following the Clock' : 'Follow the Clock'}<small>${clockOn ? 'The wall moves on by the times below.' : 'Releases the hold. The wall moves on by the times below.'}</small></button>`;
+  setHtml($('shBtns'), btns);
+  // the day
+  setHtml($('shDay'), ROWS.map((row, i) => {
+    const tags = [], isCur = i === x.cur, past = row.e && toM(row.e) <= x.m && !isCur;
+    if (isCur && x.held) tags.push('<span class="tag held">Held</span>');
+    if (i === x.ci && !(isCur && x.held)) tags.push('<span class="tag now">Now</span>');
+    if (i === x.nx) tags.push('<span class="tag next">Next</span>');
+    if (past && i !== x.ci && i !== x.nx) tags.push('<span class="tag past">Past</span>');
+    const cls = isCur && x.held ? 'held cur' : (isCur ? 'cur' : (past && i !== x.nx ? 'past' : ''));
+    return `<div class="dr ${cls}"><time>${esc(row.s)}</time><div class="tt"><b>${esc(row.title)}</b>${tags.join(' ')}${row.sub ? `<span class="muted">${esc(row.sub)}</span>` : ''}</div>${isCur ? '<span class="onw">On the Wall</span>' : `<button class="b" data-do="shShow" data-i="${i}">Show Now</button>`}</div>`;
+  }).join(''));
+  // speaker
+  const si = c.speaker != null ? c.speaker : spClock(), sn = (SPK[si] || {}).name || '';
+  setHtml($('shSpk'), c.speaker != null ? `On stage: <b>${esc(sn)}</b>, held by you (${si + 1} of ${SPK.length}).`
+    : x.wallMode === 'opening' ? `On stage: <b>${esc(sn)}</b>, by the clock.` : `The cards follow the clock during the Opening${SPK[0] ? ', from ' + esc(SPK[0].s) : ''}.`);
+  $('shSpPrev').disabled = c.speaker != null && c.speaker <= 0;
+  $('shSpNext').disabled = spBase() >= SPK.length - 1;
+  $('shSpAuto').classList.toggle('on', c.speaker == null); $('shSpAuto').setAttribute('aria-pressed', String(c.speaker == null));
+  // video
+  const v = c.video, vt = v && v.id ? (vids.find(y => y.id === v.id) || {}).title || v.id : '';
+  setHtml($('shVid'), v && v.id ? `Last started: <b>${esc(vt)}</b> at ${esc(fmt(v.at))}.` : v && v.at ? `Stopped at ${esc(fmt(v.at))}.` : 'No video has played yet.');
+  setHtml($('shVids'), (vids.length ? vids.map(y => `<button class="b go" data-do="shVideo" data-v="${esc(y.id)}">Play ${esc(y.title)}</button>`).join('') : '<p class="muted">No video is set up.</p>') + '<button class="b warn" data-do="video" data-v="">Stop Video</button>');
+  // poll
+  const p = D.poll, pl = A.poll || {};
+  setHtml($('shPoll'), (p ? `<div class="q" dir="auto">${esc(p.q)}</div><div class="muted">${p.open ? 'Open' : 'Closed'}, ${plural(p.total, 'answer', 'answers')}.</div>` : '<div>No poll on the wall right now.</div>')
+    + `<div style="margin-top:6px">${pl.manual ? '<b>Held by you.</b> It does not change by itself.' : `<b>Follows the schedule.</b> ${pl.open && pl.until ? (pl.next ? `It changes at ${esc(pl.until)}.` : `It closes at ${esc(pl.until)}.`) : (pl.next ? `The next poll opens at ${esc(pl.next.at)}.` : 'No poll is open now.')}`}</div>`);
+  setHtml($('shPollBtns'), pl.manual ? '<button class="b go" data-do="pollBack" style="width:100%">Back to the Schedule</button>' : '<button class="b on blue" style="width:100%" disabled aria-pressed="true">Following the Schedule</button>');
+  setHtml($('shPollList'), D.polls.filter(y => !(p && p.id === y.id && p.open && pl.manual)).map(y => `<button class="b left" data-do="pollOpen" data-p="${esc(y.id)}" dir="auto">${esc(y.q)}${p && p.id === y.id ? '<br><span class="muted" style="font-weight:400">On the wall now. Opens it and holds it.</span>' : ''}</button>`).join('') || '<p class="muted">No other poll.</p>');
+  // reactions
+  setHtml($('shRx'), rxWords());
+  const rxm = c.rx || 'auto';
+  setHtml($('shRxBtns'), [['auto','Auto'],['on','On'],['off','Off']].map(([k, n]) => `<button class="b blue ${rxm === k ? 'on' : ''}" data-do="rx" data-m="${k}" aria-pressed="${rxm === k}">${n}</button>`).join(''));
+  const wins = DAYX ? DAYX.reactionWindows.map(w => `${w.from} to ${w.to}`).join(' and ') : '';
+  $('shRxHelp').textContent = `Auto opens them by the clock${wins ? ', ' + wins : ''}. On and Off hold them on every phone and on the wall.`;
+  // group photo
+  const gl = gpLeft(), gpRun = gl > 0;
+  setHtml($('shGp'), gpRun ? `<b>Countdown running:</b> <span id="shGpLeft">${gl}</span> seconds left.` : 'Not running.');
+  $('shGpStop').disabled = !gpRun;
+  // announcement
+  if (!$('shAnnQuick').dataset.ready) { $('shAnnQuick').innerHTML = ANNOUNCE.map(t => `<button class="b left" data-do="ann" data-t="${esc(t)}">${esc(t)}</button>`).join(''); $('shAnnQuick').dataset.ready = 1; }
+  const ann = c.ann, live = ann && D.t < ann.at + (ann.secs || 20) * 1000;
+  setHtml($('shAnn'), live ? `<b>On the wall now:</b> "${esc(ann.text)}"` : 'Nothing on the wall right now.');
+  $('shAnnClear').disabled = !live;
+  // waiting
+  const pend = D.pending || {}, w = [[(pend.photos || []).length, 'Photos'], [(pend.profiles || []).length, 'Cards'], [(pend.takeaways || []).length, 'Takeaways']];
+  setHtml($('shWait'), w.map(([n, l]) => `<div class="tile${n ? ' hot' : ''}"><b>${n}</b><small>${l}</small></div>`).join(''));
+  // screen
+  setHtml($('shScr'), c.overlay ? `<b>${esc(OVERLAY[c.overlay] || 'A cover')}</b> covers the wall.` : 'The live screen is showing.');
+  setHtml($('shOvs'), [['','Live Screen'],['logo','Logo Screen'],['black','Black Screen'],['check','Screen Check']].map(([k, n]) => `<button class="b ${(c.overlay || '') === k ? 'on' : ''}" data-do="overlay" data-o="${k}" aria-pressed="${(c.overlay || '') === k}">${n}</button>`).join(''));
+}
+// Between answers the clock and the group photo seconds tick here, once a second.
+setInterval(() => {
+  if (!D || TAB !== 'show' || document.hidden) return;
+  const ck = $('shClock'); if (ck) ck.textContent = fmt(wallNow());
+  const gl = $('shGpLeft'); if (gl) gl.textContent = Math.max(0, gpLeft());
+}, 1000);
+
 function render(){
   if (!D) return;
   const c = D.cfg;
@@ -709,7 +970,7 @@ function render(){
   $('badge').hidden = !nPend; $('badge').textContent = nPend;
   const lk = ((D.people || {}).locked || []).length, pb = $('pbadge'); pb.hidden = !lk; pb.textContent = lk; pb.className = 'hot';
   const nd = needs().length, sb = $('sbadge'); sb.hidden = !nd; sb.textContent = nd; sb.className = 'hot';
-  ({status:renderStatus, people:renderPeople, screen:renderScreen, approve:renderApprove, polls:renderPolls, export:renderExport, log:renderLog})[TAB]();
+  ({show:renderShow, status:renderStatus, people:renderPeople, screen:renderScreen, approve:renderApprove, polls:renderPolls, export:renderExport, log:renderLog})[TAB]();
 }
 const THUMBS = {};
 async function loadThumbs(){
@@ -733,14 +994,15 @@ const DO = {
   mode: el => act({action:'mode', mode:el.dataset.m}, el.dataset.m === 'auto' ? 'Screen follows the clock' : 'Screen held'),
   scene: el => act({action:'pin', scene:el.dataset.s || null}, el.dataset.s ? 'Scene held' : 'Scenes rotate again'),
   video: el => act({action:'video', id:el.dataset.v || null}, el.dataset.v ? 'Video playing' : 'Video stopped'),
-  overlay: el => act({action:'overlay', overlay:el.dataset.o || null}),
+  overlay: el => act({action:'overlay', overlay:el.dataset.o || null}, {'':'Back to the live screen', black:'Black screen on the wall', logo:'Logo screen on the wall', check:'Screen check on the wall'}[el.dataset.o || '']),
   theme: el => act({action:'theme', theme:el.dataset.th}),
   rx: el => act({action:'rx', mode:el.dataset.m}, {auto:'Reactions follow the clock', on:'Reactions held on', off:'Reactions held off'}[el.dataset.m]),
   finale: el => act({action:'finale', step:el.dataset.step || null}, el.dataset.step ? 'Finale step shown' : 'The finale runs by itself'),
-  gpStart: () => act({action:'groupPhoto', secs:60}, 'Group photo countdown started', {title:'Start the group photo countdown?', body:'The whole wall shows a 60 second countdown, a white flash at zero, then Thank You.', yes:'Start countdown'}),
+  gpStart: () => act({action:'groupPhoto', secs:60}, 'Group photo countdown started', {title:'Start the group photo countdown?', body:'The whole wall shows a 60 second countdown, then Smile for a few seconds.', yes:'Start countdown'}),
   gpStop: () => act({action:'groupPhoto', secs:null}, 'Countdown stopped'),
-  spPrev: () => act({action:'speaker', index:Math.max(0, (D.cfg.speaker == null ? 0 : D.cfg.speaker) - 1)}),
-  spNext: () => act({action:'speaker', index:Math.min(SPEAKERS.length - 1, (D.cfg.speaker == null ? -1 : D.cfg.speaker) + 1)}),
+  // Previous and Next step from the card on the wall now, the held one or the one the clock shows, as the wall's arrow keys do.
+  spPrev: () => { const i = Math.max(0, spBase() - 1); return act({action:'speaker', index:i}, 'On stage: ' + (SPEAKERS[i] || 'speaker ' + (i + 1))); },
+  spNext: () => { const i = Math.min(SPEAKERS.length - 1, spBase() + 1); return act({action:'speaker', index:i}, 'On stage: ' + (SPEAKERS[i] || 'speaker ' + (i + 1))); },
   spAuto: () => act({action:'speaker', index:null}, 'Speakers follow the clock'),
   ann: el => act({action:'ann', text:el.dataset.t, secs:30}, 'On the wall for 30 seconds'),
   annGo: () => { const t = $('annTxt').value.trim(); if (!t) { toast('Write the announcement first'); return; } act({action:'ann', text:t, secs:+$('annSecs').value}, 'Announcement sent'); },
@@ -777,14 +1039,27 @@ const DO = {
     $('impRes').textContent = `Imported ${plural(d.count, 'person', 'people')}.${d.replaced ? ' ' + plural(d.replaced, 'row', 'rows') + ' replaced an earlier one.' : ''}${sk ? ' The server skipped ' + sk + '.' : ''}`;
     toast('People imported');
   },
-  teamGo: () => teamUpload()
+  teamGo: () => teamUpload(),
+  // Show tab. The buttons carry the mode and title they were drawn with, so a tap does what its label said.
+  shGo: el => act({action:'mode', mode:el.dataset.m}, `The wall moves to ${el.dataset.title}`),
+  shStay: el => { if (el.getAttribute('aria-pressed') === 'true') { toast('The wall is already held here'); return; } return act({action:'mode', mode:el.dataset.m}, `The wall stays on ${el.dataset.title}`); },
+  shClock: el => { if (el.getAttribute('aria-pressed') === 'true') { toast('The wall already follows the clock'); return; } return act({action:'mode', mode:'auto'}, 'The wall follows the clock'); },
+  shShow: el => { const r = ROWS[+el.dataset.i]; if (!r) return; const same = r.mode === showCtx().wallMode;
+    return act({action:'mode', mode:r.mode}, `The wall shows ${r.title}`, {title:`Show ${r.title} now?`, body:same ? 'The wall already shows this screen. It then stays on it until you tap Follow the Clock.' : `The wall moves to ${r.title} now and stays there until you tap Follow the Clock.`, yes:'Show Now'}); },
+  shVideo: el => { const v = (D.videos || []).find(y => y.id === el.dataset.v); if (!v) return; const body = {action:'video', id:v.id};
+    return showCtx().wallMode === 'video' ? act(body, `${v.title} is playing`) : act(body, `${v.title} is playing`, {title:`Play ${v.title} now?`, body:'It plays full screen with sound, over what the wall shows now. Stop Video ends it.', yes:'Play'}); },
+  shAnnGo: async () => { const t = $('shAnnTxt').value.trim(); if (!t) { toast('Write the announcement first'); $('shAnnTxt').focus(); return; } const d = await act({action:'ann', text:t, secs:30}, 'On the wall for 30 seconds'); if (d) $('shAnnTxt').value = ''; }
 };
 document.addEventListener('click', e => {
   const t = e.target.closest('[data-go],[data-a],[data-do]'); if (!t || t.disabled) return;
   if (t.dataset.go) { showTab(t.dataset.go); window.scrollTo(0, 0); return; }
   if (t.dataset.a) { approval(t); return; }
-  const f = DO[t.dataset.do]; if (f) f(t);
+  const f = DO[t.dataset.do]; if (!f) return;
+  // On the Show tab the tapped button shows that it is sending until the answer is back.
+  if (TAB === 'show' && t.closest('#show') && !busy) { t.classList.add('sending'); Promise.resolve(f(t)).finally(() => t.classList.remove('sending')); }
+  else f(t);
 });
+$('shAnnTxt').addEventListener('keydown', e => { if (e.key === 'Enter') DO.shAnnGo(); });
 $('npType').onchange = () => { $('npOptsBox').hidden = $('npType').value !== 'choice'; };
 $('wipePhrase').addEventListener('input', () => { $('wipeGo').disabled = $('wipePhrase').value.trim() !== 'RESET MD26'; });
 $('svLink').addEventListener('input', () => { $('svLink').dataset.touched = 1; });
@@ -842,9 +1117,10 @@ function showConn(){
   else { el.className = 'st off'; el.innerHTML = `<i></i>No connection since ${esc(fmt(lastOk))}. Showing the last data.`; }
 }
 let timer = 0;
-function start(){
+// fresh: just signed in at the gate, so the Show tab opens. A reload opens the tab that was open.
+function start(fresh){
   $('gate').hidden = true; $('app').hidden = false;
-  const saved = ls.get('md_tab'); showTab(TABS.includes(saved) ? saved : 'status');
+  const saved = ls.get('md_tab2'); showTab(!fresh && TABS.includes(saved) ? saved : 'show');
   render(); showConn(); readImport($('impPaste').value);
   clearInterval(timer);
   // every 8 seconds, only while the page is visible

@@ -1,6 +1,7 @@
 // End to end test of the team remote at 420 px wide (docs/PLAN.md WP6).
 //   BASE=http://localhost:8897 node scripts/e2e-remote.cjs
-// Drives the page like a person: sign in to the remote, import people from a file and from pasted rows,
+// Drives the page like a person: sign in to the remote, the Show tab (go to the next part, stay, follow the clock,
+// show a row now), import people from a file and from pasted rows,
 // check that no email or full number is sent, a sign in made through the API shows up in People,
 // a lockout and Unlock, a rehearsal on and off, a feature switch, a takeaway approval, an announcement,
 // polls, reactions, finale, group photo, survey link, team photo, an export download and a wipe.
@@ -33,6 +34,7 @@ async function api(method, p, { dev, pin, json, raw, type } = {}) {
 }
 const op = json => api('POST', '/api/op', { pin: true, json });
 const state = async () => (await api('GET', '/api/state')).data;
+const opGet = async () => (await api('GET', '/api/op', { pin: true })).data;
 const claim = async (dev, name, last4) => {
   const w = await api('GET', '/api/who?q=' + encodeURIComponent(name), { dev });
   const hit = ((w.data || {}).list || []).find(x => x.name === name);
@@ -84,7 +86,7 @@ const tsv = rows => rows.map(r => r.map(c => /[\t\n"]/.test(c) ? '"' + c.replace
   const refresh = async () => { await page.click('#refreshNow'); await sleep(700); };
   const lastOp = action => { for (let i = opBodies.length - 1; i >= 0; i--) { try { const b = JSON.parse(opBodies[i]); if (b.action === action) return b; } catch (e) {} } return null; };
 
-  /* the gate and the Status tab */
+  /* the gate, then the Show tab */
   await page.goto(B + '/remote/');
   await page.fill('#gWho', 'E2E Team'); await page.fill('#gPin', 'wrong');
   await page.click('#gGo'); await page.waitForSelector('#gErr:not(:empty)');
@@ -92,7 +94,47 @@ const tsv = rows => rows.map(r => r.map(c => /[\t\n"]/.test(c) ? '"' + c.replace
   errs.length = 0; // the browser logs the 401 of the wrong PIN, on purpose
   await page.fill('#gPin', PIN); await page.click('#gGo');
   await page.waitForSelector('#app:not([hidden])');
-  check(await page.getAttribute('nav button[data-t=status]', 'aria-selected') === 'true', 'Status is the first tab');
+  check(await page.getAttribute('nav button[data-t=show]', 'aria-selected') === 'true' && await page.isVisible('#show'), 'Show is the tab that opens after the gate');
+  check((await page.locator('nav button[role=tab]').first().getAttribute('data-t')) === 'show', 'Show is the first tab');
+
+  /* Show: the three big buttons and Show Now, inside a rehearsal at 10:12 (Opening by the clock) */
+  await op({ action: 'rehearsal', hhmm: '10:12' }); await refresh();
+  await page.waitForSelector('#shBtns #shGo');
+  const prog = await page.evaluate(() => MD_DAY.program);
+  const oi = prog.findIndex(r => r.mode === 'opening'), nextRow = prog[oi + 1];
+  check(/Opening/.test(await page.textContent('#shNow')) && /Following the clock/.test(await page.textContent('#shState')), 'Show: the Opening is on the wall and it follows the clock');
+  check(/Rehearsal/.test(await page.textContent('#shClockBox')) && /10:1\d/.test(await page.textContent('#shClock')), 'Show: the wall clock reads the rehearsal time and says Rehearsal');
+  check((await page.textContent('#shGo')).includes('Go to ' + nextRow.title + ' Now'), 'Show: the primary button names the next part (' + nextRow.title + ')');
+  check(await page.getAttribute('#shClockBtn', 'aria-pressed') === 'true', 'Show: Follow the Clock is marked while the wall is automatic');
+  await noScroll('Show'); await shot('00-show');
+  await page.click('#shGo');
+  await page.waitForFunction(() => /Held on/.test(document.getElementById('shState').textContent), null, { timeout: 8000 });
+  check((await opGet()).cfg.mode === nextRow.mode, 'Go to the next part holds its mode on the server (' + nextRow.mode + ')');
+  check(await page.getAttribute('#shStay', 'aria-pressed') === 'true', 'Show: Stay is marked while the wall is held');
+  await page.click('#shClockBtn');
+  await page.waitForFunction(() => /Following the clock/.test(document.getElementById('shState').textContent), null, { timeout: 8000 });
+  check((await opGet()).cfg.mode === 'auto', 'Follow the Clock releases the hold');
+  check((await page.textContent('#shStay')).includes('Stay on Opening'), 'Show: the Stay button names the part on the wall');
+  await page.click('#shStay');
+  await page.waitForFunction(() => /Held on Opening/.test(document.getElementById('shState').textContent), null, { timeout: 8000 });
+  check((await opGet()).cfg.mode === 'opening', 'Stay on Opening holds the opening mode');
+  await page.click('#shClockBtn');
+  await page.waitForFunction(() => /Following the clock/.test(document.getElementById('shState').textContent), null, { timeout: 8000 });
+  const li = prog.findIndex(r => r.mode === 'lunch');
+  await page.click(`#shDay [data-do=shShow][data-i="${li}"]`);
+  check(/Show .* now\?/.test(await page.textContent('#askT')), 'Show Now on a row asks first');
+  await yes();
+  await page.waitForFunction(() => !!document.querySelector('#shDay .dr.held'), null, { timeout: 8000 });
+  check((await opGet()).cfg.mode === 'lunch', 'Show Now on the Lunch row holds the lunch mode');
+  await page.click('#shClockBtn');
+  await page.waitForFunction(() => /Following the clock/.test(document.getElementById('shState').textContent), null, { timeout: 8000 });
+  const ses = prog.filter(r => r.mode === 'live');
+  await op({ action: 'rehearsal', hhmm: ses[0].s.replace(/:\d\d$/, ':20') }); await refresh();
+  check(await page.locator('#shGo').isDisabled() && (await page.textContent('#shBtns')).includes('start by the clock at ' + ses[1].s), 'Show: between two session blocks Go is off and says the next sessions start by the clock');
+  await op({ action: 'rehearsal', hhmm: null }); await refresh();
+
+  /* the Status tab */
+  await tab('status');
   await page.waitForSelector('#wallKv dt'); await sleep(500);
   check(/All good|need/.test(await page.textContent('#stBanner')), 'the Status banner says whether anything needs the team');
   check(/Poll|Reactions|Takeaways/.test(await page.textContent('#autoList')), 'Running by itself lists the clock rules');
@@ -266,9 +308,9 @@ const tsv = rows => rows.map(r => r.map(c => /[\t\n"]/.test(c) ? '"' + c.replace
   check((await state()).rx.on === true, 'reactions held on');
   await page.click('#rxBtns [data-m=auto]'); await page.waitForFunction(() => /Following the clock/.test(document.getElementById('rxNow').textContent), null, { timeout: 8000 });
   check(!(await page.locator('#finBtns').isVisible()), 'the finale controls are hidden while the wall has no finale loop');
-  await page.click('[data-do=gpStart]'); check(/60 second/.test(await page.textContent('#askB')), 'the group photo asks first and says 60 seconds'); await yes();
+  await page.click('#screen [data-do=gpStart]'); check(/60 second/.test(await page.textContent('#askB')), 'the group photo asks first and says 60 seconds'); await yes();
   await page.waitForFunction(() => /Countdown running/.test(document.getElementById('gpNow').textContent), null, { timeout: 8000 });
-  await page.click('[data-do=gpStop]'); await page.waitForFunction(() => !/Countdown running/.test(document.getElementById('gpNow').textContent), null, { timeout: 8000 });
+  await page.click('#screen [data-do=gpStop]'); await page.waitForFunction(() => !/Countdown running/.test(document.getElementById('gpNow').textContent), null, { timeout: 8000 });
   await page.fill('#svLink', 'https://example.com/survey'); await page.click('[data-do=svSave]');
   await page.waitForFunction(() => /example.com\/survey/.test(document.getElementById('svNow').textContent), null, { timeout: 8000 });
   check((await state()).cfg.links.survey === 'https://example.com/survey', 'survey link saved');
