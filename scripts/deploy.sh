@@ -1,6 +1,8 @@
 #!/bin/bash
 # Deploys the checked out commit to the Netlify project, then checks that the site answers as version 2.
-#   scripts/deploy.sh            deploy to production (https://mentorship-day-live.netlify.app)
+#   scripts/deploy.sh            deploy the committed code to both homes: Netlify and the self hosted copy
+#   scripts/deploy.sh netlify    Netlify only (https://mentorship-day-live.netlify.app)
+#   scripts/deploy.sh self       the self hosted copy on this server only (https://mentorship.zaidlab.xyz)
 #   scripts/deploy.sh rollback   put the version 1 deploy of 12 November back
 #   scripts/deploy.sh unlock     let pushes to GitHub main go live again (the live deploy is kept locked)
 # Only Zaid runs this, or Claude after his go in that session (docs/PLAN.md section 1.3).
@@ -18,8 +20,26 @@ if [ "${1:-}" = "rollback" ]; then
   npx netlify-cli api restoreSiteDeploy --data "{\"site_id\":\"$SITE\",\"deploy_id\":\"$V1_DEPLOY\"}" > /dev/null
   echo "Version 1 is back at $URL"; exit 0
 fi
-if [ -n "$(git status --porcelain -- public netlify netlify.toml package.json)" ]; then echo "There are changes that are not committed in public or netlify. Commit first."; exit 1; fi
+# Both homes get the committed code, never the working tree: a clean export of HEAD, plus the video files,
+# which are kept out of git. Work in progress in the tree is not deployed.
 SHA=$(git rev-parse --short HEAD)
+WHAT=${1:-both}
+BUILD="$PWD/dev/build-ctx"
+rm -rf "$BUILD"; mkdir -p "$BUILD"
+git archive HEAD | tar -x -C "$BUILD"
+mkdir -p "$BUILD/public/videos"; cp public/videos/*.mp4 "$BUILD/public/videos/" 2>/dev/null || true
+ln -s "$PWD/node_modules" "$BUILD/node_modules"
+if [ -n "$(git status --porcelain -- public netlify server)" ]; then echo "Note: changes in the tree that are not committed are NOT in this deploy."; fi
+if [ "$WHAT" = "self" ] || [ "$WHAT" = "both" ]; then
+  echo "Self hosted copy: building $SHA"
+  rm "$BUILD/node_modules"
+  docker compose -f /opt/stacks/mentorship-day/docker-compose.yml up -d --build 2>&1 | tail -3
+  ln -s "$PWD/node_modules" "$BUILD/node_modules"
+  for i in 1 2 3 4 5 6 7 8 9 10; do curl -s -m 3 -o /dev/null http://127.0.0.1:8493/api/state && break; sleep 1; done
+  echo "  local /api/state $(curl -s -m 10 -o /dev/null -w '%{http_code}' http://127.0.0.1:8493/api/state), /videos/gsg.mp4 $(curl -sI -m 10 -o /dev/null -w '%{http_code}' http://127.0.0.1:8493/videos/gsg.mp4), public address $(curl -s -m 10 -o /dev/null -w '%{http_code}' https://mentorship.zaidlab.xyz/api/state || true)"
+fi
+if [ "$WHAT" = "self" ]; then exit 0; fi
+cd "$BUILD"
 echo "Deploying $SHA to $URL"
 # The live deploy is kept locked (see below). The lock is lifted for the length of this deploy only.
 PUB0=$(npx netlify-cli api getSite --data "{\"site_id\":\"$SITE\"}" 2>/dev/null | python3 -c "import json,sys; print(json.load(sys.stdin)['published_deploy']['id'])")
