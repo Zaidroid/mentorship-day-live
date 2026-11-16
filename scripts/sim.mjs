@@ -435,7 +435,7 @@ async function runDay() {
     while (idx < eventsList.length && eventsList[idx].t <= simNow) { const ev = eventsList[idx++]; if (ev.t < UNTIL) dispatch(ev); }
     for (let k = dyn.length - 1; k >= 0; k--) if (dyn[k].t <= simNow) dispatch(dyn.splice(k, 1)[0]);
     if (simNow >= nextReport) {
-      const n = S ? S.n : {};
+      const n = (S && S.n) || {};
       const tot = total();
       console.log(`[${fmt(nextReport)}] req ${String(tot).padStart(6)} (+${String(tot - lastCount).padStart(4)})  failed ${bad()}  here ${n.here ?? "-"}  cards ${n.board ?? "-"}  links ${n.links ?? "-"}  photos ${n.photos ?? "-"}  takeaways ${n.takeaways ?? "-"}  answers ${n.answers ?? "-"}  reactions ${S && S.rx ? S.rx.total : "-"}  in flight ${running.size}`);
       lastCount = tot; nextReport += 5;
