@@ -479,7 +479,7 @@ let SESSIONS = DAY.sessions.map(s => Object.assign({}, s, {who:s.who.slice(), bo
 const FOCUS = {}; DAY.ones.forEach(o => { FOCUS[o.who] = o.focus; });
 function slotsFor(who, room, start, end, mode){ const o = []; for (let m = toMin(start); m + 15 <= toMin(end); m += 15) o.push({who, room, s:fmt(m), e:fmt(m+15), mode, status:'Open'}); return o; }
 let SLOTS = [].concat(...DAY.ones.map(o => slotsFor(o.who, o.room, o.s, o.e, o.mode)));
-const PROGRAM = DAY.program.map(p => ({s:p.s, e:p.e, title:p.title, sub:p.sub, mode:p.mode}));
+const PROGRAM = DAY.program.map(p => ({s:p.s, e:p.e, title:p.title, sub:p.sub, mode:p.mode, where:p.where || ''}));
 const SPEAKERS = DAY.speakers.map(x => Object.assign({}, x));
 const VIDEOS = DAY.videos.map(v => v.title);
 
