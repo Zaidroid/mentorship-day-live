@@ -26,7 +26,7 @@ export const DEFAULT_CFG = {
   overlay: null,         // black, logo, check, or null
   ann: null,             // { text, at, secs }
   video: null,           // { id, at } ; id null means stop
-  way: null,             // { registration, rooms, oneToOnes } arrow directions
+  way: { roomA: "right", roomB: "left", roomC: "up" }, // arrows as seen from the screen; Room C is upstairs on the 3rd Floor
   poll: { id: "p1", open: true },
   hidden: [],            // poll words hidden by the operator
   at: 0

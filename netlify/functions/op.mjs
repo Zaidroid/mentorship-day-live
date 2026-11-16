@@ -58,7 +58,7 @@ export default async (req) => {
     cfg.ann = text ? { text, at: Date.now(), secs: Math.max(8, Math.min(120, parseInt(b.secs) || 20)) } : null;
     await writeCfg(s, cfg); note = text ? `Announced: ${text}` : "Cleared the announcement";
   } else if (a === "way") {
-    const w = {}; for (const k of ["registration", "rooms", "oneToOnes"]) { const d = String((b.way || {})[k] || ""); if (DIRS.includes(d) && d) w[k] = d; }
+    const w = {}; for (const k of ["roomA", "roomB", "roomC", "registration", "oneToOnes"]) { const d = String((b.way || {})[k] || ""); if (DIRS.includes(d) && d) w[k] = d; }
     cfg.way = Object.keys(w).length ? w : null; await writeCfg(s, cfg); note = "Updated the This Way directions";
   } else if (a === "approvePhoto" || a === "rejectPhoto" || a === "hidePhoto") {
     if (!idOk(b.id)) return J({ error: "Unknown photo." }, 400);

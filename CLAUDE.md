@@ -77,7 +77,7 @@ Storage is one Netlify Blobs store `md26` with strong consistency. Keys: `cfg`, 
 
 * Deploy to Netlify, then test from a real phone, the remote, and the screen together.
 * Opening videos: add `public/videos/tareq-azza.mp4` and `public/videos/kassimlegal.mp4` once Zaid sends them.
-* This Way directions: set in the remote once directions from the Main Hall to the rooms are known. The scene stays hidden until then.
+* This Way directions (16 November): Room A on the right, Room B on the left, Room C upstairs on the 3rd Floor. These are the defaults on the screen and the directions poster. Registration and One to Ones directions are still unknown, so they stay hidden until set in the remote. Confirm on site that right and left hold from where the screen stands.
 * Speaker card titles for Rand Safi and Alaa Alaaedein, and Alan's title. Zaid's card reads "Market Access Lead, Gaza Sky Geeks".
 * Screen signal and resolution from Rose at TechnoPark. The layout adapts; confirm with the screen check on site.
 * Poll questions and networking tags are drafts for Zaid to approve: `DEFAULT_POLLS` and `TAGS` in `netlify/lib/store.mjs`.

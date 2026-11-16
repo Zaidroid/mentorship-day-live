@@ -6,7 +6,7 @@
    `chrome --kiosk --autoplay-policy=no-user-gesture-required https://mentorship-day-live.netlify.app/screen/`
    Without the flag, click once anywhere on the screen after it loads.
 2. On the remote, tap Screen check. The red frame and blue corners must sit exactly on the edges of the wall, and the small sample text must be readable from the back of the hall. Then tap Live screen.
-3. Set the This Way directions in the remote, as seen from the screen.
+3. Check the This Way directions in the remote, as seen from the screen: Room A on the right, Room B on the left, Room C upstairs on the 3rd Floor. Add Registration and One to Ones once their directions are known.
 4. Scan the QR code with a phone, answer the poll, and confirm the word appears on the screen.
 5. Check the Screen Feed sheet: Checked in, WiFi name and password, and Announcement if needed.
 

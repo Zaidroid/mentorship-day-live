@@ -748,9 +748,9 @@ R.pulse = (c) => {
 /* This Way */
 const DEG = {'right':0, 'down right':45, 'down':90, 'down left':135, 'left':180, 'up left':225, 'up':270, 'up right':315};
 const ARROW = '<svg viewBox="0 0 100 100" aria-hidden="true"><path d="M18,50 H78 M56,27 L79,50 L56,73" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-const WAYS = [{k:'registration', t:'Registration', s:'Badges and one to one bookings'}, {k:'rooms', t:'Rooms A, B and C', s:'Sessions'}, {k:'oneToOnes', t:'One to Ones', s:'Small Rooms 1 and 3', blue:true}];
+const WAYS = [{k:'roomA', t:'Room A', s:'Sessions'}, {k:'roomB', t:'Room B', s:'Sessions'}, {k:'roomC', t:'Room C', s:'Upstairs, 3rd Floor'}, {k:'registration', t:'Registration', s:'Badges and one to one bookings'}, {k:'oneToOnes', t:'One to Ones', s:'Small Rooms 1 and 3', blue:true}];
 R.way = (c) => {
-  const items = WAYS.filter(w => S.way && S.way[w.k]), row = c.w >= 165;
+  const items = WAYS.filter(w => S.way && S.way[w.k]), row = c.w >= 165 && items.length <= 3;
   return {title:'This Way', html:`<div class="way" style="grid-template-columns:${row ? `repeat(${items.length},minmax(0,1fr))` : '1fr'}"><div class="here rv" style="grid-column:1/-1">You are in the Main Hall</div>${items.map(w => `<div class="wy glass rv"><div class="arr leaf ${w.blue ? 'blue' : ''}"><i style="rotate:${DEG[S.way[w.k]] || 0}deg">${ARROW}</i></div><div style="min-width:0"><b>${esc(w.t)}</b><span>${esc(w.s)}</span></div></div>`).join('')}</div>`};
 };
 
