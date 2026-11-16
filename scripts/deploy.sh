@@ -21,6 +21,9 @@ fi
 if [ -n "$(git status --porcelain -- public netlify netlify.toml package.json)" ]; then echo "There are changes that are not committed in public or netlify. Commit first."; exit 1; fi
 SHA=$(git rev-parse --short HEAD)
 echo "Deploying $SHA to $URL"
+# The live deploy is kept locked (see below). The lock is lifted for the length of this deploy only.
+PUB0=$(npx netlify-cli api getSite --data "{\"site_id\":\"$SITE\"}" 2>/dev/null | python3 -c "import json,sys; print(json.load(sys.stdin)['published_deploy']['id'])")
+npx netlify-cli api unlockDeploy --data "{\"deploy_id\":\"$PUB0\"}" > /dev/null 2>&1 || true
 npx netlify-cli deploy --prod --site "$SITE" --dir public --functions netlify/functions --message "Version 2 ($SHA)"
 # The live deploy is locked, so a push to GitHub main (which Netlify builds by itself) cannot replace it.
 # A locked site does not publish a new deploy on its own: publish the newest deploy made here, then lock it.
