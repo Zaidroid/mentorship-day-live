@@ -19,10 +19,11 @@ One laptop drives the wall. The wall is its second display; the laptop's own scr
 3. Open a Chrome window with the wall address, drag it onto the wall display, and make it full screen: press F inside the page, or F11.
 4. Click once anywhere on the wall window. Chrome lets a video play with sound only after a click on the page. Without that click the wall plays the video muted and shows "Click the screen once so videos can play with sound". The other way: close every Chrome window, then start Chrome with `--autoplay-policy=no-user-gesture-required` (the flag only counts when Chrome starts fresh).
 5. Open a second Chrome window on the laptop's own screen with the remote. Type your name and the team PIN. This is the window for the team member in charge.
-6. Move the mouse pointer back to the laptop screen. The wall page does not hide it.
+6. Move the mouse pointer back to the laptop screen. On the wall it hides by itself after 3 seconds without a move.
 7. On the laptop, turn off sleep, the screen saver, turning the display off, notifications (do not disturb), and automatic updates. Keep it on power all day.
 8. Never minimize the wall window. The page keeps the screen awake only while it is visible.
 9. Run the screen check (below), then go back to the live screen.
+10. If the circle in the screen check looks like an oval, the wall is stretching the laptop's picture. Open `/screen/fit.html?shape=2&quiet` in place of `/screen/?quiet`: it lays the wall out 2 wide to 1 high and squeezes it into the laptop's picture, so the wall's stretch puts it back in proportion. Change the number if the wall has another shape (width divided by height).
 
 Keyboard keys reach the wall only while its window has focus. After you use the remote, click once on the wall window before you press a key. Keys change only this wall page, not the server; a mode or scene chosen later in the remote replaces a key hold.
 
@@ -140,7 +141,7 @@ Open the remote, type your name (the log shows who did what) and the team PIN. I
 * What the screen shows: Automatic, or hold Welcome, Opening, Video Messages, Coffee Break, Lounge and Sessions, Lunch, Thank You.
 * Hold one scene: Rooms now, Next Up, One to Ones, Networking Board, Photo Wall, Live Poll, Live Numbers, This Way, Advisor Spotlight, Today's Advisors. Rotate scenes lets go.
 * Reactions: Auto (follows the clock), On, Off. This opens or closes the reaction buttons on the phones.
-* Lunch finale and Group photo: buttons for the finale steps and a 60 second countdown. The wall does not act on them yet (section 6).
+* Group photo: "Group photo in 60 seconds" starts a countdown that takes the whole wall, then holds "Smile" for a moment. "Stop countdown" ends it. The Lunch finale controls are hidden, because the wall has no finale loop yet (section 6).
 * Opening speakers: Previous, By the clock, Next.
 * Videos: Play Tareq Azza, Play KassimLegal, Stop video. A video plays full screen and returns by itself.
 * Announcement: up to 140 characters, shown for 15 seconds, 30 seconds or 1 minute. Send or Clear.
@@ -200,10 +201,9 @@ At the time of writing these parts of the plan are not built on the wall:
 
 * the Networking Board as a constellation with connection lines (the wall shows the featured card, who is looking for what, and the names; "connections made" shows in Live Numbers)
 * Voices of the Day: takeaways are collected, approved and exported, but the wall does not show them
-* the Lunch Finale loop, and the group photo countdown: the remote's Lunch finale and Group photo buttons save the setting but change nothing on the wall. At 14:00 the wall shows Lunch as in version 1
+* the Lunch Finale loop: at 14:00 the wall shows Lunch as in version 1, and the finale controls are hidden in the remote. The group photo countdown does work
 * the poll word flying in from the QR code, and the moment with the top answers when the poll changes
 * the garden that grows with the day (the timeline flowers are the program, as in version 1)
-* reactions on the wall: the reaction buttons work on the phones, but the wall shows nothing of them. Not merged at the time of writing
 
 ## 7. Moderation and Approvals
 

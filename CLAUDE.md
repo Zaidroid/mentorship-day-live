@@ -146,7 +146,7 @@ Storage is one Netlify Blobs store `md26` with strong consistency. Shared JSON b
 
 * Deploy version 2 with Zaid's go, then the live checks in `docs/PLAN.md` section 8.4 (CDN cache, a 2 minute load test, a real phone, the remote), then tag `v2-freeze`. There is no tag yet.
 * Hosting and the function call budget: a paid Netlify plan for November, or the self hosted server as the main site (`docs/PLAN.md` section 10, item 0).
-* Not built on the wall at the time of writing: the Networking Board constellation, Voices of the Day, the Lunch Finale loop, the group photo countdown, the poll word fly in and the poll result moment, the Photo Wall "New" tag and crossfade, the growing garden, and reactions (not merged). The remote's Lunch finale and Group photo buttons save the setting but change nothing on the wall.
+* Not built on the wall at the time of writing: the Networking Board constellation, Voices of the Day, the Lunch Finale loop, the poll word fly in and the poll result moment, the Photo Wall "New" tag and crossfade, and the growing garden. The remote's Lunch finale controls are hidden. Reactions and the group photo countdown are on the wall since 16 November. `public/screen/fit.html?shape=2` is the wall for a display that stretches a 16 to 9 picture. `scripts/deploy.sh` deploys and rolls back.
 * `scripts/e2e.cjs` is still the version 1 story. Plan WP7 task 1 (one story from import to export) is not done.
 * Opening videos: add `public/videos/tareq-azza.mp4` and `public/videos/kassimlegal.mp4` once Zaid sends them.
 * This Way directions: set in the remote on site. The scene and the arrows stay hidden until then.

@@ -59,7 +59,7 @@ Decided with Zaid on 12 November 2026; the plan is `docs/PLAN.md`, the API as bu
 * Choose Your Sessions and Rooms show how many people plan to join each session. Seats left show only when the tracker has bookings. A live session has a progress bar and reads "Wrapping up" in its last 5 minutes.
 * A director picks what each slot shows by content and the clock: Choose Your Sessions before a block, Rooms during it, new photos, poll answers and connections brought forward, empty scenes skipped.
 * It keeps itself running: a heartbeat every 60 seconds to the remote, a reload when the team asks, a watchdog, a screen wake lock, and a lite mode when frames are slow.
-* Not built at the time of writing: the Networking Board constellation, Voices of the Day, the Lunch Finale and the group photo countdown, the poll word fly in, the growing garden, and reactions on the wall.
+* Not built at the time of writing: the Networking Board constellation, Voices of the Day, the Lunch Finale, the poll word fly in and the growing garden. Reactions and the group photo countdown are on the wall.
 
 ### By the Clock
 
