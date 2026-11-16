@@ -941,7 +941,7 @@ function renderCheck(){
   $('check').innerHTML = `<div class="grid">${g.join('')}</div><div class="edge"></div>${corner('top','left')}${corner('top','right')}${corner('bottom','left')}${corner('bottom','right')}<div class="cross"></div>
     <div class="info glass"><strong>Screen check</strong><div>${W} x ${H} browser pixels</div><div>${Math.round(W * dpr)} x ${Math.round(H * dpr)} device pixels</div><div>Shape ${(W / H).toFixed(2)} to 1</div><div>Layout: ${L.wide ? 'ultra wide, with side panel' : (L.n > 1 ? L.n + ' columns' : 'one column')}</div>
     <div id="ckFps"></div><div id="ckLite"></div>
-    <div>The red frame and blue corners should sit exactly on the edges of the wall.</div><div style="font-size:calc(var(--u)*1.3);margin-top:calc(var(--u)*1)">This is the smallest text the screen uses. Check it is readable from the back of the hall.</div></div>`;
+    <div>The red frame and blue corners should sit exactly on the edges of the wall.</div><div style="display:flex;align-items:center;gap:calc(var(--u)*1.4);margin-top:calc(var(--u)*1)"><span style="flex:none;width:calc(var(--u)*7);height:calc(var(--u)*7);border-radius:50%;border:calc(var(--u)*.5) solid #DF6236;box-sizing:border-box"></span><span>This must be a perfect circle. If it looks like an oval, the wall is stretching the picture: open /screen/fit.html?shape=2 instead.</span></div><div style="font-size:calc(var(--u)*1.3);margin-top:calc(var(--u)*1)">This is the smallest text the screen uses. Check it is readable from the back of the hall.</div></div>`;
   checkPerf();
 }
 // The live part of the screen check: frame rate and lite state, every half second while it shows.
@@ -1657,6 +1657,9 @@ function checkSparks(){ const total = SESSIONS.reduce((a, s) => a + s.booked, 0)
 const KEYMODES = {'1':'welcome','2':'opening','3':'video','4':'choose','5':'live','6':'lunch','7':'close'};
 function toast(t){ const el = $('toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toast.h); toast.h = setTimeout(() => el.classList.remove('show'), 2600); }
 function help(){ const h = $('help'); h.innerHTML = `<table>${[['F','Full screen'],['0','Automatic, follows the clock'],['1 to 7','Welcome, Opening, Videos, Coffee break, Sessions, Lunch, Thank you'],['Left, Right','Previous or next opening speaker'],['N','Next scene now'],['T','Light or dark'],['A','Type an announcement'],['C','Clear the announcement'],['L','Logo screen'],['B','Black screen'],['K','Screen check, for setting up the wall'],['V','Stop a playing video'],['D','Demo data on or off'],['H','Show or hide this help']].map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('')}</table>`; h.classList.toggle('hide'); }
+// The pointer hides after 3 seconds without a move, so it never sits on the wall.
+let curT = 0; const curHide = () => { document.documentElement.style.cursor = 'none'; };
+addEventListener('mousemove', () => { document.documentElement.style.cursor = ''; clearTimeout(curT); curT = setTimeout(curHide, 3000); }); curT = setTimeout(curHide, 3000);
 addEventListener('keydown', e => { const k = e.key.toLowerCase();
   if (KEYMODES[k]) { S.override = KEYMODES[k]; S.speaker = null; loop(true); toast('Held on ' + ({welcome:'welcome', opening:'opening', video:'videos', choose:'coffee break', live:'sessions', lunch:'lunch', close:'thank you'}[S.override]) + ', press 0 to follow the clock'); }
   else if (k === '0') { S.override = null; S.speaker = null; loop(true); toast('Automatic, following the clock'); }

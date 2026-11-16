@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mentorship Day Wall, Fitted</title>
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#E3E3E3}
+iframe{position:absolute;left:0;top:0;border:0;transform-origin:0 0;display:block}
+</style>
+</head>
+<body>
+<!-- For a wall that stretches the picture it is given. A laptop sends a 16 to 9 picture; a wall of another
+     shape (the Main Hall wall is about 2 to 1) stretches it, and circles turn into ovals. This page lays the
+     wall out at its true shape and squeezes it into the picture the laptop sends, so the stretch on the wall
+     puts everything back in proportion.
+       /screen/fit.html?shape=2          the wall is 2 wide to 1 high
+       /screen/fit.html?shape=2&quiet    every other option is passed on to the wall page
+     Without shape, or when the picture already has that shape, the wall shows as it is. -->
+<iframe id="w" title="Wall" allow="autoplay; screen-wake-lock"></iframe>
+<script>
+(function(){
+  var P = new URLSearchParams(location.search), shape = parseFloat(P.get('shape')) || 0, f = document.getElementById('w');
+  P.delete('shape');
+  var q = P.toString().replace(/=(&|$)/g, '$1');
+  function fit(){
+    var W = innerWidth, H = innerHeight, vw = shape > 0.5 && shape < 6 ? Math.round(H * shape) : W;
+    f.style.width = vw + 'px'; f.style.height = H + 'px'; f.style.transform = vw === W ? 'none' : 'scaleX(' + (W / vw) + ')';
+  }
+  fit(); addEventListener('resize', fit);
+  f.src = './' + (q ? '?' + q : '');
+  // Keys go to the wall inside. F is kept here, because full screen must cover this page, not the frame.
+  function full(){ if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(function(){}); else document.exitFullscreen(); }
+  f.addEventListener('load', function(){
+    try { f.contentWindow.focus();
+      f.contentWindow.addEventListener('keydown', function(e){ if (e.key.toLowerCase() === 'f' && !e.ctrlKey && !e.metaKey && !e.altKey) { e.stopImmediatePropagation(); e.preventDefault(); full(); } }, true);
+    } catch(e) {}
+  });
+  addEventListener('keydown', function(e){ if (e.key.toLowerCase() === 'f') full(); });
+  addEventListener('focus', function(){ try { f.contentWindow.focus(); } catch(e) {} });
+  addEventListener('click', function(){ try { f.contentWindow.focus(); } catch(e) {} });
+})();
+</script>
+</body>
+</html>
