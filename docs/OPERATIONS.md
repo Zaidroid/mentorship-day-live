@@ -8,6 +8,8 @@ For Mentorship Day, Tuesday 17 November 2026, version 2. Version 2 is not deploy
 | Remote | https://mentorship-day-live.netlify.app/remote/ | The team, with the team PIN |
 | Phone page | https://mentorship-day-live.netlify.app/ | Attendees, from the QR code |
 
+Since 16 November the same system also runs at https://mentorship.zaidlab.xyz (Zaid's own server, no Netlify badge), with the same three paths: `/screen/`, `/remote/` and `/`. The two addresses do not share data. Use one address for everything on the day: the wall, the remote, the QR code and the people import.
+
 The floor team needs only `docs/TEAM-CARD.md`.
 
 ## 1. Wall Setup With a Laptop
